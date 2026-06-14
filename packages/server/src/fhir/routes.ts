@@ -26,6 +26,7 @@ import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
 import { checkCoverageHandler } from './operations/check-coverage';
 import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
+import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -370,6 +371,11 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Practitioner/:id/$verify-practitioner-authority', verifyPractitionerAuthorityHandler);
   router.add('POST', '/Practitioner/:id/$verify-practitioner-authority', verifyPractitionerAuthorityHandler);
   router.add('POST', '/Practitioner/$verify-practitioner-authority', verifyPractitionerAuthorityHandler);
+
+  // Condition $report-idsr-notification operation (Kenya IDSR — Kenya Health Act 2017 s.57)
+  router.add('GET', '/Condition/:id/$report-idsr-notification', reportIdsrNotificationHandler);
+  router.add('POST', '/Condition/:id/$report-idsr-notification', reportIdsrNotificationHandler);
+  router.add('POST', '/Condition/$report-idsr-notification', reportIdsrNotificationHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

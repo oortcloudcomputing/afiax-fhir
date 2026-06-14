@@ -1556,3 +1556,155 @@ function getKenyaCoverageEligibilitySystem(
       return KenyaCoverageRefugeeIdIdentifierSystem;
   }
 }
+
+// ─── IDSR: Integrated Disease Surveillance and Response ───────────────────────
+// Immediately notifiable conditions under:
+//   Kenya Health Act 2017 s.57-63
+//   Kenya IDSR Technical Guidelines 3rd Edition (2024)
+//   IHR 2005 (International Health Regulations)
+// Notification must reach the County Director of Health within 24 hours of
+// clinical suspicion (not confirmed diagnosis).
+
+export const KenyaIdsrImmediateNotificationCodes = [
+  'A00',   // Cholera
+  'A01',   // Typhoid fever
+  'A20',   // Plague
+  'A22',   // Anthrax
+  'A33',   // Neonatal tetanus
+  'A36',   // Diphtheria
+  'A39',   // Meningococcal disease
+  'A80',   // Acute poliomyelitis / AFP
+  'A82',   // Rabies
+  'A95',   // Yellow fever
+  'A96',   // Arenaviral haemorrhagic fever
+  'A98.4', // Ebola virus disease
+  'A98.5', // Marburg virus disease
+  'A99',   // Unspecified viral haemorrhagic fever
+  'B03',   // Smallpox
+  'B04',   // Mpox (monkeypox)
+  'B05',   // Measles
+  'J09',   // Influenza A (novel/pandemic subtype)
+  'U07.1', // COVID-19
+] as const;
+
+export type KenyaIdsrImmediateNotificationCode = (typeof KenyaIdsrImmediateNotificationCodes)[number];
+
+export const KenyaIdsrConditionDisplay: Record<string, string> = {
+  'A00': 'Cholera',
+  'A01': 'Typhoid fever',
+  'A20': 'Plague',
+  'A22': 'Anthrax',
+  'A33': 'Neonatal tetanus',
+  'A36': 'Diphtheria',
+  'A39': 'Meningococcal disease',
+  'A80': 'Acute poliomyelitis / AFP',
+  'A82': 'Rabies',
+  'A95': 'Yellow fever',
+  'A96': 'Arenaviral haemorrhagic fever',
+  'A98.4': 'Ebola virus disease',
+  'A98.5': 'Marburg virus disease',
+  'A99': 'Unspecified viral haemorrhagic fever',
+  'B03': 'Smallpox',
+  'B04': 'Mpox (monkeypox)',
+  'B05': 'Measles',
+  'J09': 'Influenza A (novel/pandemic subtype)',
+  'U07.1': 'COVID-19',
+};
+
+export const KenyaIdsrCodeSystem = 'http://hl7.org/fhir/sid/icd-10';
+export const KenyaIdsrValueSetUrl = 'https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions';
+export const KenyaIdsrCorrelationIdSystem = 'https://afiax.africa/identifier/idsr-correlation-id';
+
+export const KenyaIdsrNotificationExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-idsr-notification',
+  status: 'status',
+  conditionCode: 'conditionCode',
+  conditionDisplay: 'conditionDisplay',
+  notifiedAt: 'notifiedAt',
+  correlationId: 'correlationId',
+  task: 'task',
+} as const;
+
+export type IdsrNotificationStatus = 'pending' | 'reported' | 'error';
+
+export interface KenyaIdsrNotificationSnapshot {
+  readonly status?: IdsrNotificationStatus;
+  readonly conditionCode?: string;
+  readonly conditionDisplay?: string;
+  readonly notifiedAt?: string;
+  readonly correlationId?: string;
+  readonly task?: Reference<Task>;
+}
+
+export function isKenyaIdsrImmediateNotificationCode(code: string): boolean {
+  return (KenyaIdsrImmediateNotificationCodes as readonly string[]).includes(code);
+}
+
+export function getKenyaIdsrConditionCode(condition: { code?: { coding?: Array<{ system?: string; code?: string }> } }): string | undefined {
+  for (const coding of condition.code?.coding ?? []) {
+    if (coding.code && isKenyaIdsrImmediateNotificationCode(coding.code)) {
+      return coding.code;
+    }
+  }
+  return undefined;
+}
+
+export function buildKenyaIdsrNotificationExtension(
+  status: IdsrNotificationStatus,
+  conditionCode: string,
+  notifiedAt: string,
+  correlationId: string,
+  task?: Reference<Task>
+): Extension {
+  const extension: Extension = {
+    url: KenyaIdsrNotificationExtension.baseUrl,
+    extension: [
+      { url: KenyaIdsrNotificationExtension.status, valueCode: status },
+      { url: KenyaIdsrNotificationExtension.conditionCode, valueCode: conditionCode },
+      { url: KenyaIdsrNotificationExtension.conditionDisplay, valueString: KenyaIdsrConditionDisplay[conditionCode] ?? conditionCode },
+      { url: KenyaIdsrNotificationExtension.notifiedAt, valueDateTime: notifiedAt },
+      { url: KenyaIdsrNotificationExtension.correlationId, valueString: correlationId },
+    ],
+  };
+
+  if (task) {
+    extension.extension?.push({ url: KenyaIdsrNotificationExtension.task, valueReference: task });
+  }
+
+  return extension;
+}
+
+export function getKenyaIdsrNotificationSnapshot(
+  condition: { extension?: Extension[] } | undefined
+): KenyaIdsrNotificationSnapshot | undefined {
+  if (!condition?.extension?.length) {
+    return undefined;
+  }
+
+  const base = KenyaIdsrNotificationExtension.baseUrl;
+  const parentExt = condition.extension.find((e) => e.url === base);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueCode ?? val?.valueString ?? val?.valueDateTime ?? undefined;
+  }
+
+  const status = child(KenyaIdsrNotificationExtension.status);
+  if (!status) {
+    return undefined;
+  }
+
+  const taskVal = parentExt.extension.find((e) => e.url === KenyaIdsrNotificationExtension.task);
+
+  return {
+    status: status as IdsrNotificationStatus,
+    conditionCode: child(KenyaIdsrNotificationExtension.conditionCode),
+    conditionDisplay: child(KenyaIdsrNotificationExtension.conditionDisplay),
+    notifiedAt: child(KenyaIdsrNotificationExtension.notifiedAt),
+    correlationId: child(KenyaIdsrNotificationExtension.correlationId),
+    task: taskVal?.valueReference as Reference<Task> | undefined,
+  };
+}

@@ -50,10 +50,13 @@ Implemented in this repo now:
 - optional post-status-refresh Kenya workflow bot
 - IHE ATNA `AuditEvent.action` correctly set to `E` (Execute) for all `operation`, `batch`,
   and `transaction` subtypes — satisfies HMPR 2025 Reg.12(c)(i)
+- IDSR immediate notification — `Condition/$report-idsr-notification` creates a 24-hour deadline
+  `Task` and `AuditEvent` when a Condition carries a Kenya IDSR ICD-10 code; satisfies Kenya
+  Health Act 2017 s.57 and IDSR Technical Guidelines 3rd Edition (2024)
 
 Not implemented yet:
 
-- IDSR disease surveillance — immediate notification Task creation on notifiable Condition
+- Subscription + Bot wiring for automatic IDSR trigger on Condition create (operation exists; deployment artifact)
 - KHIS/DHIS2 weekly aggregate export (MOH 505 / FHIR `$export` → DHIS2 API)
 - Break-glass emergency access declaration and audit
 - FHIR security label (Confidentiality code) enforcement for restricted resources
@@ -295,6 +298,7 @@ Use these repo-level documents when you need the Kenya implementation contract f
 - `operations/check-coverage.md`
 - `operations/submit-national-claim.md`
 - `operations/check-national-claim-status.md`
+- `operations/report-idsr-notification.md`
 
 Use these repo-level guides when you need the execution model around those workflows:
 

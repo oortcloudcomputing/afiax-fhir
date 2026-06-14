@@ -22,6 +22,7 @@ export const kenyaCountryPack: CountryPackDefinition = {
     'publish-national-record',
     'submit-national-claim',
     'check-national-claim-status',
+    'report-idsr-notification',
   ],
   identifierBindings: [
     {

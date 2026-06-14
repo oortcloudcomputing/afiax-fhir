@@ -23,7 +23,8 @@ export type CountryPackOperationCode =
   | 'check-coverage'
   | 'publish-national-record'
   | 'submit-national-claim'
-  | 'check-national-claim-status';
+  | 'check-national-claim-status'
+  | 'report-idsr-notification';
 
 export interface CountryPackIdentifierBinding {
   readonly category: string;

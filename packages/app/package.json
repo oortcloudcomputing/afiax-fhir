@@ -1,18 +1,18 @@
 {
   "name": "@medplum/app",
   "version": "5.1.1",
-  "description": "Medplum App",
-  "homepage": "https://www.medplum.com/",
+  "description": "Afiax Clinical Suite — Kenya-first, pan-African digital health platform",
+  "homepage": "https://afiax.africa/",
   "bugs": {
-    "url": "https://github.com/medplum/medplum/issues"
+    "url": "https://github.com/mattwamoto/afiax-fhir/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/mattwamoto/afiax-fhir.git",
     "directory": "packages/app"
   },
   "license": "Apache-2.0",
-  "author": "Medplum <hello@medplum.com>",
+  "author": "Oortcloud Computing Limited <engineering@afiax.africa>",
   "type": "module",
   "files": [
     ".env.defaults",

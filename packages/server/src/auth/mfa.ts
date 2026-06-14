@@ -32,8 +32,8 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
     });
   }
 
-  const accountName = `Medplum - ${user.email}`;
-  const issuer = 'medplum.com';
+  const accountName = `Afiax - ${user.email}`;
+  const issuer = 'afiax.africa';
   const secret = user.mfaSecret as string;
   const otp = authenticator.keyuri(accountName, issuer, secret);
 

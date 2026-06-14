@@ -337,7 +337,7 @@ export function getKenyaFacilityRegistrySnapshot(
   const base = KenyaFacilityRegistryExtension.baseUrl;
   const facilityCode = getExtensionValue(organization, base, KenyaFacilityRegistryExtension.facilityCode);
   const lookedUpAt = getExtensionValue(organization, base, KenyaFacilityRegistryExtension.lookedUpAt);
-  if (typeof facilityCode !== 'string' && typeof lookedUpAt !== 'string') {
+  if (typeof facilityCode !== 'string' || typeof lookedUpAt !== 'string') {
     return undefined;
   }
 

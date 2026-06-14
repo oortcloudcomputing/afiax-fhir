@@ -73,9 +73,17 @@ Do not put these things in this folder:
 
 If the Kenya pack starts formalizing terminology, these are the most likely first candidates:
 
-1. practitioner identification type code system
-2. coverage eligibility identification type code system
-3. Kenya workflow-state code systems if the normalized state families stabilize enough to version formally
+1. Kenya IDSR Notifiable Conditions CodeSystem — ICD-10 codes for all immediately and weekly notifiable
+   diseases under the Kenya Health Act 2017 and Kenya IDSR Technical Guidelines 3rd Edition (2024).
+   URI: `https://afiax.africa/CodeSystem/kenya-idsr-conditions` — **in progress for v1.1**
+2. Kenya Encounter Type CodeSystem — OPD, IPD, ANC, MCH, ART, TB, Family Planning, Emergency aligned
+   with MOH data collection tools.
+   URI: `https://afiax.africa/CodeSystem/kenya-encounter-type`
+3. Kenya SHA Claim Status CodeSystem — submitted, pending, adjudicated, rejected, appeal — aligned
+   with SHA Claims API response codes.
+   URI: `https://afiax.africa/CodeSystem/kenya-sha-claim-status`
+4. Practitioner identification type code system
+5. Coverage eligibility identification type code system
 
 ## Engineering rule
 

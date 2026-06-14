@@ -58,9 +58,17 @@ Do not put these things in this folder:
 
 When this folder begins to fill out, the most useful first artifacts are:
 
-1. Kenya practitioner identification type value set
-2. Kenya coverage eligibility identification type value set
-3. Kenya normalized claim-state value set if the claim workflow codes stabilize enough to formalize
+1. **Kenya IDSR Immediate Notification ValueSet** — the set of ICD-10-CM codes for diseases requiring
+   same-day notification to the County Director of Health under Kenya Health Act 2017 s.57 and the
+   Kenya IDSR Technical Guidelines 3rd Edition (2024). Binds to `Condition.code` for IDSR subscription
+   monitoring. URI: `https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions`
+   — **in progress for v1.1 (IDSR phase)**
+2. **Kenya IDSR Weekly Reporting ValueSet** — ICD-10-CM codes for all diseases reported in the MOH 505
+   weekly epidemiological bulletin. Binds to the KHIS/DHIS2 export aggregation filter.
+   URI: `https://afiax.africa/ValueSet/kenya-idsr-weekly-reporting-conditions` — **in progress**
+3. Kenya practitioner identification type value set
+4. Kenya coverage eligibility identification type value set
+5. Kenya normalized claim-state value set if the claim workflow codes stabilize enough to formalize
 
 ## Relationship to other folders
 

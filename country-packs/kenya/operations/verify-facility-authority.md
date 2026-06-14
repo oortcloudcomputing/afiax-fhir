@@ -136,3 +136,9 @@ If verification fails:
 3. confirm the MFL code is actually present on the `Organization`
 4. compare the raw DHA lookup payload shown in the UI with the normalized verification result
 5. inspect the created `Task` and `AuditEvent`
+
+## Known issues fixed
+
+| Date | Bug | Fix |
+|---|---|---|
+| 2026-06-14 | `getKenyaFacilityRegistrySnapshot` (`packages/core/src/kenya.ts:340`) used `&&` in null-guard — allowed reading a partial snapshot where either `facilityCode` or `lookedUpAt` was missing, returning an incomplete struct instead of `undefined` | Fixed to `\|\|` — returns `undefined` when either field is absent. Affects how the UI reads the registry snapshot from `Organization.extension` after a lookup. |

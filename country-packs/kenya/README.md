@@ -48,15 +48,28 @@ Implemented in this repo now:
 - `Claim` Kenya SHA status refresh and local `ClaimResponse` upsert
 - optional post-submit Kenya workflow bot
 - optional post-status-refresh Kenya workflow bot
+- IHE ATNA `AuditEvent.action` correctly set to `E` (Execute) for all `operation`, `batch`,
+  and `transaction` subtypes — satisfies HMPR 2025 Reg.12(c)(i)
 
 Not implemented yet:
 
+- IDSR disease surveillance — immediate notification Task creation on notifiable Condition
+- KHIS/DHIS2 weekly aggregate export (MOH 505 / FHIR `$export` → DHIS2 API)
+- Break-glass emergency access declaration and audit
+- FHIR security label (Confidentiality code) enforcement for restricted resources
 - DHA callback ingestion for asynchronous SHA updates
 - Kenya claim queue views
 - Kenya reconciliation dashboards
 - Kenya production runbooks and cutover automation
-- Kenya client-registry workflow
+- Kenya client-registry workflow (DHA Client Registry / national patient ID)
 - Kenya SHR publishing
+
+## Known bugs fixed
+
+| Date | File | Bug | Fix |
+|---|---|---|---|
+| 2026-06-14 | `packages/core/src/kenya.ts:340` | `getKenyaFacilityRegistrySnapshot` used `&&` instead of `||` in null-guard, allowing snapshot creation when either `facilityCode` or `lookedUpAt` was missing | Changed to `\|\|` — returns `undefined` if either required field is absent |
+| 2026-06-14 | `packages/server/src/util/auditevent.ts` | `AuditEventActionLookup` returned `undefined` for `operation`, `batch`, `transaction` subtypes — `AuditEvent.action` was absent on all Country Pack operations | Changed all three to `'E'` (FHIR R4 Execute action) |
 
 ## Directory layout
 

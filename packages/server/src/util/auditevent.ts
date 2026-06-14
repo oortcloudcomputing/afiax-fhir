@@ -147,9 +147,9 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   update: 'U',
   patch: 'U',
   delete: 'D',
-  batch: undefined,
-  transaction: undefined,
-  operation: undefined,
+  batch: 'E',
+  transaction: 'E',
+  operation: 'E',
   110122: undefined,
   110123: undefined,
 };

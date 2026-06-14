@@ -1,9 +1,13 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH"],
+  "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH", "WEBSITE_ALLOWED_DEV_ORIGINS"],
   "tasks": {
     "clean": {
       "outputs": ["build/**", "dist/**", "coverage/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
     },
     "build": {
       "dependsOn": ["^build"],

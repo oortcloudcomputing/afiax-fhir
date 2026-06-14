@@ -53,11 +53,14 @@ Implemented in this repo now:
 - IDSR immediate notification — `Condition/$report-idsr-notification` creates a 24-hour deadline
   `Task` and `AuditEvent` when a Condition carries a Kenya IDSR ICD-10 code; satisfies Kenya
   Health Act 2017 s.57 and IDSR Technical Guidelines 3rd Edition (2024)
+- KHIS/DHIS2 weekly aggregate export — `$khis-weekly-export` aggregates FHIR Conditions by
+  ICD-10 code and pushes MOH 505 weekly counts to KHIS via DHIS2 `dataValueSets` API;
+  satisfies Kenya Health Act 2017 s.57–63 and IDSR Technical Guidelines (weekly tier)
 
 Not implemented yet:
 
 - Subscription + Bot wiring for automatic IDSR trigger on Condition create (operation exists; deployment artifact)
-- KHIS/DHIS2 weekly aggregate export (MOH 505 / FHIR `$export` → DHIS2 API)
+- Automated weekly KHIS export scheduler (operation exists; Bot + Schedule wiring is a deployment artifact)
 - Break-glass emergency access declaration and audit
 - FHIR security label (Confidentiality code) enforcement for restricted resources
 - DHA callback ingestion for asynchronous SHA updates
@@ -299,6 +302,7 @@ Use these repo-level documents when you need the Kenya implementation contract f
 - `operations/submit-national-claim.md`
 - `operations/check-national-claim-status.md`
 - `operations/report-idsr-notification.md`
+- `operations/khis-weekly-export.md`
 
 Use these repo-level guides when you need the execution model around those workflows:
 

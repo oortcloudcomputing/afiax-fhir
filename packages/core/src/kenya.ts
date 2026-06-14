@@ -1674,6 +1674,213 @@ export function buildKenyaIdsrNotificationExtension(
   return extension;
 }
 
+// ─── KHIS: Kenya Health Information System (DHIS2) weekly aggregate export ────
+// Implements MOH 505 weekly epidemiological bulletin reporting to KHIS (DHIS2).
+// Legislative basis:
+//   Kenya Health Act 2017 s.57-63 (disease notification)
+//   Kenya IDSR Technical Guidelines 3rd Edition (2024) — weekly reporting tier
+//   Digital Health Act 2023 s.24 (health data interoperability)
+// Weekly notifiable conditions extend the immediate list with endemic diseases
+// tracked in the MOH 505 bulletin (malaria, TB, ARI, diarrhoeal diseases, etc.).
+
+export const KenyaKhisWeeklyNotificationCodes = [
+  // ── Immediately notifiable (superset of KenyaIdsrImmediateNotificationCodes) ──
+  'A00',   // Cholera
+  'A01',   // Typhoid fever
+  'A20',   // Plague
+  'A22',   // Anthrax
+  'A33',   // Neonatal tetanus
+  'A36',   // Diphtheria
+  'A39',   // Meningococcal disease
+  'A80',   // Acute poliomyelitis / AFP
+  'A82',   // Rabies
+  'A95',   // Yellow fever
+  'A96',   // Arenaviral haemorrhagic fever
+  'A98.4', // Ebola virus disease
+  'A98.5', // Marburg virus disease
+  'A99',   // Unspecified viral haemorrhagic fever
+  'B03',   // Smallpox
+  'B04',   // Mpox (monkeypox)
+  'B05',   // Measles
+  'J09',   // Influenza A (novel/pandemic subtype)
+  'U07.1', // COVID-19
+  // ── Weekly reportable (MOH 505 endemic disease surveillance) ─────────────────
+  'A15',   // Respiratory tuberculosis (confirmed bacteriologically/histologically)
+  'A16',   // Respiratory tuberculosis (not confirmed)
+  'A17',   // Tuberculosis of nervous system
+  'A06',   // Amoebiasis
+  'A09',   // Other and unspecified gastroenteritis and colitis (diarrhoeal diseases)
+  'A27',   // Leptospirosis
+  'A30',   // Leprosy
+  'A75',   // Typhus fever
+  'A90',   // Dengue fever
+  'A92',   // Other mosquito-borne viral fevers (Rift Valley Fever, Chikungunya)
+  'B50',   // Plasmodium falciparum malaria
+  'B51',   // Plasmodium vivax malaria
+  'B54',   // Unspecified malaria
+  'B55',   // Leishmaniasis
+  'B74',   // Filariasis
+  'G00',   // Bacterial meningitis
+  'G03',   // Meningitis due to other and unspecified causes
+  'J00',   // Acute nasopharyngitis (common cold)
+  'J06',   // Acute upper respiratory infections, multiple and unspecified
+  'J18',   // Pneumonia, unspecified organism
+  'K52',   // Other and unspecified noninfective gastroenteritis and colitis
+] as const;
+
+export type KenyaKhisWeeklyNotificationCode = (typeof KenyaKhisWeeklyNotificationCodes)[number];
+
+export const KenyaKhisWeeklyConditionDisplay: Record<string, string> = {
+  'A00': 'Cholera',
+  'A01': 'Typhoid fever',
+  'A06': 'Amoebiasis',
+  'A09': 'Diarrhoeal diseases',
+  'A15': 'Tuberculosis (confirmed)',
+  'A16': 'Tuberculosis (unconfirmed)',
+  'A17': 'Tuberculosis of nervous system',
+  'A20': 'Plague',
+  'A22': 'Anthrax',
+  'A27': 'Leptospirosis',
+  'A30': 'Leprosy',
+  'A33': 'Neonatal tetanus',
+  'A36': 'Diphtheria',
+  'A39': 'Meningococcal disease',
+  'A75': 'Typhus fever',
+  'A80': 'Acute poliomyelitis / AFP',
+  'A82': 'Rabies',
+  'A90': 'Dengue fever',
+  'A92': 'Other mosquito-borne viral fevers (RVF, Chikungunya)',
+  'A95': 'Yellow fever',
+  'A96': 'Arenaviral haemorrhagic fever',
+  'A98.4': 'Ebola virus disease',
+  'A98.5': 'Marburg virus disease',
+  'A99': 'Unspecified viral haemorrhagic fever',
+  'B03': 'Smallpox',
+  'B04': 'Mpox (monkeypox)',
+  'B05': 'Measles',
+  'B50': 'Malaria (P. falciparum)',
+  'B51': 'Malaria (P. vivax)',
+  'B54': 'Malaria (unspecified)',
+  'B55': 'Leishmaniasis',
+  'B74': 'Filariasis',
+  'G00': 'Bacterial meningitis',
+  'G03': 'Meningitis (other/unspecified)',
+  'J00': 'Acute nasopharyngitis (ARI)',
+  'J06': 'Acute upper respiratory infection',
+  'J09': 'Influenza A (novel/pandemic subtype)',
+  'J18': 'Pneumonia (unspecified)',
+  'K52': 'Acute gastroenteritis',
+  'U07.1': 'COVID-19',
+};
+
+export const KenyaKhisBaseUrls = {
+  uat: 'https://hiskenya-uat.health.go.ke',
+  production: 'https://hiskenya.org',
+} as const;
+
+export const KenyaKhisCorrelationIdSystem = 'https://afiax.africa/identifier/khis-export-correlation-id';
+
+export const KenyaKhisWeeklyExportExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-khis-weekly-export',
+  status: 'status',
+  period: 'period',
+  facilityOrgUnit: 'facilityOrgUnit',
+  exportedAt: 'exportedAt',
+  correlationId: 'correlationId',
+  conditionCount: 'conditionCount',
+  dhis2ImportStatus: 'dhis2ImportStatus',
+  dhis2ImportCount: 'dhis2ImportCount',
+  task: 'task',
+} as const;
+
+export type KhisWeeklyExportStatus = 'pending' | 'exported' | 'error';
+
+export interface KenyaKhisWeeklyExportSnapshot {
+  readonly status?: KhisWeeklyExportStatus;
+  readonly period?: string;
+  readonly facilityOrgUnit?: string;
+  readonly exportedAt?: string;
+  readonly correlationId?: string;
+  readonly conditionCount?: number;
+  readonly dhis2ImportStatus?: string;
+  readonly dhis2ImportCount?: number;
+  readonly task?: Reference<Task>;
+}
+
+export function isKenyaKhisWeeklyNotificationCode(code: string): boolean {
+  return (KenyaKhisWeeklyNotificationCodes as readonly string[]).includes(code);
+}
+
+export function toKhisWeekPeriod(date: Date): string {
+  // Returns DHIS2 ISO week period format: YYYYWnn (e.g. 2026W24)
+  // Uses ISO 8601 week numbering (week starts Monday)
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}W${String(weekNo).padStart(2, '0')}`;
+}
+
+export function khisWeekPeriodToDateRange(period: string): { start: Date; end: Date } {
+  // Parse YYYYWnn → Monday 00:00 UTC → Sunday 23:59:59 UTC of that ISO week
+  const match = /^(\d{4})W(\d{2})$/.exec(period);
+  if (!match) {
+    throw new Error(`Invalid KHIS week period format: "${period}". Expected YYYYWnn (e.g. 2026W24).`);
+  }
+  const year = parseInt(match[1], 10);
+  const week = parseInt(match[2], 10);
+  // Jan 4 is always in week 1 of the ISO year
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7;
+  const weekStart = new Date(jan4.getTime() - (jan4Day - 1) * 86400000 + (week - 1) * 7 * 86400000);
+  const weekEnd = new Date(weekStart.getTime() + 7 * 86400000 - 1);
+  return { start: weekStart, end: weekEnd };
+}
+
+export function buildKenyaKhisWeeklyExportExtension(
+  status: KhisWeeklyExportStatus,
+  period: string,
+  exportedAt: string,
+  correlationId: string,
+  options?: {
+    facilityOrgUnit?: string;
+    conditionCount?: number;
+    dhis2ImportStatus?: string;
+    dhis2ImportCount?: number;
+    task?: Reference<Task>;
+  }
+): Extension {
+  const extension: Extension = {
+    url: KenyaKhisWeeklyExportExtension.baseUrl,
+    extension: [
+      { url: KenyaKhisWeeklyExportExtension.status, valueCode: status },
+      { url: KenyaKhisWeeklyExportExtension.period, valueString: period },
+      { url: KenyaKhisWeeklyExportExtension.exportedAt, valueDateTime: exportedAt },
+      { url: KenyaKhisWeeklyExportExtension.correlationId, valueString: correlationId },
+    ],
+  };
+
+  const ext = extension.extension!;
+  if (options?.facilityOrgUnit) {
+    ext.push({ url: KenyaKhisWeeklyExportExtension.facilityOrgUnit, valueString: options.facilityOrgUnit });
+  }
+  if (options?.conditionCount !== undefined) {
+    ext.push({ url: KenyaKhisWeeklyExportExtension.conditionCount, valueInteger: options.conditionCount });
+  }
+  if (options?.dhis2ImportStatus) {
+    ext.push({ url: KenyaKhisWeeklyExportExtension.dhis2ImportStatus, valueString: options.dhis2ImportStatus });
+  }
+  if (options?.dhis2ImportCount !== undefined) {
+    ext.push({ url: KenyaKhisWeeklyExportExtension.dhis2ImportCount, valueInteger: options.dhis2ImportCount });
+  }
+  if (options?.task) {
+    ext.push({ url: KenyaKhisWeeklyExportExtension.task, valueReference: options.task });
+  }
+
+  return extension;
+}
+
 export function getKenyaIdsrNotificationSnapshot(
   condition: { extension?: Extension[] } | undefined
 ): KenyaIdsrNotificationSnapshot | undefined {

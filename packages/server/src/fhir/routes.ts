@@ -27,6 +27,7 @@ import { botInitHandler } from './operations/botinit';
 import { checkCoverageHandler } from './operations/check-coverage';
 import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
 import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
+import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -376,6 +377,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Condition/:id/$report-idsr-notification', reportIdsrNotificationHandler);
   router.add('POST', '/Condition/:id/$report-idsr-notification', reportIdsrNotificationHandler);
   router.add('POST', '/Condition/$report-idsr-notification', reportIdsrNotificationHandler);
+
+  // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)
+  router.add('GET', '/$khis-weekly-export', khisWeeklyExportHandler);
+  router.add('POST', '/$khis-weekly-export', khisWeeklyExportHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

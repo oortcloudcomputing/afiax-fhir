@@ -197,13 +197,28 @@ export const KenyaProjectSettingNames = {
   claimWorkflowBotId: 'kenyaClaimWorkflowBotId',
   afyaLinkEnvironment: 'kenyaAfyaLinkEnvironment',
   afyaLinkCredentialMode: 'kenyaAfyaLinkCredentialMode',
+  khisEnvironment: 'kenyaKhisEnvironment',
+  khisCredentialMode: 'kenyaKhisCredentialMode',
+  // JSON string: Record<ICD10code, {suspected?: string, confirmed?: string, deaths?: string}>
+  khisDataElementMapping: 'kenyaKhisDataElementMapping',
+  // DHIS2 dataset UID for MOH 505
+  khisMoh505DataSetUid: 'kenyaKhisMoh505DataSetUid',
 } as const;
+
+export type KenyaKhisEnvironment = 'uat' | 'production';
+export type KenyaKhisCredentialMode = 'tenant-managed' | 'afiax-managed';
 
 export const KenyaShaClaimsSecretNames = {
   accessKey: 'kenyaShaClaimsAccessKey',
   secretKey: 'kenyaShaClaimsSecretKey',
   callbackUrl: 'kenyaShaClaimsCallbackUrl',
   baseUrl: 'kenyaShaClaimsBaseUrl',
+} as const;
+
+export const KenyaKhisSecretNames = {
+  baseUrl: 'kenyaKhisBaseUrl',
+  username: 'kenyaKhisUsername',
+  password: 'kenyaKhisPassword',
 } as const;
 
 function getProjectSettings(source: ProjectSettingsSource): ProjectSetting[] | undefined {
@@ -304,4 +319,30 @@ export function getKenyaAfyaLinkEnvironment(source: ProjectSettingsSource): Keny
 
 export function getKenyaAfyaLinkCredentialMode(source: ProjectSettingsSource): KenyaAfyaLinkCredentialMode {
   return getKenyaHieCredentialMode(source);
+}
+
+export function getKenyaKhisEnvironment(source: ProjectSettingsSource): KenyaKhisEnvironment {
+  const value = getProjectSettingString(source, KenyaProjectSettingNames.khisEnvironment);
+  return value === 'production' ? 'production' : 'uat';
+}
+
+export function getKenyaKhisCredentialMode(source: ProjectSettingsSource): KenyaKhisCredentialMode {
+  const value = getProjectSettingString(source, KenyaProjectSettingNames.khisCredentialMode);
+  return value === 'afiax-managed' ? 'afiax-managed' : 'tenant-managed';
+}
+
+export function getKenyaKhisMoh505DataSetUid(source: ProjectSettingsSource): string | undefined {
+  return getProjectSettingString(source, KenyaProjectSettingNames.khisMoh505DataSetUid)?.trim() || undefined;
+}
+
+export function getKenyaKhisDataElementMapping(source: ProjectSettingsSource): Record<string, { suspected?: string; confirmed?: string; deaths?: string }> | undefined {
+  const raw = getProjectSettingString(source, KenyaProjectSettingNames.khisDataElementMapping);
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(raw) as Record<string, { suspected?: string; confirmed?: string; deaths?: string }>;
+  } catch {
+    return undefined;
+  }
 }

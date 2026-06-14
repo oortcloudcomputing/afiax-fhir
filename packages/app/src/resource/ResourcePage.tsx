@@ -8,6 +8,7 @@ import type {
   Coverage,
   OperationOutcome,
   Organization,
+  Patient,
   Practitioner,
   Resource,
   ResourceType,
@@ -26,6 +27,8 @@ import { getPatient, getSpecimen } from '../utils';
 import { CoverageEligibilityPanel } from './CoverageEligibilityPanel';
 import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
 import { PractitionerAuthorityVerificationPanel } from './PractitionerAuthorityVerificationPanel';
+import { PatientIdentityPanel } from './PatientIdentityPanel';
+import { NationalRecordPublicationPanel } from './NationalRecordPublicationPanel';
 import { cleanResource } from './utils';
 
 function getTabs(resourceType: string): string[] {
@@ -150,6 +153,8 @@ export function ResourcePage(): JSX.Element | null {
       {value?.resourceType === 'Practitioner' && (
         <PractitionerAuthorityVerificationPanel practitioner={value as Practitioner} />
       )}
+      {value?.resourceType === 'Patient' && <PatientIdentityPanel patient={value as Patient} />}
+      {value?.resourceType === 'Patient' && <NationalRecordPublicationPanel patient={value as Patient} />}
       {value && (
         <Paper>
           {patient && <PatientHeader patient={patient} />}

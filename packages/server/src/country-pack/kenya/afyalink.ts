@@ -79,6 +79,33 @@ export interface AfyaLinkEligibilityResponse {
   readonly message?: AfyaLinkEligibilityMessage;
 }
 
+export interface AfyaLinkClientRegistryMessage {
+  readonly found?: number | string | boolean | null;
+  readonly client_registry_id?: string | null;
+  readonly full_name?: string | null;
+  readonly first_name?: string | null;
+  readonly last_name?: string | null;
+  readonly date_of_birth?: string | null;
+  readonly gender?: string | null;
+  readonly identification_type?: string | null;
+  readonly identification_number?: string | null;
+}
+
+export interface AfyaLinkClientRegistryResponse {
+  readonly message?: AfyaLinkClientRegistryMessage;
+}
+
+export interface AfyaLinkShrPublicationMessage {
+  readonly record_id?: string | null;
+  readonly status?: string | null;
+  readonly timestamp?: string | null;
+  readonly message?: string | null;
+}
+
+export interface AfyaLinkShrPublicationResponse {
+  readonly message?: AfyaLinkShrPublicationMessage;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -502,5 +529,116 @@ export async function searchAfyaLinkEligibility(
     return normalizeAfyaLinkEligibilityResponse(await response.json());
   } catch (err) {
     throw new Error(`Failed to parse AfyaLink eligibility response: ${normalizeErrorString(err)}`);
+  }
+}
+
+function normalizeAfyaLinkClientRegistryResponse(raw: unknown): AfyaLinkClientRegistryResponse {
+  if (!isRecord(raw)) {
+    return { message: { found: 0 } };
+  }
+
+  if (isRecord(raw.message)) {
+    return {
+      message: {
+        found: normalizeFoundValue(raw.message.found),
+        client_registry_id: typeof raw.message.client_registry_id === 'string' ? raw.message.client_registry_id : null,
+        full_name: typeof raw.message.full_name === 'string' ? raw.message.full_name : null,
+        first_name: typeof raw.message.first_name === 'string' ? raw.message.first_name : null,
+        last_name: typeof raw.message.last_name === 'string' ? raw.message.last_name : null,
+        date_of_birth: typeof raw.message.date_of_birth === 'string' ? raw.message.date_of_birth : null,
+        gender: typeof raw.message.gender === 'string' ? raw.message.gender : null,
+        identification_type: typeof raw.message.identification_type === 'string' ? raw.message.identification_type : null,
+        identification_number:
+          typeof raw.message.identification_number === 'string' ? raw.message.identification_number : null,
+      },
+    };
+  }
+
+  // Flat response (some DHA environments return fields at the root)
+  const found = normalizeFoundValue(raw.found);
+  return {
+    message: {
+      found: found ?? (raw.client_registry_id ? 1 : 0),
+      client_registry_id: typeof raw.client_registry_id === 'string' ? raw.client_registry_id : null,
+      full_name: typeof raw.full_name === 'string' ? raw.full_name : null,
+      first_name: typeof raw.first_name === 'string' ? raw.first_name : null,
+      last_name: typeof raw.last_name === 'string' ? raw.last_name : null,
+      date_of_birth: typeof raw.date_of_birth === 'string' ? raw.date_of_birth : null,
+      gender: typeof raw.gender === 'string' ? raw.gender : null,
+      identification_type: typeof raw.identification_type === 'string' ? raw.identification_type : null,
+      identification_number: typeof raw.identification_number === 'string' ? raw.identification_number : null,
+    },
+  };
+}
+
+export async function searchAfyaLinkClientRegistry(
+  credentials: KenyaAfyaLinkCredentials,
+  identificationType: string,
+  identificationNumber: string
+): Promise<AfyaLinkClientRegistryResponse> {
+  const token = await getAfyaLinkToken(credentials);
+  const response = await fetch(
+    `${credentials.baseUrl}/v1/client-registry?identification_type=${encodeURIComponent(
+      identificationType
+    )}&identification_number=${encodeURIComponent(identificationNumber)}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (response.status === 404) {
+    return { message: { found: 0, identification_type: identificationType, identification_number: identificationNumber } };
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`AfyaLink client registry lookup failed (${response.status}): ${errorBody}`);
+  }
+
+  try {
+    return normalizeAfyaLinkClientRegistryResponse(await response.json());
+  } catch (err) {
+    throw new Error(`Failed to parse AfyaLink client registry response: ${normalizeErrorString(err)}`);
+  }
+}
+
+export async function publishToAfyaLinkShr(
+  credentials: KenyaAfyaLinkCredentials,
+  bundle: Record<string, unknown>
+): Promise<AfyaLinkShrPublicationResponse> {
+  const token = await getAfyaLinkToken(credentials);
+  const response = await fetch(`${credentials.baseUrl}/v1/shr/patient-record`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(bundle),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`AfyaLink SHR publication failed (${response.status}): ${errorBody}`);
+  }
+
+  try {
+    const raw = await response.json();
+    if (isRecord(raw) && isRecord(raw.message)) {
+      return {
+        message: {
+          record_id: typeof raw.message.record_id === 'string' ? raw.message.record_id : null,
+          status: typeof raw.message.status === 'string' ? raw.message.status : null,
+          timestamp: typeof raw.message.timestamp === 'string' ? raw.message.timestamp : null,
+          message: typeof raw.message.message === 'string' ? raw.message.message : null,
+        },
+      };
+    }
+    return { message: { status: 'received' } };
+  } catch (err) {
+    throw new Error(`Failed to parse AfyaLink SHR publication response: ${normalizeErrorString(err)}`);
   }
 }

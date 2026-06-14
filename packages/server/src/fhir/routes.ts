@@ -29,6 +29,8 @@ import { checkNationalClaimStatusHandler } from './operations/check-national-cla
 import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { breakGlassHandler } from './operations/break-glass';
+import { resolvePatientIdentityHandler } from './operations/resolve-patient-identity';
+import { publishNationalRecordHandler } from './operations/publish-national-record';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -386,6 +388,15 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $break-glass operation (Kenya DPA 2019 s.25 / Digital Health Act 2023 s.19)
   router.add('POST', '/Patient/:id/$break-glass', breakGlassHandler);
   router.add('POST', '/Patient/$break-glass', breakGlassHandler);
+
+  // Patient $resolve-patient-identity — DHA Client Registry lookup
+  router.add('GET', '/Patient/:id/$resolve-patient-identity', resolvePatientIdentityHandler);
+  router.add('POST', '/Patient/:id/$resolve-patient-identity', resolvePatientIdentityHandler);
+  router.add('POST', '/Patient/$resolve-patient-identity', resolvePatientIdentityHandler);
+
+  // Patient $publish-national-record — Kenya SHR publication
+  router.add('POST', '/Patient/:id/$publish-national-record', publishNationalRecordHandler);
+  router.add('POST', '/Patient/$publish-national-record', publishNationalRecordHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

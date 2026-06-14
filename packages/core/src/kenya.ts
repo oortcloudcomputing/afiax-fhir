@@ -1984,6 +1984,199 @@ export function getKenyaBreakGlassSnapshot(
   };
 }
 
+// ============================================================
+// Patient Identity Resolution — DHA Client Registry
+// ============================================================
+
+export const KenyaClientRegistryIdSystem = 'https://afiax.africa/kenya/identifier/client-registry-id';
+export const KenyaPatientIdentityCorrelationIdSystem =
+  'https://afiax.africa/identifier/kenya-patient-identity-correlation-id';
+
+export type KenyaPatientIdentificationType =
+  | 'National ID'
+  | 'Alien ID'
+  | 'Passport'
+  | 'Birth Certificate'
+  | 'Refugee ID';
+
+export const KenyaPatientIdentificationTypes: readonly KenyaPatientIdentificationType[] = [
+  'National ID',
+  'Alien ID',
+  'Passport',
+  'Birth Certificate',
+  'Refugee ID',
+];
+
+export type PatientIdentityStatus = 'resolved' | 'not-found' | 'error';
+
+export const KenyaPatientIdentityExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-patient-identity',
+  status: 'status',
+  clientRegistryId: 'clientRegistryId',
+  identificationType: 'identificationType',
+  identificationNumber: 'identificationNumber',
+  fullName: 'fullName',
+  dateOfBirth: 'dateOfBirth',
+  gender: 'gender',
+  resolvedAt: 'resolvedAt',
+  correlationId: 'correlationId',
+} as const;
+
+export interface KenyaPatientIdentitySnapshot {
+  readonly status: PatientIdentityStatus;
+  readonly clientRegistryId?: string;
+  readonly identificationType?: string;
+  readonly identificationNumber?: string;
+  readonly fullName?: string;
+  readonly dateOfBirth?: string;
+  readonly gender?: string;
+  readonly resolvedAt?: string;
+  readonly correlationId?: string;
+}
+
+export function buildKenyaPatientIdentityExtension(
+  status: PatientIdentityStatus,
+  identificationType: string,
+  identificationNumber: string,
+  resolvedAt: string,
+  correlationId: string,
+  clientRegistryId?: string,
+  fullName?: string,
+  dateOfBirth?: string,
+  gender?: string
+): Extension {
+  const children: Extension[] = [
+    { url: KenyaPatientIdentityExtension.status, valueCode: status },
+    { url: KenyaPatientIdentityExtension.identificationType, valueString: identificationType },
+    { url: KenyaPatientIdentityExtension.identificationNumber, valueString: identificationNumber },
+    { url: KenyaPatientIdentityExtension.resolvedAt, valueDateTime: resolvedAt },
+    { url: KenyaPatientIdentityExtension.correlationId, valueString: correlationId },
+  ];
+  if (clientRegistryId) {
+    children.push({ url: KenyaPatientIdentityExtension.clientRegistryId, valueString: clientRegistryId });
+  }
+  if (fullName) {
+    children.push({ url: KenyaPatientIdentityExtension.fullName, valueString: fullName });
+  }
+  if (dateOfBirth) {
+    children.push({ url: KenyaPatientIdentityExtension.dateOfBirth, valueDate: dateOfBirth });
+  }
+  if (gender) {
+    children.push({ url: KenyaPatientIdentityExtension.gender, valueString: gender });
+  }
+  return { url: KenyaPatientIdentityExtension.baseUrl, extension: children };
+}
+
+export function getKenyaPatientIdentitySnapshot(
+  patient: { extension?: Extension[] } | undefined
+): KenyaPatientIdentitySnapshot | undefined {
+  if (!patient?.extension?.length) {
+    return undefined;
+  }
+  const parentExt = patient.extension.find((e) => e.url === KenyaPatientIdentityExtension.baseUrl);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueCode ?? val?.valueString ?? val?.valueDateTime ?? val?.valueDate ?? undefined;
+  }
+  const status = child(KenyaPatientIdentityExtension.status);
+  if (!status) {
+    return undefined;
+  }
+  return {
+    status: status as PatientIdentityStatus,
+    clientRegistryId: child(KenyaPatientIdentityExtension.clientRegistryId),
+    identificationType: child(KenyaPatientIdentityExtension.identificationType),
+    identificationNumber: child(KenyaPatientIdentityExtension.identificationNumber),
+    fullName: child(KenyaPatientIdentityExtension.fullName),
+    dateOfBirth: child(KenyaPatientIdentityExtension.dateOfBirth),
+    gender: child(KenyaPatientIdentityExtension.gender),
+    resolvedAt: child(KenyaPatientIdentityExtension.resolvedAt),
+    correlationId: child(KenyaPatientIdentityExtension.correlationId),
+  };
+}
+
+// ============================================================
+// National Record Publication — Kenya SHR
+// ============================================================
+
+export const KenyaShrPublicationCorrelationIdSystem =
+  'https://afiax.africa/identifier/kenya-shr-publication-correlation-id';
+
+export type NationalRecordPublicationStatus = 'published' | 'error';
+
+export const KenyaNationalRecordPublicationExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-national-record-publication',
+  status: 'status',
+  publicationId: 'publicationId',
+  publishedAt: 'publishedAt',
+  correlationId: 'correlationId',
+  endpoint: 'endpoint',
+  message: 'message',
+} as const;
+
+export interface KenyaNationalRecordPublicationSnapshot {
+  readonly status: NationalRecordPublicationStatus;
+  readonly publicationId?: string;
+  readonly publishedAt?: string;
+  readonly correlationId?: string;
+  readonly endpoint?: string;
+  readonly message?: string;
+}
+
+export function buildKenyaNationalRecordPublicationExtension(
+  status: NationalRecordPublicationStatus,
+  publishedAt: string,
+  correlationId: string,
+  message: string,
+  publicationId?: string,
+  endpoint?: string
+): Extension {
+  const children: Extension[] = [
+    { url: KenyaNationalRecordPublicationExtension.status, valueCode: status },
+    { url: KenyaNationalRecordPublicationExtension.publishedAt, valueDateTime: publishedAt },
+    { url: KenyaNationalRecordPublicationExtension.correlationId, valueString: correlationId },
+    { url: KenyaNationalRecordPublicationExtension.message, valueString: message },
+  ];
+  if (publicationId) {
+    children.push({ url: KenyaNationalRecordPublicationExtension.publicationId, valueString: publicationId });
+  }
+  if (endpoint) {
+    children.push({ url: KenyaNationalRecordPublicationExtension.endpoint, valueString: endpoint });
+  }
+  return { url: KenyaNationalRecordPublicationExtension.baseUrl, extension: children };
+}
+
+export function getKenyaNationalRecordPublicationSnapshot(
+  patient: { extension?: Extension[] } | undefined
+): KenyaNationalRecordPublicationSnapshot | undefined {
+  if (!patient?.extension?.length) {
+    return undefined;
+  }
+  const parentExt = patient.extension.find((e) => e.url === KenyaNationalRecordPublicationExtension.baseUrl);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueCode ?? val?.valueString ?? val?.valueDateTime ?? undefined;
+  }
+  const status = child(KenyaNationalRecordPublicationExtension.status);
+  if (!status) {
+    return undefined;
+  }
+  return {
+    status: status as NationalRecordPublicationStatus,
+    publicationId: child(KenyaNationalRecordPublicationExtension.publicationId),
+    publishedAt: child(KenyaNationalRecordPublicationExtension.publishedAt),
+    correlationId: child(KenyaNationalRecordPublicationExtension.correlationId),
+    endpoint: child(KenyaNationalRecordPublicationExtension.endpoint),
+    message: child(KenyaNationalRecordPublicationExtension.message),
+  };
+}
+
 export function getKenyaIdsrNotificationSnapshot(
   condition: { extension?: Extension[] } | undefined
 ): KenyaIdsrNotificationSnapshot | undefined {

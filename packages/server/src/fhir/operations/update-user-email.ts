@@ -110,9 +110,9 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
 
       await sendEmail(systemRepo, {
         to: params.email,
-        subject: 'Medplum Email Address Updated',
+        subject: 'Afiax Connected Healthcare — Email Address Update',
         text: [
-          'A request to update the email address associated with your Medplum account.',
+          'A request to update the email address associated with your Afiax Connected Healthcare account.',
           '',
           'Please click on the following link to verify your ability to receive emails:',
           '',
@@ -121,7 +121,7 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
           'If you received this in error, you can safely ignore it.',
           '',
           'Thank you,',
-          'Medplum',
+          'Afiax Connected Healthcare',
           '',
         ].join('\n'),
       });

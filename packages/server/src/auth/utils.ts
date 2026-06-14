@@ -90,8 +90,8 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    const accountName = `Medplum - ${user.email}`;
-    const issuer = 'medplum.com';
+    const accountName = `Afiax - ${user.email}`;
+    const issuer = 'afiax.africa';
     const secret = user.mfaSecret as string;
     const otp = authenticator.keyuri(accountName, issuer, secret);
     res.json({ login: login.id, mfaEnrollRequired: true, enrollUri: otp, enrollQrCode: await toDataURL(otp) });

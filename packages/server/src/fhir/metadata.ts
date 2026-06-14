@@ -27,24 +27,24 @@ import type { MedplumServerConfig } from '../config/types';
  */
 const baseStmt: CapabilityStatement = {
   resourceType: 'CapabilityStatement',
-  id: 'medplum-server',
+  id: 'afiax-fhir-server',
   version: MEDPLUM_VERSION,
-  name: 'MedplumCapabilityStatement',
-  title: 'Medplum Capability Statement',
+  name: 'AfiaxCapabilityStatement',
+  title: 'Afiax FHIR Capability Statement',
   status: 'active',
   date: new Date().toISOString(),
-  publisher: 'Medplum',
+  publisher: 'Oortcloud Computing Limited (Afiax Connected Healthcare)',
   contact: [
     {
       telecom: [
         {
           system: 'url',
-          value: 'https://www.medplum.com',
+          value: 'https://afiax.africa',
         },
       ],
     },
   ],
-  description: 'Medplum FHIR Capability Statement',
+  description: 'Afiax FHIR R4 Capability Statement — Kenya-first, pan-African digital health platform',
   jurisdiction: [
     {
       coding: [
@@ -189,7 +189,7 @@ export function getCapabilityStatement(): CapabilityStatement {
 }
 
 function buildCapabilityStatement(): CapabilityStatement {
-  const name = 'medplum';
+  const name = 'afiax';
   const version = MEDPLUM_VERSION;
   const config = getConfig();
   const baseUrl = config.baseUrl;

@@ -50,22 +50,22 @@ function buildBaseSpec(): OpenAPIObjectWithPaths {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'Medplum - OpenAPI 3.0',
+      title: 'Afiax FHIR API - OpenAPI 3.0',
       description:
-        'Medplum OpenAPI 3.0 specification.  Learn more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
-      termsOfService: 'https://www.medplum.com/terms',
+        'Afiax FHIR R4 REST API specification. Afiax Connected Healthcare is a Kenya-first, pan-African digital health platform. Learn more at [https://afiax.africa](https://afiax.africa).',
+      termsOfService: 'https://afiax.africa/terms',
       contact: {
-        email: 'hello@medplum.com',
+        email: 'engineering@afiax.africa',
       },
       license: {
         name: 'Apache 2.0',
         url: 'https://www.apache.org/licenses/LICENSE-2.0.html',
       },
-      version: '1.0.5',
+      version: '1.0.0',
     },
     externalDocs: {
-      description: 'Learn more about Medplum',
-      url: 'https://www.medplum.com/',
+      description: 'Afiax Developer Documentation',
+      url: 'https://afiax.africa/docs',
     },
     servers: [
       {
@@ -170,7 +170,7 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
     name: typeName,
     description: typeDefinition.description,
     externalDocs: {
-      url: 'https://www.medplum.com/docs/api/fhir/resources/' + typeName.toLowerCase(),
+      url: 'https://afiax.africa/docs/api/fhir/resources/' + typeName.toLowerCase(),
     },
   });
 }

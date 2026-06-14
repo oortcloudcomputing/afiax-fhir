@@ -30,7 +30,26 @@ export async function initApp(): Promise<void> {
     },
   });
 
+  // Afiax brand primary color: #1da7dd (cyan)
+  // Scale generated from primary using Mantine's shade progression
+  const afiaxCyan: [string, string, string, string, string, string, string, string, string, string] = [
+    '#e8f8fd', // 0
+    '#caeef9', // 1
+    '#9adff3', // 2
+    '#62cfec', // 3
+    '#36c1e7', // 4
+    '#1da7dd', // 5 — primary
+    '#1490bf', // 6
+    '#0d73a0', // 7
+    '#095c80', // 8
+    '#054560', // 9
+  ];
+
   const theme = createTheme({
+    primaryColor: 'afiaxCyan',
+    colors: {
+      afiaxCyan,
+    },
     headings: {
       sizes: {
         h1: {

@@ -28,6 +28,7 @@ import { checkCoverageHandler } from './operations/check-coverage';
 import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
 import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
+import { breakGlassHandler } from './operations/break-glass';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -381,6 +382,10 @@ function initInternalFhirRouter(): FhirRouter {
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)
   router.add('GET', '/$khis-weekly-export', khisWeeklyExportHandler);
   router.add('POST', '/$khis-weekly-export', khisWeeklyExportHandler);
+
+  // Patient $break-glass operation (Kenya DPA 2019 s.25 / Digital Health Act 2023 s.19)
+  router.add('POST', '/Patient/:id/$break-glass', breakGlassHandler);
+  router.add('POST', '/Patient/$break-glass', breakGlassHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

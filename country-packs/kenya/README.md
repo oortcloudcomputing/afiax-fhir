@@ -57,11 +57,14 @@ Implemented in this repo now:
   ICD-10 code and pushes MOH 505 weekly counts to KHIS via DHIS2 `dataValueSets` API;
   satisfies Kenya Health Act 2017 s.57–63 and IDSR Technical Guidelines (weekly tier)
 
+- Break-glass emergency access declaration — `Patient/$break-glass` creates a `Flag`, writes a
+  snapshot extension on the `Patient`, emits an `AuditEvent` with `purposeOfEvent: ETREAT`, and
+  sends a security alert email; satisfies Kenya DPA 2019 s.25 and Digital Health Act 2023 s.19
+
 Not implemented yet:
 
 - Subscription + Bot wiring for automatic IDSR trigger on Condition create (operation exists; deployment artifact)
 - Automated weekly KHIS export scheduler (operation exists; Bot + Schedule wiring is a deployment artifact)
-- Break-glass emergency access declaration and audit
 - FHIR security label (Confidentiality code) enforcement for restricted resources
 - DHA callback ingestion for asynchronous SHA updates
 - Kenya claim queue views
@@ -303,6 +306,7 @@ Use these repo-level documents when you need the Kenya implementation contract f
 - `operations/check-national-claim-status.md`
 - `operations/report-idsr-notification.md`
 - `operations/khis-weekly-export.md`
+- `operations/break-glass.md`
 
 Use these repo-level guides when you need the execution model around those workflows:
 

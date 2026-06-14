@@ -1881,6 +1881,109 @@ export function buildKenyaKhisWeeklyExportExtension(
   return extension;
 }
 
+// ─── Break-glass emergency access ────────────────────────────────────────────
+// Emergency override allowing authorised clinicians to access restricted
+// patient records. The declaration itself is the audit — it does not change
+// FHIR access control permissions but creates a time-limited Flag and a full
+// AuditEvent with purposeOfEvent=ETREAT for post-hoc security review.
+//
+// Legislative basis:
+//   Kenya Data Protection Act 2019 s.25 — lawful processing in emergencies
+//   Digital Health Act 2023 s.19 — emergency access to health information
+//   HMPR 2025 Reg.8 — access control and emergency access requirements
+
+export const KenyaBreakGlassExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-break-glass',
+  status: 'status',
+  reason: 'reason',
+  declaredAt: 'declaredAt',
+  expiresAt: 'expiresAt',
+  correlationId: 'correlationId',
+  declaredBy: 'declaredBy',
+  flag: 'flag',
+} as const;
+
+export const KenyaBreakGlassFlagSystem = 'https://afiax.africa/CodeSystem/kenya-security-flag';
+export const KenyaBreakGlassFlagCode = 'break-glass-access';
+export const KenyaBreakGlassCorrelationIdSystem = 'https://afiax.africa/identifier/break-glass-correlation-id';
+export const KenyaBreakGlassDefaultDurationHours = 4;
+
+export type BreakGlassStatus = 'active' | 'expired' | 'revoked';
+
+export interface KenyaBreakGlassSnapshot {
+  readonly status?: BreakGlassStatus;
+  readonly reason?: string;
+  readonly declaredAt?: string;
+  readonly expiresAt?: string;
+  readonly correlationId?: string;
+  readonly declaredBy?: string;
+  readonly flag?: Reference;
+}
+
+export function buildKenyaBreakGlassExtension(
+  status: BreakGlassStatus,
+  reason: string,
+  declaredAt: string,
+  expiresAt: string,
+  correlationId: string,
+  declaredBy?: string,
+  flag?: Reference
+): Extension {
+  const extension: Extension = {
+    url: KenyaBreakGlassExtension.baseUrl,
+    extension: [
+      { url: KenyaBreakGlassExtension.status, valueCode: status },
+      { url: KenyaBreakGlassExtension.reason, valueString: reason },
+      { url: KenyaBreakGlassExtension.declaredAt, valueDateTime: declaredAt },
+      { url: KenyaBreakGlassExtension.expiresAt, valueDateTime: expiresAt },
+      { url: KenyaBreakGlassExtension.correlationId, valueString: correlationId },
+    ],
+  };
+
+  const ext = extension.extension!;
+  if (declaredBy) {
+    ext.push({ url: KenyaBreakGlassExtension.declaredBy, valueString: declaredBy });
+  }
+  if (flag) {
+    ext.push({ url: KenyaBreakGlassExtension.flag, valueReference: flag });
+  }
+  return extension;
+}
+
+export function getKenyaBreakGlassSnapshot(
+  patient: { extension?: Extension[] } | undefined
+): KenyaBreakGlassSnapshot | undefined {
+  if (!patient?.extension?.length) {
+    return undefined;
+  }
+  const parentExt = patient.extension.find((e) => e.url === KenyaBreakGlassExtension.baseUrl);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueCode ?? val?.valueString ?? val?.valueDateTime ?? undefined;
+  }
+
+  const status = child(KenyaBreakGlassExtension.status);
+  if (!status) {
+    return undefined;
+  }
+
+  const flagVal = parentExt.extension.find((e) => e.url === KenyaBreakGlassExtension.flag);
+
+  return {
+    status: status as BreakGlassStatus,
+    reason: child(KenyaBreakGlassExtension.reason),
+    declaredAt: child(KenyaBreakGlassExtension.declaredAt),
+    expiresAt: child(KenyaBreakGlassExtension.expiresAt),
+    correlationId: child(KenyaBreakGlassExtension.correlationId),
+    declaredBy: child(KenyaBreakGlassExtension.declaredBy),
+    flag: flagVal?.valueReference as Reference | undefined,
+  };
+}
+
 export function getKenyaIdsrNotificationSnapshot(
   condition: { extension?: Extension[] } | undefined
 ): KenyaIdsrNotificationSnapshot | undefined {

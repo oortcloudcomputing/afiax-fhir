@@ -36,6 +36,7 @@ describe('handleKenyaIdsrNotification', () => {
     return {
       resourceType: 'Condition',
       id: 'cond-1',
+      subject: { reference: 'Patient/test-patient' },
       code: {
         coding: codes.map((c) => ({ system: c.system ?? 'http://hl7.org/fhir/sid/icd-10', code: c.code })),
       },
@@ -110,6 +111,7 @@ describe('applyIdsrNotificationExtension', () => {
     const condition: Condition & { id: string } = {
       resourceType: 'Condition',
       id: 'cond-1',
+      subject: { reference: 'Patient/test-patient' },
     };
 
     const result = applyIdsrNotificationExtension(condition, {
@@ -134,6 +136,7 @@ describe('applyIdsrNotificationExtension', () => {
     const condition: Condition & { id: string } = {
       resourceType: 'Condition',
       id: 'cond-1',
+      subject: { reference: 'Patient/test-patient' },
       extension: [
         {
           url: 'https://afiax.africa/fhir/StructureDefinition/kenya-idsr-notification',

@@ -78,6 +78,7 @@ import { submitNationalClaimHandler } from './operations/submit-national-claim';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { verifyFacilityAuthorityHandler } from './operations/verify-facility-authority';
 import { verifyPractitionerAuthorityHandler } from './operations/verify-practitioner-authority';
+import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import type { ResendSubscriptionsOptions } from './repo';
@@ -521,6 +522,9 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
       result = customOperationResponse;
     }
   }
+
+  // Kenya: enforce FHIR Confidentiality security labels on read responses
+  result = await enforceKenyaSecurityLabels(ctx, result);
 
   if (result.length === 1) {
     if (!isOk(result[0])) {

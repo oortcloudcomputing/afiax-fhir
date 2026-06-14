@@ -24,7 +24,9 @@ export type CountryPackOperationCode =
   | 'publish-national-record'
   | 'submit-national-claim'
   | 'check-national-claim-status'
-  | 'report-idsr-notification';
+  | 'report-idsr-notification'
+  | 'khis-weekly-export'
+  | 'break-glass';
 
 export interface CountryPackIdentifierBinding {
   readonly category: string;

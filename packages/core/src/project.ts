@@ -203,7 +203,16 @@ export const KenyaProjectSettingNames = {
   khisDataElementMapping: 'kenyaKhisDataElementMapping',
   // DHIS2 dataset UID for MOH 505
   khisMoh505DataSetUid: 'kenyaKhisMoh505DataSetUid',
+  // Email address for security alerts (break-glass, unusual access). Defaults to security@afiax.africa
+  securityAlertEmail: 'kenyaSecurityAlertEmail',
 } as const;
+
+export const KenyaSecurityAlertEmailDefault = 'security@afiax.africa';
+
+export function getKenyaSecurityAlertEmail(source: ProjectSettingsSource): string {
+  return getProjectSettingString(source, KenyaProjectSettingNames.securityAlertEmail)?.trim()
+    || KenyaSecurityAlertEmailDefault;
+}
 
 export type KenyaKhisEnvironment = 'uat' | 'production';
 export type KenyaKhisCredentialMode = 'tenant-managed' | 'afiax-managed';

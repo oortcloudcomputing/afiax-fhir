@@ -23,6 +23,8 @@ export const kenyaCountryPack: CountryPackDefinition = {
     'submit-national-claim',
     'check-national-claim-status',
     'report-idsr-notification',
+    'khis-weekly-export',
+    'break-glass',
   ],
   identifierBindings: [
     {

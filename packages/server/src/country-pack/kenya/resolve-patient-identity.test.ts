@@ -101,7 +101,7 @@ describe('handleResolvePatientIdentity', () => {
       c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
     );
     expect(idUpdate).toBeDefined();
-    const crIdentifier = idUpdate[0].identifier?.find(
+    const crIdentifier = idUpdate![0].identifier?.find(
       (id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id'
     );
     expect(crIdentifier?.value).toBe('CR-12345678');

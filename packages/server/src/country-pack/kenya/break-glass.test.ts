@@ -73,7 +73,7 @@ describe('handleBreakGlassAccess', () => {
     // Flag created
     const flagCall = createResource.mock.calls.find((c) => c[0].resourceType === 'Flag');
     expect(flagCall).toBeDefined();
-    const flag = flagCall[0] as Flag;
+    const flag = flagCall![0] as Flag;
     expect(flag.status).toBe('active');
     expect(flag.code?.coding?.[0]?.code).toBe('break-glass-access');
     expect(flag.period?.start).toBeDefined();
@@ -82,7 +82,7 @@ describe('handleBreakGlassAccess', () => {
     // Patient updated with break-glass extension
     const patientUpdate = updateResource.mock.calls.find((c) => c[0].resourceType === 'Patient');
     expect(patientUpdate).toBeDefined();
-    const updatedPatient = patientUpdate[0] as Patient;
+    const updatedPatient = patientUpdate![0] as Patient;
     const bgExt = updatedPatient.extension?.find(
       (e) => e.url === 'https://afiax.africa/fhir/StructureDefinition/kenya-break-glass'
     );

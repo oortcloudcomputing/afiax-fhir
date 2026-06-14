@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Button, Divider, Group, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   clearKenyaCoverageEligibilitySnapshot,
@@ -52,7 +52,7 @@ export interface CoverageEligibilityPanelProps {
 }
 
 function getParameter(parameters: Parameters | undefined, name: string): ParametersParameter | undefined {
-  return parameters?.parameter?.find((param) => param.name === name);
+  return parameters?.parameter?.find((p) => p.name === name);
 }
 
 function getCheckCoverageResult(parameters: Parameters | undefined): CoverageCheckResult {
@@ -73,267 +73,164 @@ function getCheckCoverageResult(parameters: Parameters | undefined): CoverageChe
     requestIdNumber: getParameter(parameters, 'requestIdNumber')?.valueString,
     requestIdType: getParameter(parameters, 'requestIdType')?.valueString,
     rawResponse: getParameter(parameters, 'rawResponse')?.valueString,
-    eligibilityRequest: getParameter(parameters, 'coverageEligibilityRequest')?.valueReference as
-      | Reference<CoverageEligibilityRequest>
-      | undefined,
-    eligibilityResponse: getParameter(parameters, 'coverageEligibilityResponse')?.valueReference as
-      | Reference<CoverageEligibilityResponse>
-      | undefined,
+    eligibilityRequest: getParameter(parameters, 'coverageEligibilityRequest')?.valueReference as Reference<CoverageEligibilityRequest> | undefined,
+    eligibilityResponse: getParameter(parameters, 'coverageEligibilityResponse')?.valueReference as Reference<CoverageEligibilityResponse> | undefined,
     task: getParameter(parameters, 'task')?.valueReference as Reference<Task> | undefined,
   };
 }
 
-function getEligibilityDisplay(value: boolean | undefined): string {
-  if (value === true) {
-    return 'Eligible';
-  }
-  if (value === false) {
-    return 'Ineligible';
-  }
-  return 'Not returned';
+function eligibilityBadge(eligible: boolean | undefined): JSX.Element | null {
+  if (eligible === undefined) return null;
+  return <Badge color={eligible ? 'green' : 'red'} variant="filled" size="sm">{eligible ? 'ELIGIBLE' : 'INELIGIBLE'}</Badge>;
+}
+
+function statusBadge(status: string | undefined): JSX.Element | null {
+  if (!status) return null;
+  const color = status === 'eligible' ? 'green' : status === 'error' ? 'red' : 'yellow';
+  return <Badge color={color} variant="outline" size="sm">{status}</Badge>;
 }
 
 export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): JSX.Element | null {
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  const currentLookupIdentifier = getKenyaCoverageEligibilityLookupIdentifier(props.coverage);
-  const syncKey = JSON.stringify({
-    id: props.coverage.id,
-    identifier: props.coverage.identifier,
-    subscriberId: props.coverage.subscriberId,
-    extension: props.coverage.extension,
-  });
-  const [identificationType, setIdentificationType] = useState<KenyaCoverageEligibilityIdentificationType>(
-    currentLookupIdentifier?.identificationType ?? 'National ID'
-  );
-  const [identificationNumber, setIdentificationNumber] = useState(currentLookupIdentifier?.identifier.value ?? '');
-  const [savedIdentificationType, setSavedIdentificationType] = useState<KenyaCoverageEligibilityIdentificationType>(
-    currentLookupIdentifier?.identificationType ?? 'National ID'
-  );
-  const [savedIdentificationNumber, setSavedIdentificationNumber] = useState(currentLookupIdentifier?.identifier.value ?? '');
+  if (!props.coverage.id || countryPack !== 'kenya') return null;
+
+  const currentLookupId = getKenyaCoverageEligibilityLookupIdentifier(props.coverage);
+  const syncKey = JSON.stringify({ id: props.coverage.id, identifier: props.coverage.identifier, subscriberId: props.coverage.subscriberId, extension: props.coverage.extension });
+
+  const [idType, setIdType] = useState<KenyaCoverageEligibilityIdentificationType>(currentLookupId?.identificationType ?? 'National ID');
+  const [idNumber, setIdNumber] = useState(currentLookupId?.identifier.value ?? '');
+  const [savedIdType, setSavedIdType] = useState<KenyaCoverageEligibilityIdentificationType>(currentLookupId?.identificationType ?? 'National ID');
+  const [savedIdNumber, setSavedIdNumber] = useState(currentLookupId?.identifier.value ?? '');
   const [loadedKey, setLoadedKey] = useState(syncKey);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string>();
   const [result, setResult] = useState<CoverageCheckResult>();
-  const persistedResult = getKenyaCoverageEligibilitySnapshot(props.coverage);
-  const [snapshotOverride, setSnapshotOverride] = useState<CoverageCheckResult | null>();
-  const currentResult = result ?? (snapshotOverride === undefined ? persistedResult : snapshotOverride ?? undefined);
+  const [resultOverride, setResultOverride] = useState<CoverageCheckResult | null>();
 
-  if (!props.coverage.id || countryPack !== 'kenya') {
-    return null;
-  }
+  const currentResult = result ?? (resultOverride === undefined ? getKenyaCoverageEligibilitySnapshot(props.coverage) : resultOverride ?? undefined);
 
   useEffect(() => {
     if (loadedKey !== syncKey) {
-      setIdentificationType(currentLookupIdentifier?.identificationType ?? 'National ID');
-      setIdentificationNumber(currentLookupIdentifier?.identifier.value ?? '');
-      setSavedIdentificationType(currentLookupIdentifier?.identificationType ?? 'National ID');
-      setSavedIdentificationNumber(currentLookupIdentifier?.identifier.value ?? '');
+      setIdType(currentLookupId?.identificationType ?? 'National ID');
+      setIdNumber(currentLookupId?.identifier.value ?? '');
+      setSavedIdType(currentLookupId?.identificationType ?? 'National ID');
+      setSavedIdNumber(currentLookupId?.identifier.value ?? '');
       setLoadedKey(syncKey);
-      setSnapshotOverride(undefined);
+      setResultOverride(undefined);
     }
-  }, [currentLookupIdentifier?.identificationType, currentLookupIdentifier?.identifier.value, loadedKey, syncKey]);
+  }, [currentLookupId?.identificationType, currentLookupId?.identifier.value, loadedKey, syncKey]);
 
-  async function handleSaveIdentifier(): Promise<void> {
-    const trimmedNumber = identificationNumber.trim();
-    if (!trimmedNumber) {
-      setError('Eligibility lookup number is required before coverage checks.');
-      return;
-    }
-
-    setSaving(true);
-    setError(undefined);
+  async function handleSave(): Promise<void> {
+    const number = idNumber.trim();
+    if (!number) { setError('Identification number is required.'); return; }
+    setSaving(true); setError(undefined);
     try {
-      const updatedCoverage = clearKenyaCoverageEligibilitySnapshot(
-        setKenyaCoverageEligibilityLookupIdentifier(props.coverage, identificationType, trimmedNumber)
-      );
-      const savedCoverage = await medplum.updateResource(updatedCoverage);
-      setIdentificationNumber(trimmedNumber);
-      setSavedIdentificationType(identificationType);
-      setSavedIdentificationNumber(trimmedNumber);
-      setResult(undefined);
-      setSnapshotOverride(getKenyaCoverageEligibilitySnapshot(savedCoverage) ?? null);
-      showNotification({ color: 'green', message: 'Coverage eligibility lookup saved' });
+      const saved = await medplum.updateResource(clearKenyaCoverageEligibilitySnapshot(setKenyaCoverageEligibilityLookupIdentifier(props.coverage, idType, number)));
+      setIdNumber(number); setSavedIdType(idType); setSavedIdNumber(number);
+      setResult(undefined); setResultOverride(getKenyaCoverageEligibilitySnapshot(saved) ?? null);
+      showNotification({ color: 'green', message: 'Eligibility lookup saved' });
     } catch (err) {
-      const message = normalizeErrorString(err);
-      setError(message);
-      showNotification({ color: 'red', message, autoClose: false });
-    } finally {
-      setSaving(false);
-    }
+      const msg = normalizeErrorString(err);
+      setError(msg);
+      showNotification({ color: 'red', message: msg, autoClose: false });
+    } finally { setSaving(false); }
   }
 
-  async function handleCheckCoverage(): Promise<void> {
-    setChecking(true);
-    setError(undefined);
+  async function handleCheck(): Promise<void> {
+    setChecking(true); setError(undefined);
     try {
-      const parameters = (await medplum.post(
-        medplum.fhirUrl('Coverage', props.coverage.id as string, '$check-coverage')
-      )) as Parameters;
-      const coverageResult = getCheckCoverageResult(parameters);
-      setResult(coverageResult);
-      setSnapshotOverride(coverageResult);
-      showNotification({ color: 'green', message: 'Coverage eligibility check completed' });
+      const params = (await medplum.post(medplum.fhirUrl('Coverage', props.coverage.id as string, '$check-coverage'))) as Parameters;
+      const r = getCheckCoverageResult(params);
+      setResult(r); setResultOverride(r);
+      showNotification({ color: 'green', message: 'Coverage check complete' });
     } catch (err) {
-      const message = normalizeErrorString(err);
-      setError(message);
-      showNotification({ color: 'red', message, autoClose: false });
-    } finally {
-      setChecking(false);
-    }
+      const msg = normalizeErrorString(err);
+      setError(msg);
+      showNotification({ color: 'red', message: msg, autoClose: false });
+    } finally { setChecking(false); }
   }
+
+  const idUnsaved = idNumber.trim() !== savedIdNumber.trim() || idType !== savedIdType;
 
   return (
     <Stack gap="sm" mb="md">
-      <Group justify="space-between" align="flex-start">
-        <div>
+      <Group justify="space-between" align="center">
+        <Group gap="xs">
           <Title order={3}>Kenya Coverage Eligibility</Title>
-          <Text size="sm" c="dimmed">
-            Runs the DHA eligibility flow for this coverage and records the result on the resource.
-          </Text>
-        </div>
-        <Button
-          onClick={() => handleCheckCoverage().catch(console.error)}
-          loading={checking}
-          disabled={
-            !savedIdentificationNumber.trim() ||
-            saving ||
-            checking ||
-            identificationNumber.trim() !== savedIdentificationNumber.trim() ||
-            identificationType !== savedIdentificationType
-          }
-        >
+          {statusBadge(currentResult?.status)}
+          {eligibilityBadge(currentResult?.eligible)}
+        </Group>
+        <Button onClick={() => handleCheck().catch(console.error)} loading={checking} disabled={!savedIdNumber.trim() || saving || idUnsaved}>
           Check Coverage
         </Button>
       </Group>
+
       <Group align="flex-end" grow>
         <NativeSelect
-          label="Eligibility Identification Type"
-          data={[
-            'National ID',
-            'Alien ID',
-            'Mandate Number',
-            'Temporary ID',
-            'SHA Number',
-            'Refugee ID',
-          ]}
-          value={identificationType}
-          onChange={(event) => setIdentificationType(event.currentTarget.value as KenyaCoverageEligibilityIdentificationType)}
+          label="ID Type"
+          data={['National ID', 'Alien ID', 'Mandate Number', 'Temporary ID', 'SHA Number', 'Refugee ID']}
+          value={idType}
+          onChange={(e) => setIdType(e.currentTarget.value as KenyaCoverageEligibilityIdentificationType)}
         />
-        <TextInput
-          label="Eligibility Identification Number"
-          description="DHA eligibility uses identification_type and identification_number."
-          placeholder="12345678"
-          value={identificationNumber}
-          onChange={(event) => setIdentificationNumber(event.currentTarget.value)}
-        />
-        <Button
-          variant="light"
-          onClick={() => handleSaveIdentifier().catch(console.error)}
-          loading={saving}
-          disabled={
-            !identificationNumber.trim() ||
-            (identificationNumber.trim() === savedIdentificationNumber.trim() && identificationType === savedIdentificationType)
-          }
-        >
-          Save Eligibility Lookup
+        <TextInput label="ID Number" placeholder="12345678" value={idNumber} onChange={(e) => setIdNumber(e.currentTarget.value)} />
+        <Button variant="light" onClick={() => handleSave().catch(console.error)} loading={saving} disabled={!idNumber.trim() || !idUnsaved}>
+          Save
         </Button>
       </Group>
-      {!identificationNumber.trim() && (
-        <Alert color="yellow">Add the DHA eligibility lookup identifier first. Coverage checks stay disabled until it is saved.</Alert>
-      )}
-      {identificationNumber.trim() &&
-        (identificationNumber.trim() !== savedIdentificationNumber.trim() || identificationType !== savedIdentificationType) && (
-          <Alert color="blue">Save the eligibility lookup first. Coverage checks always use the saved Coverage identifier.</Alert>
-        )}
+
+      {!idNumber.trim() && <Alert color="yellow" variant="light">Enter the DHA eligibility identifier to continue.</Alert>}
+      {idNumber.trim() && idUnsaved && <Alert color="blue" variant="light">Save before running the check.</Alert>}
       {error && <Alert color="red">{error}</Alert>}
+
       {currentResult?.status && (
         <>
+          <Divider />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentResult.status}</DescriptionListEntry>
-            <DescriptionListEntry term="Eligibility">{getEligibilityDisplay(currentResult.eligible)}</DescriptionListEntry>
-            <DescriptionListEntry term="Message">{currentResult.message ?? 'No message returned'}</DescriptionListEntry>
-            <DescriptionListEntry term="Next State">{currentResult.nextState ?? 'Not provided'}</DescriptionListEntry>
-            <DescriptionListEntry term="Correlation ID">{currentResult.correlationId ?? 'Not provided'}</DescriptionListEntry>
-            <DescriptionListEntry term="Identification Type">
-              {currentResult.identificationType ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Identification Number">
-              {currentResult.identificationNumber ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Full Name">{currentResult.fullName ?? 'Not returned'}</DescriptionListEntry>
-            <DescriptionListEntry term="Reason">{currentResult.reason ?? 'Not returned'}</DescriptionListEntry>
-            <DescriptionListEntry term="Possible Solution">
-              {currentResult.possibleSolution ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Coverage End Date">
-              {currentResult.coverageEndDate ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Transition Status">
-              {currentResult.transitionStatus ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="DHA Request ID">{currentResult.requestId ?? 'Not returned'}</DescriptionListEntry>
-            <DescriptionListEntry term="Request ID Type">
-              {currentResult.requestIdType ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Request ID Number">
-              {currentResult.requestIdNumber ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Checked At">
-              {currentResult.checkedAt ?? 'Not returned'}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Eligibility Request">
-              {currentResult.eligibilityRequest?.reference ? (
-                <MedplumLink to={`/${currentResult.eligibilityRequest.reference}`}>
-                  {currentResult.eligibilityRequest.reference}
-                </MedplumLink>
-              ) : (
-                'Not returned'
-              )}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Eligibility Response">
-              {currentResult.eligibilityResponse?.reference ? (
-                <MedplumLink to={`/${currentResult.eligibilityResponse.reference}`}>
-                  {currentResult.eligibilityResponse.reference}
-                </MedplumLink>
-              ) : (
-                'Not returned'
-              )}
-            </DescriptionListEntry>
-            <DescriptionListEntry term="Task">
-              {currentResult.task?.reference ? (
+            {currentResult.fullName && <DescriptionListEntry term="Member Name">{currentResult.fullName}</DescriptionListEntry>}
+            {currentResult.message && <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>}
+            {currentResult.coverageEndDate && <DescriptionListEntry term="Coverage Ends">{currentResult.coverageEndDate}</DescriptionListEntry>}
+            {currentResult.reason && <DescriptionListEntry term="Reason">{currentResult.reason}</DescriptionListEntry>}
+            {currentResult.checkedAt && <DescriptionListEntry term="Checked">{currentResult.checkedAt}</DescriptionListEntry>}
+            {currentResult.task?.reference && (
+              <DescriptionListEntry term="Task">
                 <MedplumLink to={`/${currentResult.task.reference}`}>{currentResult.task.reference}</MedplumLink>
-              ) : (
-                'Not returned'
-              )}
-            </DescriptionListEntry>
+              </DescriptionListEntry>
+            )}
           </DescriptionList>
-          {result?.rawResponse && (
-            <Stack gap={4}>
-              <Title order={5}>Raw Kenya HIE Response</Title>
-              <Text size="sm" c="dimmed">
-                Temporary debug output for DHA eligibility troubleshooting.
-              </Text>
-              <Text
-                component="pre"
-                size="xs"
-                style={{
-                  margin: 0,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--mantine-color-gray-0)',
-                  overflowX: 'auto',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {result.rawResponse}
-              </Text>
-            </Stack>
-          )}
+
+          <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
+            <summary style={{ cursor: 'pointer', userSelect: 'none' }}>All eligibility details</summary>
+            <DescriptionList>
+              {currentResult.transitionStatus && <DescriptionListEntry term="Transition Status">{currentResult.transitionStatus}</DescriptionListEntry>}
+              {currentResult.possibleSolution && <DescriptionListEntry term="Suggestion">{currentResult.possibleSolution}</DescriptionListEntry>}
+              {currentResult.requestId && <DescriptionListEntry term="DHA Request ID">{currentResult.requestId}</DescriptionListEntry>}
+              {currentResult.identificationNumber && <DescriptionListEntry term="Lookup Number">{currentResult.identificationNumber}</DescriptionListEntry>}
+              {currentResult.eligibilityRequest?.reference && (
+                <DescriptionListEntry term="Eligibility Request">
+                  <MedplumLink to={`/${currentResult.eligibilityRequest.reference}`}>{currentResult.eligibilityRequest.reference}</MedplumLink>
+                </DescriptionListEntry>
+              )}
+              {currentResult.eligibilityResponse?.reference && (
+                <DescriptionListEntry term="Eligibility Response">
+                  <MedplumLink to={`/${currentResult.eligibilityResponse.reference}`}>{currentResult.eligibilityResponse.reference}</MedplumLink>
+                </DescriptionListEntry>
+              )}
+            </DescriptionList>
+          </details>
         </>
+      )}
+
+      {result?.rawResponse && (
+        <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
+          <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw HIE response</summary>
+          <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+            {result.rawResponse}
+          </Text>
+        </details>
       )}
     </Stack>
   );

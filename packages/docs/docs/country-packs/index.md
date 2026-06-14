@@ -21,7 +21,7 @@ Country packs exist to preserve the layering of the platform:
 - regulator and payer integrations sit behind explicit internal operations
 - tenant-specific behavior stays separate from country behavior
 
-This is the main reason the Kenya work in this repo is implemented as a pack and not as direct Medplum core branching.
+This is the main reason the Kenya work in this repo is implemented as a pack and not as direct Afiax FHIR core branching.
 
 ## What belongs in a country pack
 

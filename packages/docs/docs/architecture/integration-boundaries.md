@@ -195,8 +195,8 @@ Interpretation:
 - do not call national APIs directly from browser or mobile UI
 - do not hard-code country-specific identifiers into the core model
 - do not move final clinical state into ERP, commerce, or mobile-local models
-- do not bundle Afiax Billing implementation code into this Medplum fork
-- do not bundle Afiax Pay execution code into this Medplum fork
+- do not bundle Afiax Billing implementation code into Afiax FHIR
+- do not bundle Afiax Pay execution code into Afiax FHIR
 - do not let exchange payloads become the primary documentation model
 - do not bake country-specific rules into generic UI or platform components
 - do not let a gateway silently become a second source of truth
@@ -218,7 +218,7 @@ Interpretation:
 ### Incorrect
 
 - calling DHA directly from a React screen without the pack handler
-- creating ERPNext documents from Medplum core routes
+- creating ERPNext documents from Afiax FHIR core routes
 - letting the mobile gateway become the only source of reimbursement state
 
 ## Related docs

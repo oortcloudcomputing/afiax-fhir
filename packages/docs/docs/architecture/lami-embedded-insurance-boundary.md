@@ -36,7 +36,7 @@ Not implemented in this repo:
 - quote and purchase flows
 - policy lifecycle synchronization
 
-This is deliberate. Lami is an adjacent integration service concern, not Medplum core code.
+This is deliberate. Lami is an adjacent integration service concern, not Afiax FHIR core code.
 
 ## Core rule
 

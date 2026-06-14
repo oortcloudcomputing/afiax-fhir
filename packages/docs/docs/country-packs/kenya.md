@@ -137,8 +137,7 @@ These are the current de facto Kenya conformance surfaces in code.
 
 ## Entry points
 
-Kenya behavior is reached through generic Medplum operations and curated resource panels, not through Kenya-only core
-routes.
+Kenya behavior is reached through generic Afiax FHIR operations and curated resource panels, not through Kenya-only core routes.
 
 Current generic operations with Kenya handlers:
 

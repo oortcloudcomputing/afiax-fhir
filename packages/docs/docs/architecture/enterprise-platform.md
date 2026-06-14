@@ -115,7 +115,7 @@ They include:
 | Shared domain services | identity orchestration, scheduling, notifications, workflow support | adjacent platform services |
 | Country packs | registries, payer adapters, terminology, exchange connectors, compliance artifacts | this repo plus pack-adjacent services |
 | Enterprise systems | Afiax Pay, Afiax Billing, CRM, HR, training, pharmacy inventory | external enterprise systems |
-| Integration services | gateways, Medplum Agent, adapters, Knative executors, ERP connectors, partner connectors | external integration services |
+| Integration services | gateways, Afiax Agent, adapters, Knative executors, ERP connectors, partner connectors | external integration services |
 | Data layer | PostgreSQL, object storage, audit logs, backups, reconciliation data | platform infrastructure |
 
 ## What this repo should cover

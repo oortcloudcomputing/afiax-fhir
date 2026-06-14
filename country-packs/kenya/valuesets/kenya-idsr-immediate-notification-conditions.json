@@ -1,0 +1,49 @@
+{
+  "resourceType": "ValueSet",
+  "id": "kenya-idsr-immediate-notification-conditions",
+  "url": "https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions",
+  "version": "1.0.0",
+  "name": "KenyaIdsrImmediateNotificationConditions",
+  "title": "Kenya IDSR Immediately Notifiable Conditions",
+  "status": "active",
+  "experimental": false,
+  "date": "2026-06-14",
+  "publisher": "Oortcloud Computing Limited (Afiax Connected Healthcare)",
+  "contact": [
+    {
+      "telecom": [
+        { "system": "url", "value": "https://afiax.africa" }
+      ]
+    }
+  ],
+  "description": "ICD-10 codes for diseases that must be reported to the County Director of Health within 24 hours of clinical suspicion under Kenya Health Act 2017 s.57, Kenya IDSR Technical Guidelines 3rd Edition (2024), and IHR 2005.",
+  "copyright": "ICD-10 codes copyright WHO. ValueSet definition copyright Oortcloud Computing Limited.",
+  "compose": {
+    "include": [
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10",
+        "concept": [
+          { "code": "A00", "display": "Cholera" },
+          { "code": "A01", "display": "Typhoid fever" },
+          { "code": "A20", "display": "Plague" },
+          { "code": "A22", "display": "Anthrax" },
+          { "code": "A33", "display": "Neonatal tetanus" },
+          { "code": "A36", "display": "Diphtheria" },
+          { "code": "A39", "display": "Meningococcal disease" },
+          { "code": "A80", "display": "Acute poliomyelitis (AFP)" },
+          { "code": "A82", "display": "Rabies" },
+          { "code": "A95", "display": "Yellow fever" },
+          { "code": "A96", "display": "Arenaviral haemorrhagic fever" },
+          { "code": "A98.4", "display": "Ebola virus disease" },
+          { "code": "A98.5", "display": "Marburg virus disease" },
+          { "code": "A99", "display": "Unspecified viral haemorrhagic fever" },
+          { "code": "B03", "display": "Smallpox" },
+          { "code": "B04", "display": "Mpox (monkeypox)" },
+          { "code": "B05", "display": "Measles" },
+          { "code": "J09", "display": "Influenza A (novel/pandemic subtype)" },
+          { "code": "U07.1", "display": "COVID-19" }
+        ]
+      }
+    ]
+  }
+}

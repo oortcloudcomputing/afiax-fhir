@@ -18,7 +18,7 @@
     "build": "npm run clean && tsc && node build.mjs",
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
-    "dev": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts",
+    "dev": "tsx watch --exclude '../core/dist/**' --import ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "migrate": "tsx src/migrations/migrate-main.ts",

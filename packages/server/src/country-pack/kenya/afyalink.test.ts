@@ -116,7 +116,7 @@ describe('Kenya AfyaLink connector', () => {
     });
 
     expect(fetch).toHaveBeenLastCalledWith(
-      'https://uat.dha.go.ke/v1/facility-search?facility_code=24749',
+      'https://uat.dha.go.ke/v2/facility-search?facility_code=24749',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
@@ -236,7 +236,7 @@ describe('Kenya AfyaLink connector', () => {
     });
 
     expect(fetch).toHaveBeenLastCalledWith(
-      'https://uat.dha.go.ke/v1/practitioner-search?identification_type=ID&identification_number=12345678',
+      'https://uat.dha.go.ke/v1/practitioner-search?identification_type=National%20ID&identification_number=12345678',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({

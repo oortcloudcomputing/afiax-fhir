@@ -418,7 +418,7 @@ export async function searchAfyaLinkFacility(
 ): Promise<AfyaLinkFacilitySearchResponse> {
   const token = await getAfyaLinkToken(credentials);
   const response = await fetch(
-    `${credentials.baseUrl}/v1/facility-search?facility_code=${encodeURIComponent(facilityCode)}`,
+    `${credentials.baseUrl}/v2/facility-search?facility_code=${encodeURIComponent(facilityCode)}`,
     {
       method: 'GET',
       headers: {
@@ -449,6 +449,28 @@ export async function searchAfyaLinkFacility(
   }
 }
 
+function buildPractitionerSearchUrl(
+  baseUrl: string,
+  identificationType: string,
+  identificationNumber: string
+): string {
+  const enc = encodeURIComponent;
+  // Regulator-based registration number lookup (KMPDC doctors, COC clinical officers)
+  if (identificationType === 'KMPDC') {
+    return `${baseUrl}/v1/practitioner-search?regulator=kmpdc&registration_number=${enc(identificationNumber)}`;
+  }
+  if (identificationType === 'COC') {
+    return `${baseUrl}/v1/practitioner-search?regulator=coc&registration_number=${enc(identificationNumber)}`;
+  }
+  // National ID-based lookup (PPB pharmacists, NCK nurses, legacy ID/PASSPORT)
+  const regulator = identificationType === 'PPB' ? 'ppb' : identificationType === 'NCK' ? 'nck' : undefined;
+  const normalizedType = (identificationType === 'ID' || identificationType === 'PASSPORT')
+    ? identificationType === 'PASSPORT' ? 'Passport' : 'National ID'
+    : 'National ID';
+  const base = `${baseUrl}/v1/practitioner-search?identification_type=${enc(normalizedType)}&identification_number=${enc(identificationNumber)}`;
+  return regulator ? `${base}&regulator=${regulator}` : base;
+}
+
 export async function searchAfyaLinkPractitioner(
   credentials: KenyaAfyaLinkCredentials,
   identificationType: string,
@@ -456,9 +478,7 @@ export async function searchAfyaLinkPractitioner(
 ): Promise<AfyaLinkPractitionerSearchResponse> {
   const token = await getAfyaLinkToken(credentials);
   const response = await fetch(
-    `${credentials.baseUrl}/v1/practitioner-search?identification_type=${encodeURIComponent(
-      identificationType
-    )}&identification_number=${encodeURIComponent(identificationNumber)}`,
+    buildPractitionerSearchUrl(credentials.baseUrl, identificationType, identificationNumber),
     {
       method: 'GET',
       headers: {

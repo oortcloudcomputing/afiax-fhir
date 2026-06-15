@@ -49,6 +49,10 @@ export const KenyaPractitionerAuthorityIdentifierSystem =
   'https://afiax.africa/kenya/identifier/health-worker-registration-number';
 export const KenyaPractitionerNationalIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/national-id';
 export const KenyaPractitionerPassportIdentifierSystem = 'https://afiax.africa/kenya/identifier/passport-number';
+export const KenyaPractitionerKmpdcRegistrationSystem = 'https://afiax.africa/kenya/identifier/kmpdc-registration';
+export const KenyaPractitionerCocRegistrationSystem = 'https://afiax.africa/kenya/identifier/coc-registration';
+export const KenyaPractitionerPpbNationalIdSystem = 'https://afiax.africa/kenya/identifier/ppb-national-id';
+export const KenyaPractitionerNckNationalIdSystem = 'https://afiax.africa/kenya/identifier/nck-national-id';
 export const KenyaCoverageNationalIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/coverage-national-id';
 export const KenyaCoverageAlienIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/coverage-alien-id';
 export const KenyaCoverageMandateNumberIdentifierSystem =
@@ -462,7 +466,31 @@ function getKenyaRegistryStringValue(
   return typeof value === 'string' && value ? value : undefined;
 }
 
-export type KenyaPractitionerIdentificationType = 'ID' | 'PASSPORT';
+export type KenyaPractitionerIdentificationType =
+  | 'KMPDC'    // Medical Practitioners and Dentists Council — registration number
+  | 'COC'      // Clinical Officers Council — registration number
+  | 'PPB'      // Pharmacy and Poisons Board — National ID
+  | 'NCK'      // Nursing Council of Kenya — National ID
+  | 'ID'       // Generic National ID (legacy / no specific regulator)
+  | 'PASSPORT'; // Generic Passport (legacy)
+
+export const KenyaPractitionerIdentificationTypes: readonly KenyaPractitionerIdentificationType[] = [
+  'KMPDC',
+  'COC',
+  'PPB',
+  'NCK',
+  'ID',
+  'PASSPORT',
+] as const;
+
+export const KenyaPractitionerIdentificationTypeLabels: Record<KenyaPractitionerIdentificationType, string> = {
+  KMPDC: 'KMPDC Licence No.',
+  COC: 'COC Licence No.',
+  PPB: 'PPB (National ID)',
+  NCK: 'NCK (National ID)',
+  ID: 'National ID',
+  PASSPORT: 'Passport',
+};
 export type KenyaCoverageEligibilityIdentificationType =
   | 'National ID'
   | 'Alien ID'
@@ -765,12 +793,13 @@ export function setKenyaPractitionerLookupIdentifier(
   identificationNumber: string
 ): Practitioner {
   const trimmedNumber = identificationNumber.trim();
+  const label = KenyaPractitionerIdentificationTypeLabels[identificationType];
   const nextIdentifier: Identifier = {
     system: getKenyaPractitionerLookupSystem(identificationType),
     value: trimmedNumber,
     type: {
-      text: identificationType === 'PASSPORT' ? 'Passport number' : 'National ID number',
-      coding: [{ code: identificationType, display: identificationType === 'PASSPORT' ? 'Passport' : 'National ID' }],
+      text: label,
+      coding: [{ code: identificationType, display: label }],
     },
   };
 
@@ -878,52 +907,58 @@ function getKenyaPractitionerIdentificationTypeForIdentifier(
     return undefined;
   }
 
-  if (identifier.system === KenyaPractitionerNationalIdIdentifierSystem) {
-    return 'ID';
-  }
-  if (identifier.system === KenyaPractitionerPassportIdentifierSystem) {
-    return 'PASSPORT';
+  // Explicit system URIs take priority
+  const systemMap: Record<string, KenyaPractitionerIdentificationType> = {
+    [KenyaPractitionerKmpdcRegistrationSystem]: 'KMPDC',
+    [KenyaPractitionerCocRegistrationSystem]: 'COC',
+    [KenyaPractitionerPpbNationalIdSystem]: 'PPB',
+    [KenyaPractitionerNckNationalIdSystem]: 'NCK',
+    [KenyaPractitionerNationalIdIdentifierSystem]: 'ID',
+    [KenyaPractitionerPassportIdentifierSystem]: 'PASSPORT',
+  };
+  if (identifier.system && systemMap[identifier.system]) {
+    return systemMap[identifier.system];
   }
 
   const typeText = identifier.type?.text?.toLowerCase();
-  if (typeText?.includes('passport')) {
-    return 'PASSPORT';
-  }
-  if (typeText?.includes('national id') || typeText === 'id' || typeText?.includes('national identification')) {
-    return 'ID';
-  }
+  if (typeText?.includes('passport')) return 'PASSPORT';
+  if (typeText?.includes('national id') || typeText === 'id' || typeText?.includes('national identification')) return 'ID';
+  if (typeText?.includes('kmpdc') || typeText?.includes('medical practitioner')) return 'KMPDC';
+  if (typeText?.includes('clinical officer') || typeText?.includes(' coc')) return 'COC';
+  if (typeText?.includes('pharmacy') || typeText?.includes('ppb')) return 'PPB';
+  if (typeText?.includes('nursing') || typeText?.includes('nck')) return 'NCK';
 
   for (const coding of identifier.type?.coding ?? []) {
     const code = coding.code?.toUpperCase();
-    const display = coding.display?.toLowerCase();
-    if (code === 'PASSPORT' || display?.includes('passport')) {
-      return 'PASSPORT';
-    }
-    if (code === 'ID' || display?.includes('national id')) {
-      return 'ID';
-    }
+    if (code === 'KMPDC') return 'KMPDC';
+    if (code === 'COC') return 'COC';
+    if (code === 'PPB') return 'PPB';
+    if (code === 'NCK') return 'NCK';
+    if (code === 'PASSPORT') return 'PASSPORT';
+    if (code === 'ID') return 'ID';
   }
 
   return undefined;
 }
 
 function getKenyaPractitionerLookupSystem(identificationType: KenyaPractitionerIdentificationType): string {
-  return identificationType === 'PASSPORT'
-    ? KenyaPractitionerPassportIdentifierSystem
-    : KenyaPractitionerNationalIdIdentifierSystem;
+  const systemMap: Record<KenyaPractitionerIdentificationType, string> = {
+    KMPDC: KenyaPractitionerKmpdcRegistrationSystem,
+    COC: KenyaPractitionerCocRegistrationSystem,
+    PPB: KenyaPractitionerPpbNationalIdSystem,
+    NCK: KenyaPractitionerNckNationalIdSystem,
+    ID: KenyaPractitionerNationalIdIdentifierSystem,
+    PASSPORT: KenyaPractitionerPassportIdentifierSystem,
+  };
+  return systemMap[identificationType];
 }
 
 function normalizePractitionerIdentificationType(
   value: string | null | undefined
 ): KenyaPractitionerIdentificationType | undefined {
-  const normalized = value?.trim().toUpperCase();
-  if (normalized === 'PASSPORT') {
-    return 'PASSPORT';
-  }
-  if (normalized === 'ID') {
-    return 'ID';
-  }
-  return undefined;
+  const normalized = value?.trim().toUpperCase() as KenyaPractitionerIdentificationType | undefined;
+  const valid: KenyaPractitionerIdentificationType[] = ['KMPDC', 'COC', 'PPB', 'NCK', 'ID', 'PASSPORT'];
+  return normalized && valid.includes(normalized) ? normalized : undefined;
 }
 
 function normalizeOptionalBoolean(value: unknown): boolean | undefined {

@@ -10,6 +10,7 @@ import {
   getKenyaPractitionerRegistrySnapshot,
   getKenyaPractitionerVerificationSnapshot,
   getProjectSettingString,
+  KenyaPractitionerIdentificationTypeLabels,
   normalizeErrorString,
   setKenyaPractitionerLookupIdentifier,
   type KenyaPractitionerIdentificationType,
@@ -90,9 +91,9 @@ export function PractitionerAuthorityVerificationPanel(
   const currentLookupId = getKenyaPractitionerLookupIdentifier(props.practitioner);
   const syncKey = JSON.stringify({ id: props.practitioner.id, identifier: props.practitioner.identifier, extension: props.practitioner.extension });
 
-  const [idType, setIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'ID');
+  const [idType, setIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'KMPDC');
   const [idNumber, setIdNumber] = useState(currentLookupId?.identifier.value ?? '');
-  const [savedIdType, setSavedIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'ID');
+  const [savedIdType, setSavedIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'KMPDC');
   const [savedIdNumber, setSavedIdNumber] = useState(currentLookupId?.identifier.value ?? '');
   const [loadedKey, setLoadedKey] = useState(syncKey);
   const [saving, setSaving] = useState(false);
@@ -109,9 +110,9 @@ export function PractitionerAuthorityVerificationPanel(
 
   useEffect(() => {
     if (loadedKey !== syncKey) {
-      setIdType(currentLookupId?.identificationType ?? 'ID');
+      setIdType(currentLookupId?.identificationType ?? 'KMPDC');
       setIdNumber(currentLookupId?.identifier.value ?? '');
-      setSavedIdType(currentLookupId?.identificationType ?? 'ID');
+      setSavedIdType(currentLookupId?.identificationType ?? 'KMPDC');
       setSavedIdNumber(currentLookupId?.identifier.value ?? '');
       setLoadedKey(syncKey);
       setRegistryOverride(undefined);
@@ -211,14 +212,15 @@ export function PractitionerAuthorityVerificationPanel(
 
       <Group align="flex-end" grow>
         <NativeSelect
-          label="ID Type"
-          data={[{ value: 'ID', label: 'National ID' }, { value: 'PASSPORT', label: 'Passport' }]}
+          label="Registry"
+          data={(Object.entries(KenyaPractitionerIdentificationTypeLabels) as [KenyaPractitionerIdentificationType, string][])
+            .map(([value, label]) => ({ value, label }))}
           value={idType}
           onChange={(e) => setIdType(e.currentTarget.value as KenyaPractitionerIdentificationType)}
         />
         <TextInput
-          label="Identification Number"
-          placeholder={idType === 'PASSPORT' ? 'A1234567' : '12345678'}
+          label={idType === 'KMPDC' ? 'KMPDC Licence No.' : idType === 'COC' ? 'COC Licence No.' : 'National ID / Passport'}
+          placeholder={idType === 'KMPDC' ? 'M0031534' : idType === 'COC' ? 'COC/12345' : '12345678'}
           value={idNumber}
           onChange={(e) => setIdNumber(e.currentTarget.value)}
         />

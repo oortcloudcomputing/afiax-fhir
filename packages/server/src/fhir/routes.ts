@@ -79,6 +79,7 @@ import { updateUserEmailOperation } from './operations/update-user-email';
 import { verifyFacilityAuthorityHandler } from './operations/verify-facility-authority';
 import { verifyPractitionerAuthorityHandler } from './operations/verify-practitioner-authority';
 import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
+import { maybeAutoTriggerIdsr } from '../country-pack/kenya/auto-idsr';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import type { ResendSubscriptionsOptions } from './repo';
@@ -522,6 +523,9 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
       result = customOperationResponse;
     }
   }
+
+  // Kenya: auto-trigger IDSR notification on Condition create/update (s.57 Kenya Health Act 2017)
+  maybeAutoTriggerIdsr(ctx, request.method, result);
 
   // Kenya: enforce FHIR Confidentiality security labels on read responses
   result = await enforceKenyaSecurityLabels(ctx, result);

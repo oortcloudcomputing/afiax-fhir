@@ -8,15 +8,21 @@ examples that explain what a workflow expects and what a normalized result shoul
 
 ## Current contents
 
-Today this directory contains the first facility-verification fixtures:
+| Workflow | Request | Response |
+|---|---|---|
+| `Organization/$verify-facility-authority` | `verify-facility-authority.request.json` | `verify-facility-authority.response.json` |
+| `Coverage/$check-coverage` | `check-coverage.request.json` | `check-coverage.response.json` |
+| `Claim/$submit-national-claim` | `submit-national-claim.request.json` | `submit-national-claim.response.json` |
+| `Claim/$check-national-claim-status` | `check-national-claim-status.request.json` | `check-national-claim-status.response.json` |
+| `Claim/$request-preauthorization` | `request-preauthorization.request.json` | `request-preauthorization.response.json` |
+| `Patient/$publish-national-record` | `publish-national-record.request.json` | `publish-national-record.response.json` |
+| `Patient/$resolve-patient-identity` | `resolve-patient-identity.request.json` | `resolve-patient-identity.response.json` |
+| `Patient/$break-glass` | `break-glass.request.json` | `break-glass.response.json` |
+| `Condition/$report-idsr-notification` | `report-idsr-notification.request.json` | `report-idsr-notification.response.json` |
 
-- `verify-facility-authority.request.json`
-- `verify-facility-authority.response.json`
-
-These files document the early Kenya facility verification contract:
-
-- the request fixture shows the minimal operation input shape
-- the response fixture shows the normalized result shape returned by the Kenya handler
+Each pair documents:
+- the request fixture: minimal operation input accepted by the Kenya handler
+- the response fixture: normalized result shape returned to the caller
 
 ## How fixtures are used in this repo
 
@@ -50,15 +56,15 @@ verify-facility-authority.request.json
 verify-facility-authority.response.json
 ```
 
-Recommended future examples:
+Examples:
 
 ```text
-verify-practitioner-authority.request.json
-verify-practitioner-authority.response.json
+verify-facility-authority.request.json
+verify-facility-authority.response.json
 check-coverage.request.json
 check-coverage.response.json
-submit-national-claim.bundle.json
-check-national-claim-status.response.json
+submit-national-claim.request.json
+submit-national-claim.response.json
 ```
 
 ## What a good Kenya fixture should show
@@ -73,18 +79,21 @@ Keep it focused. One fixture should explain one stage of one workflow.
 
 ## Relationship to code
 
-The current Kenya fixtures correspond to behavior implemented in:
+The Kenya fixtures correspond to behavior implemented in:
 
-- `packages/server/src/country-pack/kenya/verify-facility-authority.ts`
-- `packages/server/src/fhir/operations/verify-facility-authority.ts`
-- `packages/core/src/kenya.ts`
+| Fixture prefix | Server handler |
+|---|---|
+| `verify-facility-authority` | `packages/server/src/country-pack/kenya/verify-facility-authority.ts` |
+| `check-coverage` | `packages/server/src/country-pack/kenya/check-coverage.ts` |
+| `submit-national-claim` | `packages/server/src/country-pack/kenya/submit-national-claim.ts` |
+| `check-national-claim-status` | `packages/server/src/country-pack/kenya/check-national-claim-status.ts` |
+| `request-preauthorization` | `packages/server/src/country-pack/kenya/submit-national-claim.ts` |
+| `publish-national-record` | `packages/server/src/country-pack/kenya/publish-national-record.ts` |
+| `resolve-patient-identity` | `packages/server/src/country-pack/kenya/resolve-patient-identity.ts` |
+| `break-glass` | `packages/server/src/country-pack/kenya/break-glass.ts` |
+| `report-idsr-notification` | `packages/server/src/country-pack/kenya/idsr.ts` |
 
-As more Kenya workflows mature, add matching fixture files for:
-
-- practitioner verification
-- coverage eligibility
-- claim bundle preparation
-- claim-status normalization
+Shared types are in `packages/core/src/kenya.ts`.
 
 ## Adding a new fixture
 

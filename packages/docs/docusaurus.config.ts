@@ -7,14 +7,14 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const config: Config = {
   title: 'Afiax FHIR',
   tagline: 'FHIR-native clinical core for Afiax Enterprise',
-  url: 'https://www.afiax.africa',
+  url: 'https://www.fhirdocs.afiax.africa',
   baseUrl: '/',
   trailingSlash: false,
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
   onDuplicateRoutes: 'throw',
   favicon: 'img/afiax-mark.svg',
-  organizationName: 'mattwamoto',
+  organizationName: 'oortcloudcomputing',
   projectName: 'afiax-fhir',
 
   // Set this to true to enable the faster experimental build mode.
@@ -38,7 +38,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/mattwamoto/afiax-fhir/blob/main/packages/docs/',
+          editUrl: 'https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/docs/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             let items = await defaultSidebarItemsGenerator(args);
             items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
@@ -180,7 +180,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              to: 'https://github.com/mattwamoto/afiax-fhir',
+              to: 'https://github.com/oortcloudcomputing/afiax-fhir',
             },
             {
               label: 'Contact',

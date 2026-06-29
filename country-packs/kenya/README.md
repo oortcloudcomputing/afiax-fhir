@@ -43,9 +43,16 @@ Implemented in this repo now:
 - Afiax-managed Kenya SHA credentials in `/admin/super`
 - `Organization` Kenya facility code capture, DHA lookup, and audited verification
 - `Practitioner` Kenya identity capture, DHA lookup, and audited verification
-- `Coverage` Kenya eligibility lookup and eligibility evidence persistence
+- `Coverage` Kenya eligibility lookup and eligibility evidence persistence — includes AfyaLink v3
+  extended fields (`means_testing_done`, `employment_type`, `employer_name`, `eligible_employee`,
+  `policy_end_employer`)
 - `Claim` Kenya SHA bundle preparation and submit
 - `Claim` Kenya SHA status refresh and local `ClaimResponse` upsert
+- `Claim/$request-preauthorization` — submits a SHA pre-authorization bundle with `Claim.use: preauthorization`
+- Kenya SHR national record publication — `Patient/$publish-national-record` builds a FHIR Bundle document
+  (Patient + optional active Conditions + optional recent Encounters) and publishes it to the AfyaLink
+  SHR endpoint `/v1/shr/patient-record`; publication snapshot persisted on `Patient.extension`;
+  UI panel on `/Patient/{id}` with Include Conditions / Include Encounters toggles
 - optional post-submit Kenya workflow bot
 - optional post-status-refresh Kenya workflow bot
 - IHE ATNA `AuditEvent.action` correctly set to `E` (Execute) for all `operation`, `batch`,
@@ -56,22 +63,37 @@ Implemented in this repo now:
 - KHIS/DHIS2 weekly aggregate export — `$khis-weekly-export` aggregates FHIR Conditions by
   ICD-10 code and pushes MOH 505 weekly counts to KHIS via DHIS2 `dataValueSets` API;
   satisfies Kenya Health Act 2017 s.57–63 and IDSR Technical Guidelines (weekly tier)
-
+- IDSR automatic trigger — `maybeAutoTriggerIdsr()` fires in-process on every Condition create/update;
+  if the Condition carries a Kenya IDSR immediately-notifiable ICD-10 code and has not already been
+  notified, a 24-hour deadline `Task` and `AuditEvent` are created with `purposeOfEvent: PUBHLTH`;
+  satisfies Kenya Health Act 2017 s.57(1) without requiring a FHIR Subscription or separate Bot
+- KHIS weekly scheduler — `POST /admin/projects/:projectId/kenya/provision-khis-scheduler`
+  creates a Bot with `cronString: "0 3 * * 1"` (Monday 06:00 EAT) that iterates all active
+  Organizations and calls `$khis-weekly-export` for each; enables `cron` project feature
 - Break-glass emergency access declaration — `Patient/$break-glass` creates a `Flag`, writes a
   snapshot extension on the `Patient`, emits an `AuditEvent` with `purposeOfEvent: ETREAT`, and
   sends a security alert email; satisfies Kenya DPA 2019 s.25 and Digital Health Act 2023 s.19
+- FHIR security label enforcement — Confidentiality R/V labels block single-resource reads and
+  are stripped from Bundle search results unless the requester holds an active break-glass `Flag`;
+  satisfies Kenya DPA 2019 s.25 and Digital Health Act 2023 s.19
+- DHA Client Registry patient lookup (AfyaLink v3) — `POST /admin/projects/:projectId/kenya/afyalink/patient-lookup`
+  calls `/v3/client-registry/fetch-client` with `agent` param; `KenyaPatientWizard` uses DHA as
+  the sole source of truth (patient must be found in DHA registry before registration is allowed)
+- SHA async callback ingestion — public endpoint `POST /kenya/sha-callback/:projectId` receives
+  SHA adjudication push notifications, optionally verifies HS256 JWT, finds the Claim by bundle ID,
+  upserts `ClaimResponse`, and updates open `Task` records without requiring a full status-check cycle
+- Kenya production runbooks (`compliance/runbooks/`) — DHA outage, SHA outage, credential
+  rotation, SHA callback verification, monthly claim reconciliation, and production cutover
+  checklist with sign-off table
+- Cutover automation script (`scripts/kenya-preflight.sh`) — verifies project settings, HIE
+  connectivity, facility/practitioner presence, callback endpoint, and audit trail tamper-protection
+- Kenya claim queue + reconciliation panel in `/admin/country-pack` — lists Claims with SHA
+  submission snapshots, supports status filtering, and allows per-claim `$check-national-claim-status`
+  trigger
 
 Not implemented yet:
 
-- Subscription + Bot wiring for automatic IDSR trigger on Condition create (operation exists; deployment artifact)
-- Automated weekly KHIS export scheduler (operation exists; Bot + Schedule wiring is a deployment artifact)
-- FHIR security label (Confidentiality code) enforcement for restricted resources
-- DHA callback ingestion for asynchronous SHA updates
-- Kenya claim queue views
-- Kenya reconciliation dashboards
-- Kenya production runbooks and cutover automation
-- Kenya client-registry workflow (DHA Client Registry / national patient ID)
-- Kenya SHR publishing
+- None. All planned Kenya pack features are implemented.
 
 ## Known bugs fixed
 
@@ -116,12 +138,24 @@ Current generic operations with Kenya handlers:
 - `Coverage/$check-coverage`
 - `Claim/$submit-national-claim`
 - `Claim/$check-national-claim-status`
+- `Claim/$request-preauthorization`
+- `Patient/$publish-national-record`
+- `Patient/$resolve-patient-identity`
+- `Patient/$break-glass`
+- `Condition/$report-idsr-notification`
+- `$khis-weekly-export`
 
 Current admin routes that support the Kenya UX:
 
 - `POST /admin/projects/:projectId/kenya/afyalink/test`
 - `POST /admin/projects/:projectId/kenya/afyalink/facility-lookup`
 - `POST /admin/projects/:projectId/kenya/afyalink/practitioner-lookup`
+- `POST /admin/projects/:projectId/kenya/afyalink/patient-lookup`
+- `POST /admin/projects/:projectId/kenya/provision-khis-scheduler`
+
+Current public routes (no Medplum auth — verified by SHA shared secret):
+
+- `POST /kenya/sha-callback/:projectId`
 
 These routes exist to support onboarding and resource-level Kenya UI. They are not the canonical clinical workflow
 surface. The canonical clinical workflow surface remains the FHIR operations above.
@@ -140,9 +174,10 @@ kenyaHieEnvironment=uat|production
 kenyaHieCredentialMode=tenant-managed|afiax-managed
 kenyaShaClaimsEnvironment=uat|production
 kenyaShaClaimsCredentialMode=tenant-managed|afiax-managed
-kenyaHieAgentId=<agent-id>              # optional until client-registry work starts
+kenyaHieAgentId=<agent-id>              # required for v3 client-registry fetch-client
 kenyaClaimSubmitWorkflowBotId=Bot/<id>  # optional
 kenyaClaimStatusWorkflowBotId=Bot/<id>  # optional
+kenyaKhisSchedulerBotId=Bot/<id>        # set automatically by provision-khis-scheduler
 ```
 
 ### 2. Configure credentials
@@ -162,7 +197,7 @@ Kenya SHA secrets:
 ```text
 kenyaShaClaimsAccessKey
 kenyaShaClaimsSecretKey
-kenyaShaClaimsCallbackUrl
+kenyaShaClaimsCallbackUrl   # set this to https://<your-host>/kenya/sha-callback/<projectId>
 ```
 
 For Afiax-managed mode, use `/admin/super`. The same names are stored in `Project.systemSecret`.
@@ -307,6 +342,9 @@ Use these repo-level documents when you need the Kenya implementation contract f
 - `operations/report-idsr-notification.md`
 - `operations/khis-weekly-export.md`
 - `operations/break-glass.md`
+- `operations/publish-national-record.md`
+- `operations/resolve-patient-identity.md`
+- `operations/request-preauthorization.md`
 
 Use these repo-level guides when you need the execution model around those workflows:
 

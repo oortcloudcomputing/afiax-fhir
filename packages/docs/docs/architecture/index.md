@@ -33,12 +33,12 @@ Afiax is structured into four layers:
 Use the architecture docs in this order:
 
 1. read this page to understand the top-level layers
-2. read [Platform foundation](./platform-foundation) to understand the Afiax FHIR versus Medplum naming and scope model
-3. read [Enterprise platform](./enterprise-platform) for the wider system shape
-4. read [Canonical FHIR model](./canonical-model) for the shared data contract
-5. read [Integration boundaries](./integration-boundaries) before adding any adjacent service or connector logic
+2. read [Platform foundation](./platform-foundation.md) to understand the Afiax FHIR versus Medplum naming and scope model
+3. read [Enterprise platform](./enterprise-platform.md) for the wider system shape
+4. read [Canonical FHIR model](./canonical-model.md) for the shared data contract
+5. read [Integration boundaries](./integration-boundaries.md) before adding any adjacent service or connector logic
 6. read the billing, payments, and partner boundary pages when a workflow crosses into enterprise execution
-7. read [Country packs](../country-packs) when you are working on national adaptation
+7. read [Country packs](/docs/country-packs) when you are working on national adaptation
 
 ## Working rules
 
@@ -148,28 +148,28 @@ Interpretation:
 Use the rest of the architecture docs by question:
 
 - if you need the Afiax FHIR versus Medplum scope and naming model:
-  [Platform foundation](./platform-foundation)
+  [Platform foundation](./platform-foundation.md)
 - if you need the broader platform shape:
-  [Enterprise platform](./enterprise-platform)
+  [Enterprise platform](./enterprise-platform.md)
 - if you need the shared data contract:
-  [Canonical FHIR model](./canonical-model)
+  [Canonical FHIR model](./canonical-model.md)
 - if you need the split between reimbursement, payments, and enterprise finance:
-  [Afiax financial architecture](./financial-architecture)
+  [Afiax financial architecture](./financial-architecture.md)
 - if you need to know what stays in or out of Afiax FHIR:
-  [Afiax FHIR integration boundaries](./integration-boundaries)
+  [Afiax FHIR integration boundaries](./integration-boundaries.md)
 - if you need the Afiax Pay payment and wallet boundary:
-  [Afiax FHIR and Afiax Pay boundary](./afiax-pay-boundary)
+  [Afiax FHIR and Afiax Pay boundary](./afiax-pay-boundary.md)
 - if you need the embedded-insurance partner boundary:
-  [Lami embedded insurance boundary](./lami-embedded-insurance-boundary)
+  [Lami embedded insurance boundary](./lami-embedded-insurance-boundary.md)
 - if you need the Afiax Billing, pharmacy, and workforce boundary:
-  [Afiax FHIR and Afiax Billing boundary](./afiax-billing-boundary)
+  [Afiax FHIR and Afiax Billing boundary](./afiax-billing-boundary.md)
 - if you need the concrete billing and pharmacy event contract:
-  [Afiax FHIR and Afiax Billing contract](./afiax-billing-contract)
+  [Afiax FHIR and Afiax Billing contract](./afiax-billing-contract.md)
 - if you need the Afiax FHIR resource-to-Afiax Billing mapping:
-  [Afiax FHIR and Afiax Billing object mapping](./afiax-billing-object-mapping)
+  [Afiax FHIR and Afiax Billing object mapping](./afiax-billing-object-mapping.md)
 - if you need the normalized billing, payment, claim, and pharmacy states:
-  [Afiax FHIR and Afiax Billing status model](./afiax-billing-status-model)
+  [Afiax FHIR and Afiax Billing status model](./afiax-billing-status-model.md)
 - if you need the JSON envelopes and event bodies:
-  [Afiax FHIR and Afiax Billing payload spec](./afiax-billing-payload-spec)
+  [Afiax FHIR and Afiax Billing payload spec](./afiax-billing-payload-spec.md)
 - if you need the country-pack model:
-  [Country packs](../country-packs)
+  [Country packs](/docs/country-packs)

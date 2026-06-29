@@ -227,7 +227,7 @@ This is just a, you know, diagnostic report we have if you search in our, our re
 
 Finally, I'll move on to the documentation. So we invest a lot in our docs and we absolutely, we want feedback. So if anybody is just looks at the docs, they find something they don't. File a GitHub issue. We're happy to talk about it. It's the subject matter for, and the subject matter is very dense.
 
-So like, it's a, it is a tough job to really document it in a way that makes sense for users, but we are working on it. One thing I'll point out here is that we have [sophisticated search](/search). As very popular. And so like, oh, how do I [invite a user](/docs/user-management)? Okay, great. Or, you know, I want to look at observation.
+So like, it's a, it is a tough job to really document it in a way that makes sense for users, but we are working on it. One thing I'll point out here is that we have [sophisticated search](/docs). As very popular. And so like, oh, how do I [invite a user](/docs/user-management)? Okay, great. Or, you know, I want to look at observation.
 
 And documentation is all [in GitHub](https://github.com/medplum/medplum/tree/main/packages/docs), so if you ever wanted to contribute to, to documentation, write some tutorials we would absolutely welcome that. And this is part of our open source project, so again, can just go there. Great. And I think you know, we have our, our core repo and would have our, our lots of tooling and build associated with it.
 

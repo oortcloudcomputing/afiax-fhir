@@ -262,7 +262,7 @@ Interpretation:
 
 ## Related docs
 
-- [Architecture overview](./index)
+- [Architecture overview](./index.md)
 - [Platform foundation](./platform-foundation)
 - [Afiax financial architecture](./financial-architecture)
 - [Afiax FHIR and Afiax Pay boundary](./afiax-pay-boundary)

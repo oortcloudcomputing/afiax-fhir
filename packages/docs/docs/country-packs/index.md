@@ -84,9 +84,9 @@ That pattern is now implemented by the Kenya pack and is the reference model for
 Read the pack docs in this order:
 
 1. this page for the pack model
-2. [Country Pack SDK](./sdk) for the implementation contract
-3. the pack page for the active country, such as [Kenya reference pack](./kenya)
-4. country-specific workflow pages such as [Kenya billing and settlement](./kenya-billing-and-settlement)
+2. [Country Pack SDK](./sdk.md) for the implementation contract
+3. the pack page for the active country, such as [Kenya reference pack](./kenya.md)
+4. country-specific workflow pages such as [Kenya billing and settlement](./kenya-billing-and-settlement.md)
 
 If you are implementing or extending a pack in code, also read the repo-level guides under:
 
@@ -155,6 +155,6 @@ It is not the definition of the whole platform. Shared docs remain pan-African i
 
 ## Related docs
 
-- [Country pack SDK](./sdk)
-- [Kenya reference pack](./kenya)
-- [Kenya billing and settlement](./kenya-billing-and-settlement)
+- [Country pack SDK](./sdk.md)
+- [Kenya reference pack](./kenya.md)
+- [Kenya billing and settlement](./kenya-billing-and-settlement.md)

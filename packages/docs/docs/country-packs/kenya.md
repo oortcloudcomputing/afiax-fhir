@@ -575,7 +575,7 @@ If you are extending the Kenya UI, start here:
 
 ## Related docs
 
-- [Country packs](./index)
+- [Country packs](./index.md)
 - [Country pack SDK](./sdk)
 - [Kenya billing and settlement](./kenya-billing-and-settlement)
 - [Canonical FHIR model](../architecture/canonical-model)

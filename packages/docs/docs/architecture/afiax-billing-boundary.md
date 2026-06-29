@@ -210,7 +210,7 @@ Use the dedicated mapping page when implementing field-level adapters.
 
 ## Related docs
 
-- [Architecture overview](./index)
+- [Architecture overview](./index.md)
 - [Afiax financial architecture](./financial-architecture)
 - [Enterprise platform](./enterprise-platform)
 - [Integration boundaries](./integration-boundaries)

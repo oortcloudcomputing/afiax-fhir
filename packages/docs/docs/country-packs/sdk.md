@@ -283,5 +283,5 @@ Before merging a country-pack change, check:
 
 ## Related docs
 
-- [Country packs](./index)
+- [Country packs](./index.md)
 - [Kenya reference pack](./kenya)

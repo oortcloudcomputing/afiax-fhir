@@ -223,7 +223,7 @@ Interpretation:
 
 ## Related docs
 
-- [Architecture overview](./index)
+- [Architecture overview](./index.md)
 - [Enterprise platform](./enterprise-platform)
 - [Canonical FHIR model](./canonical-model)
 - [Afiax financial architecture](./financial-architecture)

@@ -177,19 +177,32 @@ Use this when a Kenya claim fails or stalls:
 7. inspect the local `ClaimResponse`
 8. inspect the workflow-bot status if enterprise handoff was expected
 
-## Release and hardening expectations
+## Runbooks
 
-Before treating the Kenya pack as production-ready, this folder should contain at least:
+These operational documents are in `runbooks/`:
 
-- DHA outage runbook
-- SHA outage runbook
-- credential rotation runbook
-- callback verification procedure
-- replay procedure for failed claim follow-up
-- Kenya claim reconciliation runbook
-- production cutover checklist
+| File | Purpose |
+|---|---|
+| `00-production-cutover-checklist.md` | Full go-live checklist with sign-off table |
+| `01-credential-rotation.md` | AfyaLink HIE and SHA Claims credential rotation |
+| `02-dha-outage.md` | DHA/AfyaLink outage response and recovery |
+| `03-sha-outage.md` | SHA Claims outage response and recovery |
+| `04-callback-verification.md` | SHA callback verification, diagnosis, and manual replay |
+| `05-claim-reconciliation.md` | Monthly claim reconciliation against SHA settlement |
 
-Without those runbooks, the product may still function, but the operational compliance story is incomplete.
+## Cutover automation
+
+`scripts/kenya-preflight.sh` automates the machine-testable items from the production cutover
+checklist. It verifies project settings, HIE connectivity, presence of verified facilities and
+practitioners, callback endpoint reachability, and audit trail tamper-protection.
+
+```bash
+MEDPLUM_BASE_URL=https://api.your-host.com \
+MEDPLUM_CLIENT_ID=<client-id> \
+MEDPLUM_CLIENT_SECRET=<client-secret> \
+PROJECT_ID=<project-id> \
+./country-packs/kenya/scripts/kenya-preflight.sh
+```
 
 ## Engineering guardrails
 

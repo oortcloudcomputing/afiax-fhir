@@ -258,7 +258,7 @@ Interpretation:
 
 ## Related docs
 
-- [Architecture overview](./index)
+- [Architecture overview](./index.md)
 - [Platform foundation](./platform-foundation)
 - [Enterprise platform](./enterprise-platform)
 - [Afiax financial architecture](./financial-architecture)

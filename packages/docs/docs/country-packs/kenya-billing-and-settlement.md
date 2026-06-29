@@ -230,7 +230,7 @@ Do not start from the enterprise side if the Kenya claim workflow in Afiax FHIR 
 ## Related docs
 
 - [Kenya reference pack](./kenya)
-- [Country packs](./index)
+- [Country packs](./index.md)
 - [Billing](/docs/billing)
 - [Afiax financial architecture](../architecture/financial-architecture)
 - [Afiax FHIR and Afiax Billing boundary](../architecture/afiax-billing-boundary)

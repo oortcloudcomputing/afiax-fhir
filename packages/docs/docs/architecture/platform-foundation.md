@@ -105,7 +105,7 @@ When writing docs in this repo:
 
 ## Related docs
 
-- [Architecture overview](./index)
+- [Architecture overview](./index.md)
 - [Enterprise platform](./enterprise-platform)
 - [Canonical FHIR model](./canonical-model)
 - [Country packs](../country-packs)

@@ -29,23 +29,17 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
-      - name: Install root dependencies
+      - name: Install all workspace dependencies
         run: npm ci --ignore-scripts
 
-      - name: Build core (required by docs copy-core-docs script)
-        run: |
-          cd packages/core
-          npm ci --ignore-scripts
-          npm run build
+      - name: Build core (generates API docs used by docs site)
+        run: npm run build --workspace=packages/core
 
       - name: Build docs
-        run: |
-          cd packages/docs
-          npm ci --ignore-scripts
-          npm run build
+        run: npm run build --workspace=packages/docs
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 

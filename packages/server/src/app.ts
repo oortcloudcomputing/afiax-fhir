@@ -45,6 +45,7 @@ import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
+import { initKafkaProducer, shutdownKafkaProducer } from './kafka';
 import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
@@ -230,6 +231,9 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
 export async function initAppServices(config: MedplumServerConfig): Promise<void> {
   loadStructureDefinitions();
+  if (config.kafka) {
+    initKafkaProducer(config.kafka);
+  }
   initRedis(config);
   await initDatabase(config);
   await seedDatabase(config);
@@ -257,6 +261,7 @@ export async function shutdownApp(): Promise<void> {
   await closeWorkers();
   await closeDatabase();
   await closeRedis();
+  await shutdownKafkaProducer();
   closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it

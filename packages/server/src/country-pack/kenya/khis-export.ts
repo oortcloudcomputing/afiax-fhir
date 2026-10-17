@@ -4,7 +4,7 @@ import type { KhisWeeklyExportStatus } from '@medplum/core';
 import {
   buildKenyaKhisWeeklyExportExtension,
   createReference,
-  isKenyaKhisWeeklyNotificationCode,
+  findKenyaKhisWeeklyCondition,
   KenyaKhisCorrelationIdSystem,
   khisWeekPeriodToDateRange,
   normalizeErrorString,
@@ -200,7 +200,7 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   };
 }
 
-async function aggregateConditionsForWeek(
+export async function aggregateConditionsForWeek(
   ctx: AuthenticatedRequestContext,
   facilityId: string,
   weekStart: Date,
@@ -218,40 +218,49 @@ async function aggregateConditionsForWeek(
     count: 1000,
   });
 
-  const counts = new Map<string, { suspected: number; confirmed: number; deaths: number }>();
+  // Keyed by the table entry's ICD-11 code. A Condition counts once per entry, even when it carries
+  // several codings for the same disease (e.g. ICD-11 plus an additional ICD-10 coding).
+  const counts = new Map<string, { legacyCode: string; suspected: number; confirmed: number; deaths: number }>();
 
   for (const entry of bundle.entry ?? []) {
     const condition = entry.resource;
     if (!condition) {
       continue;
     }
+    const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
+    if (verificationStatus === 'refuted' || verificationStatus === 'entered-in-error') {
+      continue;
+    }
 
+    const matched = new Set<string>();
     for (const coding of condition.code?.coding ?? []) {
-      const code = coding.code ?? '';
-      if (!isKenyaKhisWeeklyNotificationCode(code)) {
+      const weeklyCondition = findKenyaKhisWeeklyCondition(coding);
+      if (!weeklyCondition || matched.has(weeklyCondition.icd11)) {
         continue;
       }
+      matched.add(weeklyCondition.icd11);
 
-      let agg = counts.get(code);
-      if (!agg) {
-        agg = { suspected: 0, confirmed: 0, deaths: 0 };
-        counts.set(code, agg);
-      }
-      const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
-
+      const agg = counts.get(weeklyCondition.icd11) ?? {
+        legacyCode: weeklyCondition.icd10,
+        suspected: 0,
+        confirmed: 0,
+        deaths: 0,
+      };
       if (verificationStatus === 'confirmed') {
-        counts.set(code, { ...agg, confirmed: agg.confirmed + 1 });
-      } else if (verificationStatus !== 'refuted' && verificationStatus !== 'entered-in-error') {
-        counts.set(code, { ...agg, suspected: agg.suspected + 1 });
+        agg.confirmed++;
+      } else {
+        agg.suspected++;
       }
+      counts.set(weeklyCondition.icd11, agg);
     }
   }
 
-  return Array.from(counts.entries()).map(([code, counts]) => ({
+  return Array.from(counts.entries()).map(([code, agg]) => ({
     code,
-    suspected: counts.suspected,
-    confirmed: counts.confirmed,
-    deaths: counts.deaths,
+    legacyCode: agg.legacyCode,
+    suspected: agg.suspected,
+    confirmed: agg.confirmed,
+    deaths: agg.deaths,
   }));
 }
 

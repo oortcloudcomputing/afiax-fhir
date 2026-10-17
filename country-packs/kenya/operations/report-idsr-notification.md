@@ -10,7 +10,7 @@ under the Kenya Integrated Disease Surveillance and Response framework.
 - Kenya Health Act 2017, s.57(1): health facility manager must notify the County Director
   of Health within 24 hours of suspecting or diagnosing a notifiable condition
 - Kenya IDSR Technical Guidelines, 3rd Edition (2024): defines the list of immediately and
-  weekly notifiable conditions with their ICD-10 codes
+  weekly notifiable conditions; MoH/DHA have adopted ICD-11 MMS as the national coding standard
 - IHR 2005 (International Health Regulations): governs international notification obligations
   for Public Health Emergencies of International Concern (PHEIC)
 
@@ -18,7 +18,7 @@ under the Kenya Integrated Disease Surveillance and Response framework.
 
 Call this operation when:
 
-1. A clinician records a `Condition` whose `Condition.code` contains an ICD-10 code on the
+1. A clinician records a `Condition` whose `Condition.code` contains an ICD-11 MMS code on the
    Kenya IDSR immediately notifiable conditions list
 2. This must happen on clinical suspicion — not after confirmed laboratory diagnosis
 
@@ -30,32 +30,35 @@ The operation can be triggered:
 
 ## Immediately notifiable conditions (Kenya IDSR 2024)
 
-| ICD-10 | Condition |
-|--------|-----------|
-| A00 | Cholera |
-| A01 | Typhoid fever |
-| A20 | Plague |
-| A22 | Anthrax |
-| A33 | Neonatal tetanus |
-| A36 | Diphtheria |
-| A39 | Meningococcal disease |
-| A80 | Acute poliomyelitis / AFP |
-| A82 | Rabies |
-| A95 | Yellow fever |
-| A96 | Arenaviral haemorrhagic fever |
-| A98.4 | Ebola virus disease |
-| A98.5 | Marburg virus disease |
-| A99 | Unspecified viral haemorrhagic fever |
-| B03 | Smallpox |
-| B04 | Mpox (monkeypox) |
-| B05 | Measles |
-| J09 | Influenza A (novel/pandemic subtype) |
-| U07.1 | COVID-19 |
+| ICD-11 MMS | ICD-10 (legacy) | Condition |
+|------------|-----------------|-----------|
+| 1A00 | A00 | Cholera |
+| 1A07 | A01 | Typhoid fever |
+| 1B93 | A20 | Plague |
+| 1B97 | A22 | Anthrax |
+| 1C15 | A33 | Neonatal tetanus |
+| 1C17 | A36 | Diphtheria |
+| 1C1C | A39 | Meningococcal disease |
+| 1C81 | A80 | Acute poliomyelitis / AFP |
+| 1C82 | A82 | Rabies |
+| 1D47 | A95 | Yellow fever |
+| 1D61 | A96 | Arenaviral haemorrhagic fever |
+| 1D60.0 | A98.4 | Ebola virus disease |
+| 1D60.1 | A98.5 | Marburg virus disease |
+| 1D86 | A99 | Viral haemorrhagic fever, not elsewhere classified |
+| 1E70 | B03 | Smallpox |
+| 1E71 | B04 | Mpox (monkeypox) |
+| 1F03 | B05 | Measles |
+| 1E31 | J09 | Influenza A (novel/pandemic subtype) |
+| RA01.0 | U07.1 | COVID-19 |
+
+ICD-11 codes match hierarchically: a child code such as `1B93.2` (pneumonic plague) or a
+postcoordinated code such as `1A00&XN6S0` triggers its listed parent.
 
 ## What the operation does
 
 1. Reads the `Condition`.
-2. Checks `Condition.code.coding[]` for a matching IDSR ICD-10 code.
+2. Checks `Condition.code.coding[]` for a matching IDSR ICD-11 code (legacy ICD-10 codes are also matched).
 3. Creates a `Task` (code: `idsr-immediate-notification`) with:
    - 24-hour `restriction.period` deadline (Kenya Health Act 2017 s.57)
    - `focus` pointing to the `Condition`
@@ -77,7 +80,7 @@ The operation can be triggered:
 |-----------|------|-------------|
 | `status` | code | `pending` or `error` |
 | `correlationId` | string | UUID for end-to-end tracing |
-| `conditionCode` | code | Matched ICD-10 code |
+| `conditionCode` | code | Matched code as recorded on the Condition (ICD-11, or ICD-10 for legacy records) |
 | `conditionDisplay` | string | Human-readable condition name |
 | `message` | string | Result description |
 | `notifiedAt` | dateTime | ISO timestamp of notification creation |
@@ -119,7 +122,7 @@ The bot reads the `Condition` reference from the subscription payload and calls
 
 ## FHIR ValueSet
 
-The full set of immediately notifiable ICD-10 codes is defined at:
+The full set of immediately notifiable ICD-11 codes (with legacy ICD-10 equivalents) is defined at:
 
 ```
 https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions
@@ -131,10 +134,10 @@ See `country-packs/kenya/valuesets/kenya-idsr-immediate-notification-conditions.
 
 If the operation returns an error:
 
-1. Confirm the `Condition.code.coding[]` contains an IHR/IDSR ICD-10 code
-2. Confirm the coding `system` is `http://hl7.org/fhir/sid/icd-10` or omitted
+1. Confirm the `Condition.code.coding[]` contains an IDSR ICD-11 code (or a descendant of one)
+2. Confirm the coding `system` is `http://id.who.int/icd/release/11/mms` (or `http://hl7.org/fhir/sid/icd-10` for legacy records)
 3. Check the created `Task` and `AuditEvent` for the correlation ID
 
 ## Known issues
 
-None. Introduced in this branch (2026-06-14).
+None. Introduced 2026-06-14; ICD-11 code table corrected and hierarchical matching added 2026-10-17.

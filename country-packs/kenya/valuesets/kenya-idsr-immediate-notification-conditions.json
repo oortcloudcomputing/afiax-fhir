@@ -2,24 +2,51 @@
   "resourceType": "ValueSet",
   "id": "kenya-idsr-immediate-notification-conditions",
   "url": "https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "name": "KenyaIdsrImmediateNotificationConditions",
   "title": "Kenya IDSR Immediately Notifiable Conditions",
   "status": "active",
   "experimental": false,
-  "date": "2026-06-14",
+  "date": "2026-10-17",
   "publisher": "Oortcloud Computing Limited (Afiax Connected Healthcare)",
   "contact": [
     {
       "telecom": [
-        { "system": "url", "value": "https://afiax.africa" }
+        {
+          "system": "url",
+          "value": "https://afiax.africa"
+        }
       ]
     }
   ],
-  "description": "ICD-10 codes for diseases that must be reported to the County Director of Health within 24 hours of clinical suspicion under Kenya Health Act 2017 s.57, Kenya IDSR Technical Guidelines 3rd Edition (2024), and IHR 2005.",
-  "copyright": "ICD-10 codes copyright WHO. ValueSet definition copyright Oortcloud Computing Limited.",
+  "description": "ICD-11 MMS codes (Kenya national standard, MoH/DHA) for diseases that must be reported to the County Director of Health within 24 hours of clinical suspicion under Kenya Health Act 2017 s.57, Kenya IDSR Technical Guidelines 3rd Edition (2024), and IHR 2005. Afiax also matches descendants of each ICD-11 code (e.g. 1B93.2 under 1B93). The ICD-10 codes are retained only to match legacy records.",
+  "copyright": "ICD-11 and ICD-10 codes copyright WHO. ValueSet definition copyright Oortcloud Computing Limited.",
   "compose": {
     "include": [
+      {
+        "system": "http://id.who.int/icd/release/11/mms",
+        "concept": [
+          { "code": "1A00", "display": "Cholera" },
+          { "code": "1A07", "display": "Typhoid fever" },
+          { "code": "1B93", "display": "Plague" },
+          { "code": "1B97", "display": "Anthrax" },
+          { "code": "1C15", "display": "Neonatal tetanus" },
+          { "code": "1C17", "display": "Diphtheria" },
+          { "code": "1C1C", "display": "Meningococcal disease" },
+          { "code": "1C81", "display": "Acute poliomyelitis / AFP" },
+          { "code": "1C82", "display": "Rabies" },
+          { "code": "1D47", "display": "Yellow fever" },
+          { "code": "1D61", "display": "Arenaviral haemorrhagic fever" },
+          { "code": "1D60.0", "display": "Ebola virus disease" },
+          { "code": "1D60.1", "display": "Marburg virus disease" },
+          { "code": "1D86", "display": "Viral haemorrhagic fever, not elsewhere classified" },
+          { "code": "1E70", "display": "Smallpox" },
+          { "code": "1E71", "display": "Mpox (monkeypox)" },
+          { "code": "1F03", "display": "Measles" },
+          { "code": "1E31", "display": "Influenza A (novel/pandemic subtype)" },
+          { "code": "RA01.0", "display": "COVID-19" }
+        ]
+      },
       {
         "system": "http://hl7.org/fhir/sid/icd-10",
         "concept": [
@@ -30,13 +57,13 @@
           { "code": "A33", "display": "Neonatal tetanus" },
           { "code": "A36", "display": "Diphtheria" },
           { "code": "A39", "display": "Meningococcal disease" },
-          { "code": "A80", "display": "Acute poliomyelitis (AFP)" },
+          { "code": "A80", "display": "Acute poliomyelitis / AFP" },
           { "code": "A82", "display": "Rabies" },
           { "code": "A95", "display": "Yellow fever" },
           { "code": "A96", "display": "Arenaviral haemorrhagic fever" },
           { "code": "A98.4", "display": "Ebola virus disease" },
           { "code": "A98.5", "display": "Marburg virus disease" },
-          { "code": "A99", "display": "Unspecified viral haemorrhagic fever" },
+          { "code": "A99", "display": "Viral haemorrhagic fever, not elsewhere classified" },
           { "code": "B03", "display": "Smallpox" },
           { "code": "B04", "display": "Mpox (monkeypox)" },
           { "code": "B05", "display": "Measles" },

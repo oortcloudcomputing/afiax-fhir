@@ -94,13 +94,13 @@ describe('handleKenyaIdsrNotification', () => {
     const ctx = buildCtx();
     const condition = buildCondition([
       { code: 'CA23' }, // Asthma (ICD-11) — not notifiable
-      { code: '1C1E.0' }, // Meningococcal disease (ICD-11) — notifiable
+      { code: '1C1C' }, // Meningococcal disease (ICD-11) — notifiable
     ]);
 
     const result = await handleKenyaIdsrNotification({ ctx, condition, correlationId: 'corr-4' });
 
     expect(result.status).toBe('pending');
-    expect(result.conditionCode).toBe('1C1E.0');
+    expect(result.conditionCode).toBe('1C1C');
     expect(result.conditionDisplay).toBe('Meningococcal disease');
   });
 

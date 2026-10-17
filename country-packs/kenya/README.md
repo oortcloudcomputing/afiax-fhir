@@ -58,15 +58,20 @@ Implemented in this repo now:
 - IHE ATNA `AuditEvent.action` correctly set to `E` (Execute) for all `operation`, `batch`,
   and `transaction` subtypes — satisfies HMPR 2025 Reg.12(c)(i)
 - IDSR immediate notification — `Condition/$report-idsr-notification` creates a 24-hour deadline
-  `Task` and `AuditEvent` when a Condition carries a Kenya IDSR ICD-10 code; satisfies Kenya
+  `Task` and `AuditEvent` when a Condition carries a Kenya IDSR ICD-11 MMS code (legacy ICD-10 also matched); satisfies Kenya
   Health Act 2017 s.57 and IDSR Technical Guidelines 3rd Edition (2024)
 - KHIS/DHIS2 weekly aggregate export — `$khis-weekly-export` aggregates FHIR Conditions by
-  ICD-10 code and pushes MOH 505 weekly counts to KHIS via DHIS2 `dataValueSets` API;
+  ICD-11 MMS condition (one count per Condition) and pushes MOH 505 weekly counts to KHIS via DHIS2 `dataValueSets` API;
   satisfies Kenya Health Act 2017 s.57–63 and IDSR Technical Guidelines (weekly tier)
 - IDSR automatic trigger — `maybeAutoTriggerIdsr()` fires in-process on every Condition create/update;
-  if the Condition carries a Kenya IDSR immediately-notifiable ICD-10 code and has not already been
+  if the Condition carries a Kenya IDSR immediately-notifiable ICD-11 code (or legacy ICD-10 code) and has not already been
   notified, a 24-hour deadline `Task` and `AuditEvent` are created with `purposeOfEvent: PUBHLTH`;
   satisfies Kenya Health Act 2017 s.57(1) without requiring a FHIR Subscription or separate Bot
+- ICD-11 diagnosis coding — every `Condition.code` and `Claim.diagnosis[].diagnosisCodeableConcept`
+  written in a Kenya project must carry an ICD-11 MMS coding (`http://id.who.int/icd/release/11/mms`),
+  the MoH/DHA national standard; ICD-10 may be added only as a secondary coding. Enforced in the
+  repository write path (covers create, update, PATCH and batch/transaction). Project setting
+  `kenyaIcd11DiagnosisEnforcement`: `enforce` (default), `warn` or `off`
 - KHIS weekly scheduler — `POST /admin/projects/:projectId/kenya/provision-khis-scheduler`
   creates a Bot with `cronString: "0 3 * * 1"` (Monday 06:00 EAT) that iterates all active
   Organizations and calls `$khis-weekly-export` for each; enables `cron` project feature

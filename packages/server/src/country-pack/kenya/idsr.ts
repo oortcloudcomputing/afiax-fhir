@@ -4,8 +4,8 @@ import type { IdsrNotificationStatus } from '@medplum/core';
 import {
   buildKenyaIdsrNotificationExtension,
   createReference,
+  findKenyaIdsrImmediateCondition,
   getKenyaIdsrConditionCode,
-  KenyaIdsrConditionDisplay,
   KenyaIdsrCorrelationIdSystem,
   normalizeErrorString,
 } from '@medplum/core';
@@ -51,7 +51,7 @@ export async function handleKenyaIdsrNotification(input: IdsrNotificationInput):
     };
   }
 
-  const conditionDisplay = KenyaIdsrConditionDisplay[conditionCode] ?? conditionCode;
+  const conditionDisplay = findKenyaIdsrImmediateCondition(conditionCode)?.display ?? conditionCode;
   const notifiedAt = new Date().toISOString();
 
   let task: (Task & { id: string }) | undefined;

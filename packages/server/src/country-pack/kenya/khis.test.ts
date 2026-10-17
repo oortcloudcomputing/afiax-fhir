@@ -13,10 +13,13 @@ function buildProject(overrides?: Partial<Project>): Project {
     setting: [
       { name: 'kenyaKhisEnvironment', valueString: 'uat' },
       { name: 'kenyaKhisMoh505DataSetUid', valueString: 'MOH505_UID' },
-      { name: 'kenyaKhisDataElementMapping', valueString: JSON.stringify({
-        'A00': { suspected: 'CHOLERA_S_UID', confirmed: 'CHOLERA_C_UID', deaths: 'CHOLERA_D_UID' },
-        'B05': { suspected: 'MEASLES_S_UID', confirmed: 'MEASLES_C_UID' },
-      }) },
+      {
+        name: 'kenyaKhisDataElementMapping',
+        valueString: JSON.stringify({
+          A00: { suspected: 'CHOLERA_S_UID', confirmed: 'CHOLERA_C_UID', deaths: 'CHOLERA_D_UID' },
+          B05: { suspected: 'MEASLES_S_UID', confirmed: 'MEASLES_C_UID' },
+        }),
+      },
     ],
     secret: [
       { name: 'kenyaKhisUsername', valueString: 'admin' },
@@ -71,6 +74,14 @@ describe('buildKhisDataValueSet', () => {
     expect(confirmedCholera?.value).toBe(1);
   });
 
+  test('falls back to a mapping keyed by the legacy ICD-10 code', () => {
+    const creds = getKhisCredentials(buildProject());
+    const payload = buildKhisDataValueSet(creds, '2026W24', 'ORG', [
+      { code: '1A00', legacyCode: 'A00', suspected: 2, confirmed: 1, deaths: 0 },
+    ]);
+    expect(payload.dataValues.find((d) => d.dataElement === 'CHOLERA_S_UID')?.value).toBe(2);
+  });
+
   test('skips conditions not in mapping', () => {
     const creds = getKhisCredentials(buildProject());
     const payload = buildKhisDataValueSet(creds, '2026W24', 'ORG', [
@@ -116,16 +127,26 @@ describe('pushKhisDataValueSet', () => {
     });
 
     const creds = getKhisCredentials(buildProject());
-    await expect(pushKhisDataValueSet(creds, {
-      dataSet: 'UID', period: '2026W24', orgUnit: 'ORG', dataValues: [],
-    })).rejects.toThrow('HTTP 401');
+    await expect(
+      pushKhisDataValueSet(creds, {
+        dataSet: 'UID',
+        period: '2026W24',
+        orgUnit: 'ORG',
+        dataValues: [],
+      })
+    ).rejects.toThrow('HTTP 401');
   });
 
   test('throws on network failure', async () => {
     (fetch as unknown as jest.Mock).mockRejectedValueOnce(new Error('ECONNREFUSED'));
     const creds = getKhisCredentials(buildProject());
-    await expect(pushKhisDataValueSet(creds, {
-      dataSet: 'UID', period: '2026W24', orgUnit: 'ORG', dataValues: [],
-    })).rejects.toThrow('ECONNREFUSED');
+    await expect(
+      pushKhisDataValueSet(creds, {
+        dataSet: 'UID',
+        period: '2026W24',
+        orgUnit: 'ORG',
+        dataValues: [],
+      })
+    ).rejects.toThrow('ECONNREFUSED');
   });
 });

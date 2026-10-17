@@ -58,12 +58,12 @@ Do not put these things in this folder:
 
 When this folder begins to fill out, the most useful first artifacts are:
 
-1. **Kenya IDSR Immediate Notification ValueSet** — the set of ICD-10-CM codes for diseases requiring
+1. **Kenya IDSR Immediate Notification ValueSet** — the set of ICD-11 MMS codes (with legacy ICD-10 equivalents) for diseases requiring
    same-day notification to the County Director of Health under Kenya Health Act 2017 s.57 and the
    Kenya IDSR Technical Guidelines 3rd Edition (2024). Binds to `Condition.code` for IDSR subscription
    monitoring. URI: `https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions`
-   — **in progress for v1.1 (IDSR phase)**
-2. **Kenya IDSR Weekly Reporting ValueSet** — ICD-10-CM codes for all diseases reported in the MOH 505
+   — **published** (`kenya-idsr-immediate-notification-conditions.json`, v2.0.0)
+2. **Kenya IDSR Weekly Reporting ValueSet** — ICD-11 MMS codes (with legacy ICD-10 equivalents) for all diseases reported in the MOH 505
    weekly epidemiological bulletin. Binds to the KHIS/DHIS2 export aggregation filter.
    URI: `https://afiax.africa/ValueSet/kenya-idsr-weekly-reporting-conditions` — **in progress**
 3. Kenya practitioner identification type value set

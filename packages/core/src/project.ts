@@ -197,12 +197,15 @@ export const KenyaProjectSettingNames = {
   claimWorkflowBotId: 'kenyaClaimWorkflowBotId',
   afyaLinkEnvironment: 'kenyaAfyaLinkEnvironment',
   afyaLinkCredentialMode: 'kenyaAfyaLinkCredentialMode',
+  erpnextEnabled: 'erpnextEnabled',
+  erpnextWorkflowBotId: 'kenyaErpNextWorkflowBotId',
   khisEnvironment: 'kenyaKhisEnvironment',
   khisCredentialMode: 'kenyaKhisCredentialMode',
-  // JSON string: Record<ICD10code, {suspected?: string, confirmed?: string, deaths?: string}>
+  // JSON string: Record<ICD11orICD10code, {suspected?: string, confirmed?: string, deaths?: string}>
   khisDataElementMapping: 'kenyaKhisDataElementMapping',
   // DHIS2 dataset UID for MOH 505
   khisMoh505DataSetUid: 'kenyaKhisMoh505DataSetUid',
+  khisSchedulerBotId: 'kenyaKhisSchedulerBotId',
   // Email address for security alerts (break-glass, unusual access). Defaults to security@afiax.africa
   securityAlertEmail: 'kenyaSecurityAlertEmail',
 } as const;
@@ -222,6 +225,29 @@ export const KenyaShaClaimsSecretNames = {
   secretKey: 'kenyaShaClaimsSecretKey',
   callbackUrl: 'kenyaShaClaimsCallbackUrl',
   baseUrl: 'kenyaShaClaimsBaseUrl',
+} as const;
+
+// ERPNext is Afiax-managed only — credentials always read from systemSecret.
+export const KenyaErpNextSecretNames = {
+  baseUrl: 'erpnextBaseUrl',
+  apiKey: 'erpnextApiKey',
+  apiSecret: 'erpnextApiSecret',
+  company: 'erpnextCompany',
+} as const;
+
+// M-Pesa Daraja API — Afiax-managed, stored in systemSecret.
+export const KenyaMpesaSecretNames = {
+  consumerKey: 'mpesaConsumerKey',
+  consumerSecret: 'mpesaConsumerSecret',
+  shortCode: 'mpesaShortCode',
+  passkey: 'mpesaPasskey',
+} as const;
+
+// Afiax Pay — Afiax-managed, stored in systemSecret.
+export const KenyaAfiaxPaySecretNames = {
+  baseUrl: 'afiaxPayBaseUrl',
+  apiKey: 'afiaxPayApiKey',
+  secretKey: 'afiaxPaySecretKey',
 } as const;
 
 export const KenyaKhisSecretNames = {
@@ -322,6 +348,10 @@ export function getKenyaClaimWorkflowBotId(source: ProjectSettingsSource): strin
   return getProjectSettingString(source, KenyaProjectSettingNames.claimWorkflowBotId)?.trim() || undefined;
 }
 
+export function getKenyaKhisSchedulerBotId(source: ProjectSettingsSource): string | undefined {
+  return getProjectSettingString(source, KenyaProjectSettingNames.khisSchedulerBotId)?.trim() || undefined;
+}
+
 export function getKenyaAfyaLinkEnvironment(source: ProjectSettingsSource): KenyaAfyaLinkEnvironment {
   return getKenyaHieEnvironment(source);
 }
@@ -354,4 +384,12 @@ export function getKenyaKhisDataElementMapping(source: ProjectSettingsSource): R
   } catch {
     return undefined;
   }
+}
+
+export function isKenyaErpNextEnabled(source: ProjectSettingsSource): boolean {
+  return getProjectSettingBoolean(source, KenyaProjectSettingNames.erpnextEnabled) ?? false;
+}
+
+export function getKenyaErpNextWorkflowBotId(source: ProjectSettingsSource): string | undefined {
+  return getProjectSettingString(source, KenyaProjectSettingNames.erpnextWorkflowBotId)?.trim() || undefined;
 }

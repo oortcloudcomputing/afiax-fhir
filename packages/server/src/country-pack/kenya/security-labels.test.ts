@@ -83,11 +83,16 @@ describe('enforceKenyaSecurityLabels', () => {
     await expect(enforceKenyaSecurityLabels(ctx, result)).resolves.toBe(result);
   });
 
-  test('passes through for Bundles (search results not individually enforced at route level)', async () => {
-    const ctx = makeCtx({});
+  test('strips restricted entries from Bundle search results when requester has no break-glass', async () => {
+    const ctx = makeCtx({ flags: [] });
     const bundle: Bundle = { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: restrictedPatient() }] };
     const result: FhirResponse = [allOk, bundle];
-    await expect(enforceKenyaSecurityLabels(ctx, result)).resolves.toBe(result);
+    const filtered = await enforceKenyaSecurityLabels(ctx, result);
+    // The restricted patient is stripped; a new Bundle with empty entries is returned
+    expect(filtered).not.toBe(result);
+    const filteredBundle = filtered[1] as Bundle;
+    expect(filteredBundle.entry).toHaveLength(0);
+    expect(filteredBundle.total).toBe(0);
   });
 
   test('denies access when patient is restricted and no break-glass flag exists', async () => {

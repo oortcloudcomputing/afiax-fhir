@@ -16,6 +16,7 @@ import { sendEmail } from '../../email/email';
 import {
   AuditEventOutcome,
   createAuditEvent,
+  logAuditEvent,
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
@@ -203,7 +204,8 @@ async function createBreakGlassAuditEvent(
     ...(flag ? [{ what: createReference(flag) }] : []),
   ];
 
-  await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  const saved = await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  logAuditEvent(saved);
 }
 
 async function sendBreakGlassAlert(

@@ -6,6 +6,7 @@ import {
   getAfyaLinkToken,
   getKenyaAfyaLinkCredentials,
   KenyaAfyaLinkSecretNames,
+  searchAfyaLinkClientRegistry,
   searchAfyaLinkEligibility,
   searchAfyaLinkFacility,
   searchAfyaLinkPractitioner,
@@ -310,6 +311,10 @@ describe('Kenya AfyaLink connector', () => {
         request_id_number: '12345678',
         message: null,
         status: null,
+        client_portal_details: null,
+        eligible_employee: null,
+        means_testing_details: null,
+        policy_end_employer: null,
       },
     });
 
@@ -322,5 +327,82 @@ describe('Kenya AfyaLink connector', () => {
         }),
       })
     );
+  });
+
+  describe('client registry (check-client)', () => {
+    const projectWithAgent: Project = {
+      resourceType: 'Project',
+      id: 'project-1',
+      secret: [
+        { name: KenyaAfyaLinkSecretNames.consumerKey, valueString: 'consumer-key' },
+        { name: KenyaAfyaLinkSecretNames.username, valueString: 'username' },
+        { name: KenyaAfyaLinkSecretNames.password, valueString: 'password' },
+      ],
+      setting: [{ name: 'kenyaHieAgentId', valueString: 'AGENT00123' }],
+    };
+
+    test('looks up client using /check-client with agent param', async () => {
+      (fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: jest.fn(async () => ({
+            status: 'success',
+            message: 'Client found.',
+            data: {
+              client_id: 'CR1234567890',
+              first_name: 'John',
+              last_name: 'Doe',
+              identification_type: 'National ID',
+              identification_number: '12345678',
+              account_status: 'Active',
+            },
+          })),
+        });
+
+      const credentials = getKenyaAfyaLinkCredentials(projectWithAgent);
+      await expect(searchAfyaLinkClientRegistry(credentials, 'National ID', '12345678')).resolves.toMatchObject({
+        message: {
+          found: 1,
+          client_registry_id: 'CR1234567890',
+          first_name: 'John',
+          last_name: 'Doe',
+          account_status: 'Active',
+        },
+      });
+
+      expect(fetch).toHaveBeenLastCalledWith(
+        'https://uat.dha.go.ke/check-client?identification_type=National%20ID&identification_number=12345678&agent=AGENT00123',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ Authorization: 'Bearer jwt-token' }),
+        })
+      );
+    });
+
+    test('returns found:0 on 404', async () => {
+      (fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        })
+        .mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn(async () => 'Not found') });
+
+      const credentials = getKenyaAfyaLinkCredentials(projectWithAgent);
+      await expect(searchAfyaLinkClientRegistry(credentials, 'National ID', '99999999')).resolves.toEqual({
+        message: { found: 0, identification_type: 'National ID', identification_number: '99999999' },
+      });
+    });
+
+    test('throws when agentId is missing', async () => {
+      const credentials = getKenyaAfyaLinkCredentials(project);
+      await expect(searchAfyaLinkClientRegistry(credentials, 'National ID', '12345678')).rejects.toThrow(
+        'AfyaLink client registry requires an agent ID'
+      );
+    });
   });
 });

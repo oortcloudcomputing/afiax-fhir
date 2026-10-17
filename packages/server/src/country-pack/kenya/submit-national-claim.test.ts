@@ -169,6 +169,16 @@ describe('submitKenyaNationalClaim', () => {
       }),
     };
 
+    // systemRepo.readResource is called by the fire-and-forget ERPNext sync; no ERPNext credentials → sync is skipped
+    const systemRepo = {
+      readResource: jest.fn(async () => ({
+        resourceType: 'Project',
+        id: 'project-123',
+        setting: [{ name: 'erpnextEnabled', valueBoolean: false }],
+        systemSecret: [],
+      })),
+    };
+
     (fetch as unknown as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
@@ -179,6 +189,7 @@ describe('submitKenyaNationalClaim', () => {
     const result = await submitKenyaNationalClaim({
       ctx: {
         repo,
+        systemRepo,
         project: {
           resourceType: 'Project',
           id: 'project-123',

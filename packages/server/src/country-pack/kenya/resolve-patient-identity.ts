@@ -13,6 +13,7 @@ import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
   createAuditEvent,
+  logAuditEvent,
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
@@ -201,7 +202,8 @@ async function writeAuditEvent(
     { description: `Patient identity resolution (correlationId: ${correlationId})` }
   );
   auditEvent.entity = [...(auditEvent.entity ?? []), { what: createReference(patient) }];
-  await ctx.systemRepo.createResource(auditEvent);
+  const saved = await ctx.systemRepo.createResource(auditEvent);
+  logAuditEvent(saved);
 }
 
 function errorResult(

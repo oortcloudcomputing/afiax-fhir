@@ -6,6 +6,7 @@ import { handleResolvePatientIdentity } from './resolve-patient-identity';
 jest.mock('../../util/auditevent', () => ({
   ...jest.requireActual('../../util/auditevent'),
   createAuditEvent: jest.fn(() => ({ resourceType: 'AuditEvent', entity: [] })),
+  logAuditEvent: jest.fn(),
   AuditEventOutcome: { Success: '0', MinorFailure: '4', MajorFailure: '12' },
   RestfulOperationType: { code: 'rest', system: 'http://terminology.hl7.org/CodeSystem/audit-event-type' },
   OperationInteraction: { code: 'operation', system: 'http://hl7.org/fhir/restful-interaction' },

@@ -10,6 +10,8 @@ import type {
   Extension,
   Identifier,
   Organization,
+  Patient,
+  PaymentNotice,
   Practitioner,
   Reference,
   Task,
@@ -1597,56 +1599,74 @@ function getKenyaCoverageEligibilitySystem(
 //   Kenya Health Act 2017 s.57-63
 //   Kenya IDSR Technical Guidelines 3rd Edition (2024)
 //   IHR 2005 (International Health Regulations)
+//   KNTS ICD-11 adoption directive (MoH Kenya, 2024)
 // Notification must reach the County Director of Health within 24 hours of
 // clinical suspicion (not confirmed diagnosis).
+//
+// CODING SYSTEM TRANSITION: Kenya National Terminology Service (KNTS) has
+// adopted ICD-11 MMS as the standard for morbidity and mortality coding.
+// Both ICD-11 (preferred) and ICD-10 (backward compatibility) are accepted.
+// New Condition resources should use system: KenyaIdsrCodeSystemIcd11.
+// ICD-11 codes validated against WHO ICD-11 MMS linearization; cross-check
+// new additions at https://icd.who.int/browse/2024-01/mms/en before committing.
 
-export const KenyaIdsrImmediateNotificationCodes = [
-  'A00',   // Cholera
-  'A01',   // Typhoid fever
-  'A20',   // Plague
-  'A22',   // Anthrax
-  'A33',   // Neonatal tetanus
-  'A36',   // Diphtheria
-  'A39',   // Meningococcal disease
-  'A80',   // Acute poliomyelitis / AFP
-  'A82',   // Rabies
-  'A95',   // Yellow fever
-  'A96',   // Arenaviral haemorrhagic fever
-  'A98.4', // Ebola virus disease
-  'A98.5', // Marburg virus disease
-  'A99',   // Unspecified viral haemorrhagic fever
-  'B03',   // Smallpox
-  'B04',   // Mpox (monkeypox)
-  'B05',   // Measles
-  'J09',   // Influenza A (novel/pandemic subtype)
-  'U07.1', // COVID-19
+/** Preferred FHIR system URI for ICD-11 MMS (KNTS-mandated standard). */
+export const KenyaIdsrCodeSystemIcd11 = 'http://id.who.int/icd/release/11/mms';
+/** Legacy FHIR system URI for ICD-10 (retained for backward compatibility). */
+export const KenyaIdsrCodeSystemIcd10 = 'http://hl7.org/fhir/sid/icd-10';
+/** @deprecated Use KenyaIdsrCodeSystemIcd11. Kept for backward compatibility. */
+export const KenyaIdsrCodeSystem = KenyaIdsrCodeSystemIcd11;
+
+/** Dual-coded IDSR/KHIS notifiable condition entry. */
+export interface KenyaIdsrNotifiableCondition {
+  /** ICD-11 MMS linearization code (KNTS-mandated standard). */
+  readonly icd11: string;
+  /** ICD-10 code retained for backward compatibility during transition. */
+  readonly icd10: string;
+  readonly display: string;
+}
+
+// ─── Immediately notifiable (24-hour reporting) ───────────────────────────────
+export const KenyaIdsrImmediateNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
+  { icd11: '1A00',   icd10: 'A00',   display: 'Cholera' },
+  { icd11: '1A07',   icd10: 'A01',   display: 'Typhoid fever' },
+  { icd11: '1B9E',   icd10: 'A20',   display: 'Plague' },
+  { icd11: '1B93',   icd10: 'A22',   display: 'Anthrax' },
+  { icd11: '1C1A.0', icd10: 'A33',   display: 'Neonatal tetanus' },
+  { icd11: '1C42',   icd10: 'A36',   display: 'Diphtheria' },
+  { icd11: '1C1E.0', icd10: 'A39',   display: 'Meningococcal disease' },
+  { icd11: '1C81',   icd10: 'A80',   display: 'Acute poliomyelitis / AFP' },
+  { icd11: '1C82',   icd10: 'A82',   display: 'Rabies' },
+  { icd11: '1D47',   icd10: 'A95',   display: 'Yellow fever' },
+  { icd11: '1D65',   icd10: 'A96',   display: 'Arenaviral haemorrhagic fever' },
+  { icd11: '1D60',   icd10: 'A98.4', display: 'Ebola virus disease' },
+  { icd11: '1D62',   icd10: 'A98.5', display: 'Marburg virus disease' },
+  { icd11: '1D6Y',   icd10: 'A99',   display: 'Unspecified viral haemorrhagic fever' },
+  { icd11: '1E70',   icd10: 'B03',   display: 'Smallpox' },
+  { icd11: '1E71',   icd10: 'B04',   display: 'Mpox (monkeypox)' },
+  { icd11: '1F03',   icd10: 'B05',   display: 'Measles' },
+  { icd11: '1E31',   icd10: 'J09',   display: 'Influenza A (novel/pandemic subtype)' },
+  { icd11: 'RA01.0', icd10: 'U07.1', display: 'COVID-19' },
 ] as const;
 
-export type KenyaIdsrImmediateNotificationCode = (typeof KenyaIdsrImmediateNotificationCodes)[number];
+// Derived sets for efficient lookup
+const _icd11ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd11));
+const _icd10ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd10));
 
-export const KenyaIdsrConditionDisplay: Record<string, string> = {
-  'A00': 'Cholera',
-  'A01': 'Typhoid fever',
-  'A20': 'Plague',
-  'A22': 'Anthrax',
-  'A33': 'Neonatal tetanus',
-  'A36': 'Diphtheria',
-  'A39': 'Meningococcal disease',
-  'A80': 'Acute poliomyelitis / AFP',
-  'A82': 'Rabies',
-  'A95': 'Yellow fever',
-  'A96': 'Arenaviral haemorrhagic fever',
-  'A98.4': 'Ebola virus disease',
-  'A98.5': 'Marburg virus disease',
-  'A99': 'Unspecified viral haemorrhagic fever',
-  'B03': 'Smallpox',
-  'B04': 'Mpox (monkeypox)',
-  'B05': 'Measles',
-  'J09': 'Influenza A (novel/pandemic subtype)',
-  'U07.1': 'COVID-19',
-};
+// Backward-compatible flat code array (ICD-10 values, for existing callers)
+export const KenyaIdsrImmediateNotificationCodes = KenyaIdsrImmediateNotifiableConditions.map(
+  (c) => c.icd10
+) as string[];
 
-export const KenyaIdsrCodeSystem = 'http://hl7.org/fhir/sid/icd-10';
+export type KenyaIdsrImmediateNotificationCode = (typeof KenyaIdsrImmediateNotifiableConditions)[number]['icd10'];
+
+// Display map includes both ICD-11 and ICD-10 keys so lookups work regardless of
+// which system was matched.
+export const KenyaIdsrConditionDisplay: Record<string, string> = Object.fromEntries([
+  ...KenyaIdsrImmediateNotifiableConditions.map((c) => [c.icd11, c.display]),
+  ...KenyaIdsrImmediateNotifiableConditions.map((c) => [c.icd10, c.display]),
+]);
+
 export const KenyaIdsrValueSetUrl = 'https://afiax.africa/ValueSet/kenya-idsr-immediate-notification-conditions';
 export const KenyaIdsrCorrelationIdSystem = 'https://afiax.africa/identifier/idsr-correlation-id';
 
@@ -1671,13 +1691,29 @@ export interface KenyaIdsrNotificationSnapshot {
   readonly task?: Reference<Task>;
 }
 
+/** Returns true if `code` is a notifiable condition code in either ICD-11 or ICD-10. */
 export function isKenyaIdsrImmediateNotificationCode(code: string): boolean {
-  return (KenyaIdsrImmediateNotificationCodes as readonly string[]).includes(code);
+  return _icd11ImmediateSet.has(code) || _icd10ImmediateSet.has(code);
 }
 
+/**
+ * Returns the first notifiable disease code found in a Condition's codings.
+ * Accepts ICD-11 MMS (preferred) and ICD-10 (backward compatibility).
+ * System URI is checked when present; codings without a system are matched
+ * against both sets to support legacy data.
+ */
 export function getKenyaIdsrConditionCode(condition: { code?: { coding?: Array<{ system?: string; code?: string }> } }): string | undefined {
   for (const coding of condition.code?.coding ?? []) {
-    if (coding.code && isKenyaIdsrImmediateNotificationCode(coding.code)) {
+    if (!coding.code) continue;
+    const sys = coding.system;
+
+    // ICD-11 — preferred system
+    if ((!sys || sys === KenyaIdsrCodeSystemIcd11) && _icd11ImmediateSet.has(coding.code)) {
+      return coding.code;
+    }
+
+    // ICD-10 — accepted during transition period
+    if ((!sys || sys === KenyaIdsrCodeSystemIcd10) && _icd10ImmediateSet.has(coding.code)) {
       return coding.code;
     }
   }
@@ -1718,95 +1754,57 @@ export function buildKenyaIdsrNotificationExtension(
 // Weekly notifiable conditions extend the immediate list with endemic diseases
 // tracked in the MOH 505 bulletin (malaria, TB, ARI, diarrhoeal diseases, etc.).
 
-export const KenyaKhisWeeklyNotificationCodes = [
-  // ── Immediately notifiable (superset of KenyaIdsrImmediateNotificationCodes) ──
-  'A00',   // Cholera
-  'A01',   // Typhoid fever
-  'A20',   // Plague
-  'A22',   // Anthrax
-  'A33',   // Neonatal tetanus
-  'A36',   // Diphtheria
-  'A39',   // Meningococcal disease
-  'A80',   // Acute poliomyelitis / AFP
-  'A82',   // Rabies
-  'A95',   // Yellow fever
-  'A96',   // Arenaviral haemorrhagic fever
-  'A98.4', // Ebola virus disease
-  'A98.5', // Marburg virus disease
-  'A99',   // Unspecified viral haemorrhagic fever
-  'B03',   // Smallpox
-  'B04',   // Mpox (monkeypox)
-  'B05',   // Measles
-  'J09',   // Influenza A (novel/pandemic subtype)
-  'U07.1', // COVID-19
+// ─── KHIS weekly notifiable conditions (MOH 505 + IDSR superset) ──────────────
+// Dual ICD-11/ICD-10 coding matches the IDSR section above.
+// Note: ICD-10 A92 (other mosquito-borne fevers) maps to two distinct ICD-11
+// codes — Rift Valley fever (1D43) and Chikungunya (1D40) are listed separately.
+// Similarly, G00 (bacterial meningitis) is organism-agnostic in ICD-10 but has
+// organism-specific children in ICD-11; the meningococcal parent (1C1E) is used
+// here for MOH 505 aggregate surveillance.
+
+export const KenyaKhisWeeklyNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
+  // ── Immediately notifiable (superset) ────────────────────────────────────────
+  ...KenyaIdsrImmediateNotifiableConditions,
   // ── Weekly reportable (MOH 505 endemic disease surveillance) ─────────────────
-  'A15',   // Respiratory tuberculosis (confirmed bacteriologically/histologically)
-  'A16',   // Respiratory tuberculosis (not confirmed)
-  'A17',   // Tuberculosis of nervous system
-  'A06',   // Amoebiasis
-  'A09',   // Other and unspecified gastroenteritis and colitis (diarrhoeal diseases)
-  'A27',   // Leptospirosis
-  'A30',   // Leprosy
-  'A75',   // Typhus fever
-  'A90',   // Dengue fever
-  'A92',   // Other mosquito-borne viral fevers (Rift Valley Fever, Chikungunya)
-  'B50',   // Plasmodium falciparum malaria
-  'B51',   // Plasmodium vivax malaria
-  'B54',   // Unspecified malaria
-  'B55',   // Leishmaniasis
-  'B74',   // Filariasis
-  'G00',   // Bacterial meningitis
-  'G03',   // Meningitis due to other and unspecified causes
-  'J00',   // Acute nasopharyngitis (common cold)
-  'J06',   // Acute upper respiratory infections, multiple and unspecified
-  'J18',   // Pneumonia, unspecified organism
-  'K52',   // Other and unspecified noninfective gastroenteritis and colitis
+  { icd11: '1B10',   icd10: 'A15',   display: 'Tuberculosis (confirmed)' },
+  { icd11: '1B11',   icd10: 'A16',   display: 'Tuberculosis (unconfirmed)' },
+  { icd11: '1B12',   icd10: 'A17',   display: 'Tuberculosis of nervous system' },
+  { icd11: '1A36',   icd10: 'A06',   display: 'Amoebiasis' },
+  { icd11: '1A90',   icd10: 'A09',   display: 'Diarrhoeal diseases' },
+  { icd11: '1B90',   icd10: 'A27',   display: 'Leptospirosis' },
+  { icd11: '1B20',   icd10: 'A30',   display: 'Leprosy' },
+  { icd11: '1C30',   icd10: 'A75',   display: 'Typhus fever' },
+  { icd11: '1D2Z',   icd10: 'A90',   display: 'Dengue fever' },
+  { icd11: '1D43',   icd10: 'A92',   display: 'Rift Valley fever' },
+  { icd11: '1D40',   icd10: 'A92',   display: 'Chikungunya' },
+  { icd11: '1F40.0', icd10: 'B50',   display: 'Malaria (P. falciparum)' },
+  { icd11: '1F40.1', icd10: 'B51',   display: 'Malaria (P. vivax)' },
+  { icd11: '1F4Z',   icd10: 'B54',   display: 'Malaria (unspecified)' },
+  { icd11: '1F5Z',   icd10: 'B55',   display: 'Leishmaniasis' },
+  { icd11: '1F67.Z', icd10: 'B74',   display: 'Filariasis' },
+  { icd11: '1C1E',   icd10: 'G00',   display: 'Bacterial meningitis' },
+  { icd11: 'DB50.Z', icd10: 'G03',   display: 'Meningitis (other/unspecified)' },
+  { icd11: 'CA04',   icd10: 'J00',   display: 'Acute nasopharyngitis (ARI)' },
+  { icd11: 'CA0Z',   icd10: 'J06',   display: 'Acute upper respiratory infection' },
+  { icd11: 'CA40.0Z',icd10: 'J18',   display: 'Pneumonia (unspecified)' },
+  { icd11: 'DA91.Z', icd10: 'K52',   display: 'Acute gastroenteritis' },
 ] as const;
 
-export type KenyaKhisWeeklyNotificationCode = (typeof KenyaKhisWeeklyNotificationCodes)[number];
+// Derived sets for efficient lookup (union of immediate + weekly-only)
+const _icd11WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd11));
+const _icd10WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd10));
 
-export const KenyaKhisWeeklyConditionDisplay: Record<string, string> = {
-  'A00': 'Cholera',
-  'A01': 'Typhoid fever',
-  'A06': 'Amoebiasis',
-  'A09': 'Diarrhoeal diseases',
-  'A15': 'Tuberculosis (confirmed)',
-  'A16': 'Tuberculosis (unconfirmed)',
-  'A17': 'Tuberculosis of nervous system',
-  'A20': 'Plague',
-  'A22': 'Anthrax',
-  'A27': 'Leptospirosis',
-  'A30': 'Leprosy',
-  'A33': 'Neonatal tetanus',
-  'A36': 'Diphtheria',
-  'A39': 'Meningococcal disease',
-  'A75': 'Typhus fever',
-  'A80': 'Acute poliomyelitis / AFP',
-  'A82': 'Rabies',
-  'A90': 'Dengue fever',
-  'A92': 'Other mosquito-borne viral fevers (RVF, Chikungunya)',
-  'A95': 'Yellow fever',
-  'A96': 'Arenaviral haemorrhagic fever',
-  'A98.4': 'Ebola virus disease',
-  'A98.5': 'Marburg virus disease',
-  'A99': 'Unspecified viral haemorrhagic fever',
-  'B03': 'Smallpox',
-  'B04': 'Mpox (monkeypox)',
-  'B05': 'Measles',
-  'B50': 'Malaria (P. falciparum)',
-  'B51': 'Malaria (P. vivax)',
-  'B54': 'Malaria (unspecified)',
-  'B55': 'Leishmaniasis',
-  'B74': 'Filariasis',
-  'G00': 'Bacterial meningitis',
-  'G03': 'Meningitis (other/unspecified)',
-  'J00': 'Acute nasopharyngitis (ARI)',
-  'J06': 'Acute upper respiratory infection',
-  'J09': 'Influenza A (novel/pandemic subtype)',
-  'J18': 'Pneumonia (unspecified)',
-  'K52': 'Acute gastroenteritis',
-  'U07.1': 'COVID-19',
-};
+// Backward-compatible flat code array (ICD-10 values)
+export const KenyaKhisWeeklyNotificationCodes = KenyaKhisWeeklyNotifiableConditions.map(
+  (c) => c.icd10
+) as string[];
+
+export type KenyaKhisWeeklyNotificationCode = (typeof KenyaKhisWeeklyNotifiableConditions)[number]['icd10'];
+
+export const KenyaKhisWeeklyConditionDisplay: Record<string, string> = Object.fromEntries([
+  ...KenyaKhisWeeklyNotifiableConditions.map((c) => [c.icd11, c.display]),
+  ...KenyaKhisWeeklyNotifiableConditions.map((c) => [c.icd10, c.display]),
+]);
 
 export const KenyaKhisBaseUrls = {
   uat: 'https://hiskenya-uat.health.go.ke',
@@ -1842,8 +1840,9 @@ export interface KenyaKhisWeeklyExportSnapshot {
   readonly task?: Reference<Task>;
 }
 
+/** Returns true if `code` is a weekly-reportable condition in either ICD-11 or ICD-10. */
 export function isKenyaKhisWeeklyNotificationCode(code: string): boolean {
-  return (KenyaKhisWeeklyNotificationCodes as readonly string[]).includes(code);
+  return _icd11WeeklySet.has(code) || _icd10WeeklySet.has(code);
 }
 
 export function toKhisWeekPeriod(date: Date): string {
@@ -2244,5 +2243,346 @@ export function getKenyaIdsrNotificationSnapshot(
     notifiedAt: child(KenyaIdsrNotificationExtension.notifiedAt),
     correlationId: child(KenyaIdsrNotificationExtension.correlationId),
     task: taskVal?.valueReference as Reference<Task> | undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Kenya insurance type identifier
+// ---------------------------------------------------------------------------
+
+export const KenyaInsuranceTypeSystem = 'https://afiax.africa/kenya/identifier/insurance-type';
+
+export type KenyaInsuranceType = 'sha' | 'cic' | 'jubilee' | 'aar' | 'britam' | 'madison' | 'private-manual';
+
+export function getKenyaInsuranceType(organization: Organization): KenyaInsuranceType | undefined {
+  const id = organization.identifier?.find((i) => i.system === KenyaInsuranceTypeSystem);
+  return id?.value as KenyaInsuranceType | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Private insurer preauthorization (Coverage extension)
+// ---------------------------------------------------------------------------
+
+export const KenyaPrivateInsurancePreauthorizationExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-private-insurance-preauthorization',
+  insurerReference: 'insurerReference',
+  insurerName: 'insurerName',
+  preauthorizationCode: 'preauthorizationCode',
+  approvedAmount: 'approvedAmount',
+  currency: 'currency',
+  validFrom: 'validFrom',
+  validTo: 'validTo',
+  approvedProcedures: 'approvedProcedures',
+  notes: 'notes',
+  capturedAt: 'capturedAt',
+  claimReference: 'claimReference',
+  claimResponseReference: 'claimResponseReference',
+} as const;
+
+export interface KenyaPrivateInsurancePreauthorizationSnapshot {
+  readonly insurerReference?: string;
+  readonly insurerName?: string;
+  readonly preauthorizationCode?: string;
+  readonly approvedAmount?: number;
+  readonly currency?: string;
+  readonly validFrom?: string;
+  readonly validTo?: string;
+  readonly approvedProcedures?: string;
+  readonly notes?: string;
+  readonly capturedAt?: string;
+  readonly claimReference?: string;
+  readonly claimResponseReference?: string;
+}
+
+export function buildKenyaPrivateInsurancePreauthorizationExtension(
+  input: KenyaPrivateInsurancePreauthorizationSnapshot
+): Extension {
+  const children: Extension[] = [
+    ...(input.insurerReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerReference, valueString: input.insurerReference }] : []),
+    ...(input.insurerName ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerName, valueString: input.insurerName }] : []),
+    ...(input.preauthorizationCode ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.preauthorizationCode, valueString: input.preauthorizationCode }] : []),
+    ...(input.approvedAmount !== undefined ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.approvedAmount, valueDecimal: input.approvedAmount }] : []),
+    ...(input.currency ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.currency, valueCode: input.currency }] : []),
+    ...(input.validFrom ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validFrom, valueDate: input.validFrom }] : []),
+    ...(input.validTo ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validTo, valueDate: input.validTo }] : []),
+    ...(input.approvedProcedures ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.approvedProcedures, valueString: input.approvedProcedures }] : []),
+    ...(input.notes ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.notes, valueString: input.notes }] : []),
+    ...(input.capturedAt ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.capturedAt, valueDateTime: input.capturedAt }] : []),
+    ...(input.claimReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.claimReference, valueString: input.claimReference }] : []),
+    ...(input.claimResponseReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.claimResponseReference, valueString: input.claimResponseReference }] : []),
+  ];
+  return { url: KenyaPrivateInsurancePreauthorizationExtension.baseUrl, extension: children };
+}
+
+export function getKenyaPrivateInsurancePreauthorizationSnapshot(
+  coverage: Coverage
+): KenyaPrivateInsurancePreauthorizationSnapshot | undefined {
+  const base = KenyaPrivateInsurancePreauthorizationExtension.baseUrl;
+  const parentExt = coverage.extension?.find((e) => e.url === base);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueString ?? val?.valueCode ?? val?.valueDate ?? val?.valueDateTime ?? undefined;
+  }
+  function childDecimal(url: string): number | undefined {
+    return parentExt?.extension?.find((e) => e.url === url)?.valueDecimal ?? undefined;
+  }
+  return {
+    insurerReference: child(KenyaPrivateInsurancePreauthorizationExtension.insurerReference),
+    insurerName: child(KenyaPrivateInsurancePreauthorizationExtension.insurerName),
+    preauthorizationCode: child(KenyaPrivateInsurancePreauthorizationExtension.preauthorizationCode),
+    approvedAmount: childDecimal(KenyaPrivateInsurancePreauthorizationExtension.approvedAmount),
+    currency: child(KenyaPrivateInsurancePreauthorizationExtension.currency),
+    validFrom: child(KenyaPrivateInsurancePreauthorizationExtension.validFrom),
+    validTo: child(KenyaPrivateInsurancePreauthorizationExtension.validTo),
+    approvedProcedures: child(KenyaPrivateInsurancePreauthorizationExtension.approvedProcedures),
+    notes: child(KenyaPrivateInsurancePreauthorizationExtension.notes),
+    capturedAt: child(KenyaPrivateInsurancePreauthorizationExtension.capturedAt),
+    claimReference: child(KenyaPrivateInsurancePreauthorizationExtension.claimReference),
+    claimResponseReference: child(KenyaPrivateInsurancePreauthorizationExtension.claimResponseReference),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ERPNext patient customer sync (Patient extension)
+// ---------------------------------------------------------------------------
+
+export const KenyaErpNextPatientExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-erpnext-customer',
+  customerName: 'customerName',
+  syncedAt: 'syncedAt',
+  status: 'status',
+  message: 'message',
+} as const;
+
+export interface KenyaErpNextPatientSnapshot {
+  readonly customerName?: string;
+  readonly syncedAt?: string;
+  readonly status?: 'synced' | 'error';
+  readonly message?: string;
+}
+
+export function buildKenyaErpNextPatientExtension(input: KenyaErpNextPatientSnapshot): Extension {
+  const children: Extension[] = [
+    ...(input.customerName ? [{ url: KenyaErpNextPatientExtension.customerName, valueString: input.customerName }] : []),
+    ...(input.syncedAt ? [{ url: KenyaErpNextPatientExtension.syncedAt, valueDateTime: input.syncedAt }] : []),
+    ...(input.status ? [{ url: KenyaErpNextPatientExtension.status, valueCode: input.status }] : []),
+    ...(input.message ? [{ url: KenyaErpNextPatientExtension.message, valueString: input.message }] : []),
+  ];
+  return { url: KenyaErpNextPatientExtension.baseUrl, extension: children };
+}
+
+export function getKenyaErpNextPatientSnapshot(patient: Patient): KenyaErpNextPatientSnapshot | undefined {
+  const base = KenyaErpNextPatientExtension.baseUrl;
+  const parentExt = patient.extension?.find((e) => e.url === base);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueString ?? val?.valueCode ?? val?.valueDateTime ?? undefined;
+  }
+  return {
+    customerName: child(KenyaErpNextPatientExtension.customerName),
+    syncedAt: child(KenyaErpNextPatientExtension.syncedAt),
+    status: child(KenyaErpNextPatientExtension.status) as KenyaErpNextPatientSnapshot['status'],
+    message: child(KenyaErpNextPatientExtension.message),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ERPNext claim billing submission (Claim extension)
+// ---------------------------------------------------------------------------
+
+export type KenyaErpNextPayerType = 'sha' | 'cic' | 'jubilee' | 'aar' | 'britam' | 'madison' | 'patient' | 'other';
+export type KenyaErpNextModeOfPayment = 'sha-claims' | 'private-insurance' | 'cash' | 'mpesa' | 'afiax-pay' | 'card';
+export type KenyaErpNextPatientPaymentStatus = 'pending' | 'confirmed' | 'failed';
+export type KenyaErpNextSubmissionStatus = 'invoice-created' | 'partial' | 'fully-settled' | 'error';
+
+export interface KenyaErpNextPaymentEntry {
+  readonly payerType: KenyaErpNextPayerType;
+  readonly payerName: string;
+  readonly paymentEntryName: string;
+  readonly amount: number;
+  readonly currency: string;
+  readonly modeOfPayment: KenyaErpNextModeOfPayment;
+  readonly approvalCode?: string;
+  readonly confirmedAt?: string;
+  readonly pendingCallbackRef?: string;
+  readonly patientPaymentStatus?: KenyaErpNextPatientPaymentStatus;
+}
+
+export const KenyaErpNextSubmissionExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-erpnext-submission',
+  invoiceName: 'invoiceName',
+  invoiceTotal: 'invoiceTotal',
+  currency: 'currency',
+  status: 'status',
+  payments: 'payments',
+  totalConfirmed: 'totalConfirmed',
+  patientDue: 'patientDue',
+  message: 'message',
+  syncedAt: 'syncedAt',
+} as const;
+
+export interface KenyaErpNextSubmissionSnapshot {
+  readonly invoiceName?: string;
+  readonly invoiceTotal?: number;
+  readonly currency?: string;
+  readonly status?: KenyaErpNextSubmissionStatus;
+  readonly payments?: KenyaErpNextPaymentEntry[];
+  readonly totalConfirmed?: number;
+  readonly patientDue?: number;
+  readonly message?: string;
+  readonly syncedAt?: string;
+}
+
+export function buildKenyaErpNextSubmissionExtension(input: KenyaErpNextSubmissionSnapshot): Extension {
+  const children: Extension[] = [
+    ...(input.invoiceName ? [{ url: KenyaErpNextSubmissionExtension.invoiceName, valueString: input.invoiceName }] : []),
+    ...(input.invoiceTotal !== undefined ? [{ url: KenyaErpNextSubmissionExtension.invoiceTotal, valueDecimal: input.invoiceTotal }] : []),
+    ...(input.currency ? [{ url: KenyaErpNextSubmissionExtension.currency, valueCode: input.currency }] : []),
+    ...(input.status ? [{ url: KenyaErpNextSubmissionExtension.status, valueCode: input.status }] : []),
+    ...(input.payments?.length ? [{ url: KenyaErpNextSubmissionExtension.payments, valueString: JSON.stringify(input.payments) }] : []),
+    ...(input.totalConfirmed !== undefined ? [{ url: KenyaErpNextSubmissionExtension.totalConfirmed, valueDecimal: input.totalConfirmed }] : []),
+    ...(input.patientDue !== undefined ? [{ url: KenyaErpNextSubmissionExtension.patientDue, valueDecimal: input.patientDue }] : []),
+    ...(input.message ? [{ url: KenyaErpNextSubmissionExtension.message, valueString: input.message }] : []),
+    ...(input.syncedAt ? [{ url: KenyaErpNextSubmissionExtension.syncedAt, valueDateTime: input.syncedAt }] : []),
+  ];
+  return { url: KenyaErpNextSubmissionExtension.baseUrl, extension: children };
+}
+
+export function getKenyaErpNextSubmissionSnapshot(claim: Claim): KenyaErpNextSubmissionSnapshot | undefined {
+  const base = KenyaErpNextSubmissionExtension.baseUrl;
+  const parentExt = claim.extension?.find((e) => e.url === base);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueString ?? val?.valueCode ?? val?.valueDateTime ?? undefined;
+  }
+  function childDecimal(url: string): number | undefined {
+    return parentExt?.extension?.find((e) => e.url === url)?.valueDecimal ?? undefined;
+  }
+  const paymentsRaw = child(KenyaErpNextSubmissionExtension.payments);
+  let payments: KenyaErpNextPaymentEntry[] | undefined;
+  if (paymentsRaw) {
+    try {
+      payments = JSON.parse(paymentsRaw) as KenyaErpNextPaymentEntry[];
+    } catch {
+      payments = undefined;
+    }
+  }
+  return {
+    invoiceName: child(KenyaErpNextSubmissionExtension.invoiceName),
+    invoiceTotal: childDecimal(KenyaErpNextSubmissionExtension.invoiceTotal),
+    currency: child(KenyaErpNextSubmissionExtension.currency),
+    status: child(KenyaErpNextSubmissionExtension.status) as KenyaErpNextSubmissionStatus | undefined,
+    payments,
+    totalConfirmed: childDecimal(KenyaErpNextSubmissionExtension.totalConfirmed),
+    patientDue: childDecimal(KenyaErpNextSubmissionExtension.patientDue),
+    message: child(KenyaErpNextSubmissionExtension.message),
+    syncedAt: child(KenyaErpNextSubmissionExtension.syncedAt),
+  };
+}
+
+export function addPaymentToErpNextSnapshot(
+  existing: KenyaErpNextSubmissionSnapshot,
+  payment: KenyaErpNextPaymentEntry
+): KenyaErpNextSubmissionSnapshot {
+  const payments = [...(existing.payments ?? []).filter((p) => p.paymentEntryName !== payment.paymentEntryName), payment];
+  const totalConfirmed = payments
+    .filter((p) => !p.pendingCallbackRef && p.patientPaymentStatus !== 'pending' && p.patientPaymentStatus !== 'failed')
+    .reduce((sum, p) => sum + p.amount, 0);
+  const patientDue = Math.max(0, (existing.invoiceTotal ?? 0) - totalConfirmed);
+  const fullySettled = patientDue === 0 && (existing.invoiceTotal ?? 0) > 0;
+  return {
+    ...existing,
+    payments,
+    totalConfirmed,
+    patientDue,
+    status: fullySettled ? 'fully-settled' : 'partial',
+    syncedAt: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Patient payment tracking (PaymentNotice extension)
+// Stores method, gateway reference, and confirmation state so callback
+// handlers (M-Pesa, Afiax Pay) can locate and complete the payment.
+// ---------------------------------------------------------------------------
+
+export type KenyaPatientPaymentMethod = 'cash' | 'card' | 'mpesa-manual' | 'mpesa-stk' | 'afiax-pay';
+
+export const KenyaPatientPaymentExtension = {
+  baseUrl: 'https://afiax.africa/fhir/StructureDefinition/kenya-patient-payment',
+  method: 'method',
+  paymentStatus: 'paymentStatus',
+  amount: 'amount',
+  currency: 'currency',
+  gatewayReference: 'gatewayReference',
+  transactionRef: 'transactionRef',
+  phone: 'phone',
+  paymentEntryName: 'paymentEntryName',
+  confirmedAt: 'confirmedAt',
+  failureReason: 'failureReason',
+} as const;
+
+export interface KenyaPatientPaymentSnapshot {
+  readonly method?: KenyaPatientPaymentMethod;
+  readonly paymentStatus?: KenyaErpNextPatientPaymentStatus;
+  readonly amount?: number;
+  readonly currency?: string;
+  readonly gatewayReference?: string;
+  readonly transactionRef?: string;
+  readonly phone?: string;
+  readonly paymentEntryName?: string;
+  readonly confirmedAt?: string;
+  readonly failureReason?: string;
+}
+
+export function buildKenyaPatientPaymentExtension(input: KenyaPatientPaymentSnapshot): Extension {
+  const children: Extension[] = [
+    ...(input.method ? [{ url: KenyaPatientPaymentExtension.method, valueCode: input.method }] : []),
+    ...(input.paymentStatus ? [{ url: KenyaPatientPaymentExtension.paymentStatus, valueCode: input.paymentStatus }] : []),
+    ...(input.amount !== undefined ? [{ url: KenyaPatientPaymentExtension.amount, valueDecimal: input.amount }] : []),
+    ...(input.currency ? [{ url: KenyaPatientPaymentExtension.currency, valueCode: input.currency }] : []),
+    ...(input.gatewayReference ? [{ url: KenyaPatientPaymentExtension.gatewayReference, valueString: input.gatewayReference }] : []),
+    ...(input.transactionRef ? [{ url: KenyaPatientPaymentExtension.transactionRef, valueString: input.transactionRef }] : []),
+    ...(input.phone ? [{ url: KenyaPatientPaymentExtension.phone, valueString: input.phone }] : []),
+    ...(input.paymentEntryName ? [{ url: KenyaPatientPaymentExtension.paymentEntryName, valueString: input.paymentEntryName }] : []),
+    ...(input.confirmedAt ? [{ url: KenyaPatientPaymentExtension.confirmedAt, valueDateTime: input.confirmedAt }] : []),
+    ...(input.failureReason ? [{ url: KenyaPatientPaymentExtension.failureReason, valueString: input.failureReason }] : []),
+  ];
+  return { url: KenyaPatientPaymentExtension.baseUrl, extension: children };
+}
+
+export function getKenyaPatientPaymentSnapshot(paymentNotice: PaymentNotice): KenyaPatientPaymentSnapshot | undefined {
+  const base = KenyaPatientPaymentExtension.baseUrl;
+  const parentExt = paymentNotice.extension?.find((e) => e.url === base);
+  if (!parentExt?.extension?.length) {
+    return undefined;
+  }
+  function child(url: string): string | undefined {
+    const val = parentExt?.extension?.find((e) => e.url === url);
+    return val?.valueString ?? val?.valueCode ?? val?.valueDateTime ?? undefined;
+  }
+  function childDecimal(url: string): number | undefined {
+    return parentExt?.extension?.find((e) => e.url === url)?.valueDecimal ?? undefined;
+  }
+  return {
+    method: child(KenyaPatientPaymentExtension.method) as KenyaPatientPaymentMethod | undefined,
+    paymentStatus: child(KenyaPatientPaymentExtension.paymentStatus) as KenyaErpNextPatientPaymentStatus | undefined,
+    amount: childDecimal(KenyaPatientPaymentExtension.amount),
+    currency: child(KenyaPatientPaymentExtension.currency),
+    gatewayReference: child(KenyaPatientPaymentExtension.gatewayReference),
+    transactionRef: child(KenyaPatientPaymentExtension.transactionRef),
+    phone: child(KenyaPatientPaymentExtension.phone),
+    paymentEntryName: child(KenyaPatientPaymentExtension.paymentEntryName),
+    confirmedAt: child(KenyaPatientPaymentExtension.confirmedAt),
+    failureReason: child(KenyaPatientPaymentExtension.failureReason),
   };
 }

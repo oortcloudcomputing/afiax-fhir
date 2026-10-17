@@ -14,6 +14,7 @@ import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
   createAuditEvent,
+  logAuditEvent,
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
@@ -357,7 +358,8 @@ async function createExportAuditEvent(
     { what: createReference(task) },
   ];
 
-  await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  const saved = await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  logAuditEvent(saved);
 }
 
 function makeErrorResult(

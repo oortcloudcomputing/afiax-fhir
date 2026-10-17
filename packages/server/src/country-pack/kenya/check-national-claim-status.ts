@@ -8,6 +8,7 @@ import {
 } from '@medplum/core';
 import type { ClaimResponse, Identifier, Project } from '@medplum/fhirtypes';
 import { checkKenyaShaClaimStatus, getKenyaShaClaimsCredentials } from './sha';
+import { syncErpNextShaPayment } from './sync-to-erpnext';
 import { triggerKenyaClaimStatusWorkflowBot } from './workflow-bot';
 import type { CheckNationalClaimStatusResult, CountryPackCheckNationalClaimStatusInput } from '../types';
 
@@ -141,6 +142,16 @@ export async function checkKenyaNationalClaimStatus(
           : 'Kenya SHA claim is still queued or under review.');
 
     const claimResponse = await upsertKenyaClaimResponse(input, claimId, response.claimResponse, normalized.status, message);
+
+    if (normalized.status === 'adjudicated') {
+      void syncErpNextShaPayment(
+        input.ctx.systemRepo,
+        input.claim,
+        claimResponse ?? undefined,
+        project as Project & { id: string }
+      );
+    }
+
     const workflowBotResult = await triggerKenyaClaimStatusWorkflowBot(input.ctx, input.claim, {
       status: normalized.status,
       correlationId: input.correlationId,

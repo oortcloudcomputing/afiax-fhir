@@ -24,6 +24,7 @@ import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
+import { capturePreauthorizationHandler } from './operations/capture-preauthorization';
 import { checkCoverageHandler } from './operations/check-coverage';
 import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
 import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
@@ -74,7 +75,11 @@ import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
+import { postPatientPaymentHandler } from './operations/post-patient-payment';
+import { pushToErpNextHandler } from './operations/push-to-erpnext';
+import { recordInsurancePaymentHandler } from './operations/record-insurance-payment';
 import { submitNationalClaimHandler } from './operations/submit-national-claim';
+import { requestPreauthorizationHandler } from './operations/request-preauthorization';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { verifyFacilityAuthorityHandler } from './operations/verify-facility-authority';
 import { verifyPractitionerAuthorityHandler } from './operations/verify-practitioner-authority';
@@ -324,6 +329,26 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Claim/:id/$check-national-claim-status', checkNationalClaimStatusHandler);
   router.add('POST', '/Claim/:id/$check-national-claim-status', checkNationalClaimStatusHandler);
   router.add('POST', '/Claim/$check-national-claim-status', checkNationalClaimStatusHandler);
+
+  // Claim $request-preauthorization operation (Kenya SHA)
+  router.add('POST', '/Claim/:id/$request-preauthorization', requestPreauthorizationHandler);
+  router.add('POST', '/Claim/$request-preauthorization', requestPreauthorizationHandler);
+
+  // Claim $push-to-erpnext operation (idempotent ERPNext sync retry)
+  router.add('POST', '/Claim/:id/$push-to-erpnext', pushToErpNextHandler);
+  router.add('POST', '/Claim/$push-to-erpnext', pushToErpNextHandler);
+
+  // Claim $post-patient-payment operation (Kenya patient payment: cash/card/mpesa/afiax-pay)
+  router.add('POST', '/Claim/:id/$post-patient-payment', postPatientPaymentHandler);
+  router.add('POST', '/Claim/$post-patient-payment', postPatientPaymentHandler);
+
+  // Claim $record-insurance-payment operation (Kenya private insurer payment capture)
+  router.add('POST', '/Claim/:id/$record-insurance-payment', recordInsurancePaymentHandler);
+  router.add('POST', '/Claim/$record-insurance-payment', recordInsurancePaymentHandler);
+
+  // Coverage $capture-preauthorization operation (Kenya private insurer pre-authorization)
+  router.add('POST', '/Coverage/:id/$capture-preauthorization', capturePreauthorizationHandler);
+  router.add('POST', '/Coverage/$capture-preauthorization', capturePreauthorizationHandler);
 
   // Coverage $check-coverage operation
   router.add('GET', '/Coverage/:id/$check-coverage', checkCoverageHandler);

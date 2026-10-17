@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Automatic IDSR trigger: fires when a Condition carrying a Kenya IDSR
-// immediately-notifiable ICD-10 code is created or updated via the FHIR API.
+// immediately-notifiable condition code (ICD-11 preferred, ICD-10 accepted)
+// is created or updated via the FHIR API.
 //
 // Regulatory basis: Kenya Health Act 2017 s.57(1) — immediate notification
 // (within 24 hours) to the County Director of Health is mandatory.
@@ -17,7 +18,7 @@ import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from './i
 
 /**
  * Called in the FHIR write path after a successful Condition create or update.
- * If the Condition carries an IDSR-notifiable ICD-10 code and has not already
+ * If the Condition carries an IDSR-notifiable condition code (ICD-11 or ICD-10) and has not already
  * been notified, spawns an async notification (non-blocking — never delays the
  * HTTP response or fails the write).
  */
@@ -36,7 +37,7 @@ export function maybeAutoTriggerIdsr(
   if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') return;
   // Skip if already notified (any status — avoids re-triggering on every update)
   if (getKenyaIdsrNotificationSnapshot(resource)) return;
-  // Skip if not a notifiable ICD-10 code
+  // Skip if not a notifiable condition code (ICD-11 or ICD-10)
   if (!getKenyaIdsrConditionCode(resource)) return;
 
   const condition = resource as Condition & { id: string };

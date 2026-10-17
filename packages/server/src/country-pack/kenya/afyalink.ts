@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  getKenyaHieAgentId,
   getKenyaHieCredentialMode,
   getKenyaHieEnvironment,
   normalizeErrorString,
@@ -22,6 +23,7 @@ export interface KenyaAfyaLinkCredentials {
   readonly consumerKey: string;
   readonly username: string;
   readonly password: string;
+  readonly agentId?: string;
 }
 
 export interface AfyaLinkTokenResponse {
@@ -73,6 +75,14 @@ export interface AfyaLinkEligibilityMessage {
   readonly request_id_type?: string | null;
   readonly message?: string | null;
   readonly status?: string | null;
+  // v3 fields
+  readonly means_testing_details?: { readonly means_testing_done?: boolean | null } | null;
+  readonly client_portal_details?: {
+    readonly employment_type?: string | null;
+    readonly employer_name?: string | null;
+  } | null;
+  readonly eligible_employee?: boolean | string | number | null;
+  readonly policy_end_employer?: string | null;
 }
 
 export interface AfyaLinkEligibilityResponse {
@@ -89,6 +99,7 @@ export interface AfyaLinkClientRegistryMessage {
   readonly gender?: string | null;
   readonly identification_type?: string | null;
   readonly identification_number?: string | null;
+  readonly account_status?: string | null;
 }
 
 export interface AfyaLinkClientRegistryResponse {
@@ -251,6 +262,10 @@ function normalizeAfyaLinkPractitionerSearchResponse(payload: unknown): AfyaLink
 
 function normalizeAfyaLinkEligibilityMessage(payload: Record<string, unknown>): AfyaLinkEligibilityMessage | undefined {
   const normalizedEligible = normalizeFoundValue(payload.eligible);
+
+  const meansTestingDetails = isRecord(payload.means_testing_details) ? payload.means_testing_details : null;
+  const clientPortalDetails = isRecord(payload.client_portal_details) ? payload.client_portal_details : null;
+
   const message: AfyaLinkEligibilityMessage = {
     id:
       typeof payload.id === 'string' || typeof payload.id === 'number'
@@ -271,6 +286,20 @@ function normalizeAfyaLinkEligibilityMessage(payload: Record<string, unknown>): 
     request_id_type: typeof payload.request_id_type === 'string' ? payload.request_id_type : null,
     message: typeof payload.message === 'string' ? payload.message : null,
     status: typeof payload.status === 'string' ? payload.status : null,
+    means_testing_details: meansTestingDetails
+      ? { means_testing_done: typeof meansTestingDetails.means_testing_done === 'boolean' ? meansTestingDetails.means_testing_done : null }
+      : null,
+    client_portal_details: clientPortalDetails
+      ? {
+          employment_type: typeof clientPortalDetails.employment_type === 'string' ? clientPortalDetails.employment_type : null,
+          employer_name: typeof clientPortalDetails.employer_name === 'string' ? clientPortalDetails.employer_name : null,
+        }
+      : null,
+    eligible_employee:
+      typeof payload.eligible_employee === 'boolean' || typeof payload.eligible_employee === 'string' || typeof payload.eligible_employee === 'number'
+        ? payload.eligible_employee
+        : null,
+    policy_end_employer: typeof payload.policy_end_employer === 'string' ? payload.policy_end_employer : null,
   };
 
   if (
@@ -371,6 +400,7 @@ export function getKenyaAfyaLinkCredentials(project: Project): KenyaAfyaLinkCred
     consumerKey: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.consumerKey, credentialMode),
     username: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.username, credentialMode),
     password: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.password, credentialMode),
+    agentId: getKenyaHieAgentId(project) ?? undefined,
   };
 }
 
@@ -417,6 +447,10 @@ export async function searchAfyaLinkFacility(
   facilityCode: string
 ): Promise<AfyaLinkFacilitySearchResponse> {
   const token = await getAfyaLinkToken(credentials);
+  // TODO(dha-verify): facility registry API docs show /v1/facility-search?facility_code=... (v1).
+  // The claims integration guide mentions /v2/facility-search?facility-fid=... (v2, different param).
+  // Test /v2 with facility_code param against UAT; switch to facility-fid if v2 requires it.
+  // Tracked: https://github.com/oortcloudcomputing/afiax-fhir/issues/4
   const response = await fetch(
     `${credentials.baseUrl}/v2/facility-search?facility_code=${encodeURIComponent(facilityCode)}`,
     {
@@ -552,29 +586,103 @@ export async function searchAfyaLinkEligibility(
   }
 }
 
-function normalizeAfyaLinkClientRegistryResponse(raw: unknown): AfyaLinkClientRegistryResponse {
+function extractClientRegistryFromFhirPatient(
+  patient: Record<string, unknown>,
+  identificationType: string,
+  identificationNumber: string
+): AfyaLinkClientRegistryMessage {
+  // v3 API returns a FHIR R4 Patient resource — extract name, DOB, gender, and identifiers
+  const nameArr = Array.isArray(patient.name) ? patient.name : [];
+  const name = (isRecord(nameArr[0]) ? nameArr[0] : {}) as Record<string, unknown>;
+  const family = typeof name.family === 'string' ? name.family : null;
+  const givenArr = Array.isArray(name.given) ? name.given : [];
+  const given = typeof givenArr[0] === 'string' ? givenArr[0] : null;
+  const fullName = [given, family].filter(Boolean).join(' ') || null;
+
+  const identifierArr = Array.isArray(patient.identifier) ? patient.identifier : [];
+  // Look for client registry ID in extensions or identifiers
+  let clientRegistryId: string | null = null;
+  for (const id of identifierArr) {
+    if (!isRecord(id)) continue;
+    const sys = typeof id.system === 'string' ? id.system : '';
+    if (sys.includes('client-registry') || sys.includes('hie')) {
+      clientRegistryId = typeof id.value === 'string' ? id.value : null;
+      break;
+    }
+  }
+  if (!clientRegistryId) {
+    // Fall back to the resource id
+    clientRegistryId = typeof patient.id === 'string' ? patient.id : null;
+  }
+
+  return {
+    found: 1,
+    client_registry_id: clientRegistryId,
+    full_name: fullName,
+    first_name: given,
+    last_name: family,
+    date_of_birth: typeof patient.birthDate === 'string' ? patient.birthDate : null,
+    gender: typeof patient.gender === 'string' ? patient.gender : null,
+    identification_type: identificationType,
+    identification_number: identificationNumber,
+  };
+}
+
+function normalizeAfyaLinkClientRegistryResponse(
+  raw: unknown,
+  identificationType: string,
+  identificationNumber: string
+): AfyaLinkClientRegistryResponse {
   if (!isRecord(raw)) {
     return { message: { found: 0 } };
   }
 
-  if (isRecord(raw.message)) {
+  // Current AfyaLink format: { status: "success", message: "Client found.", data: { client_id, ... } }
+  if (isRecord(raw.data)) {
+    const data = raw.data;
+    const clientId = typeof data.client_id === 'string' ? data.client_id : null;
     return {
       message: {
-        found: normalizeFoundValue(raw.message.found),
-        client_registry_id: typeof raw.message.client_registry_id === 'string' ? raw.message.client_registry_id : null,
-        full_name: typeof raw.message.full_name === 'string' ? raw.message.full_name : null,
-        first_name: typeof raw.message.first_name === 'string' ? raw.message.first_name : null,
-        last_name: typeof raw.message.last_name === 'string' ? raw.message.last_name : null,
-        date_of_birth: typeof raw.message.date_of_birth === 'string' ? raw.message.date_of_birth : null,
-        gender: typeof raw.message.gender === 'string' ? raw.message.gender : null,
-        identification_type: typeof raw.message.identification_type === 'string' ? raw.message.identification_type : null,
-        identification_number:
-          typeof raw.message.identification_number === 'string' ? raw.message.identification_number : null,
+        found: clientId || typeof data.first_name === 'string' ? 1 : 0,
+        client_registry_id: clientId,
+        full_name: typeof data.full_name === 'string' ? data.full_name : null,
+        first_name: typeof data.first_name === 'string' ? data.first_name : null,
+        last_name: typeof data.last_name === 'string' ? data.last_name : null,
+        date_of_birth: typeof data.date_of_birth === 'string' ? data.date_of_birth : null,
+        gender: typeof data.gender === 'string' ? data.gender : null,
+        identification_type: typeof data.identification_type === 'string' ? data.identification_type : identificationType,
+        identification_number: typeof data.identification_number === 'string' ? data.identification_number : identificationNumber,
+        account_status: typeof data.account_status === 'string' ? data.account_status : null,
       },
     };
   }
 
-  // Flat response (some DHA environments return fields at the root)
+  // Legacy: { message: { result: [FHIRPatient, ...] } } or flat message object
+  if (isRecord(raw.message)) {
+    const msg = raw.message;
+    const resultArr = Array.isArray(msg.result) ? msg.result : [];
+    if (resultArr.length > 0 && isRecord(resultArr[0])) {
+      return { message: extractClientRegistryFromFhirPatient(resultArr[0] as Record<string, unknown>, identificationType, identificationNumber) };
+    }
+    if (resultArr.length === 0 || normalizeFoundValue(msg.found) === 0) {
+      return { message: { found: 0, identification_type: identificationType, identification_number: identificationNumber } };
+    }
+    return {
+      message: {
+        found: normalizeFoundValue(msg.found),
+        client_registry_id: typeof msg.client_registry_id === 'string' ? msg.client_registry_id : null,
+        full_name: typeof msg.full_name === 'string' ? msg.full_name : null,
+        first_name: typeof msg.first_name === 'string' ? msg.first_name : null,
+        last_name: typeof msg.last_name === 'string' ? msg.last_name : null,
+        date_of_birth: typeof msg.date_of_birth === 'string' ? msg.date_of_birth : null,
+        gender: typeof msg.gender === 'string' ? msg.gender : null,
+        identification_type: typeof msg.identification_type === 'string' ? msg.identification_type : identificationType,
+        identification_number: typeof msg.identification_number === 'string' ? msg.identification_number : identificationNumber,
+      },
+    };
+  }
+
+  // Flat response fallback
   const found = normalizeFoundValue(raw.found);
   return {
     message: {
@@ -585,8 +693,8 @@ function normalizeAfyaLinkClientRegistryResponse(raw: unknown): AfyaLinkClientRe
       last_name: typeof raw.last_name === 'string' ? raw.last_name : null,
       date_of_birth: typeof raw.date_of_birth === 'string' ? raw.date_of_birth : null,
       gender: typeof raw.gender === 'string' ? raw.gender : null,
-      identification_type: typeof raw.identification_type === 'string' ? raw.identification_type : null,
-      identification_number: typeof raw.identification_number === 'string' ? raw.identification_number : null,
+      identification_type: typeof raw.identification_type === 'string' ? raw.identification_type : identificationType,
+      identification_number: typeof raw.identification_number === 'string' ? raw.identification_number : identificationNumber,
     },
   };
 }
@@ -596,19 +704,20 @@ export async function searchAfyaLinkClientRegistry(
   identificationType: string,
   identificationNumber: string
 ): Promise<AfyaLinkClientRegistryResponse> {
+  if (!credentials.agentId) {
+    throw new Error('AfyaLink client registry requires an agent ID. Configure kenyaAfyaLinkAgentId as a project setting.');
+  }
   const token = await getAfyaLinkToken(credentials);
-  const response = await fetch(
-    `${credentials.baseUrl}/v1/client-registry?identification_type=${encodeURIComponent(
-      identificationType
-    )}&identification_number=${encodeURIComponent(identificationNumber)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const enc = encodeURIComponent;
+  const url = `${credentials.baseUrl}/check-client?identification_type=${enc(identificationType)}&identification_number=${enc(identificationNumber)}&agent=${enc(credentials.agentId)}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
   if (response.status === 404) {
     return { message: { found: 0, identification_type: identificationType, identification_number: identificationNumber } };
@@ -620,9 +729,33 @@ export async function searchAfyaLinkClientRegistry(
   }
 
   try {
-    return normalizeAfyaLinkClientRegistryResponse(await response.json());
+    return normalizeAfyaLinkClientRegistryResponse(await response.json(), identificationType, identificationNumber);
   } catch (err) {
     throw new Error(`Failed to parse AfyaLink client registry response: ${normalizeErrorString(err)}`);
+  }
+}
+
+// TODO(dha-verify): AfyaLink client update uses PUT /v3/agent-update-client on a separate Tiberbu host
+// (api-uat.tiberbu.health for UAT, unknown production host). It also requires an encrypted_pin field.
+// This function is currently unused. Do not call until the Tiberbu host URL and PIN encryption are confirmed.
+export async function updateAfyaLinkClientRegistry(
+  credentials: KenyaAfyaLinkCredentials,
+  clientRegistryId: string,
+  updates: Record<string, unknown>
+): Promise<void> {
+  const token = await getAfyaLinkToken(credentials);
+  const response = await fetch(`${credentials.baseUrl}/v3/agent-update-client`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ id: clientRegistryId, ...updates }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`AfyaLink client registry update failed (${response.status}): ${errorBody}`);
   }
 }
 
@@ -631,6 +764,10 @@ export async function publishToAfyaLinkShr(
   bundle: Record<string, unknown>
 ): Promise<AfyaLinkShrPublicationResponse> {
   const token = await getAfyaLinkToken(credentials);
+  // TODO(dha-verify): endpoint /v1/shr/patient-record is not listed in the public AfyaLink API docs.
+  // DHA docs show /v1/patient-resource (PUT), /v1/shr-submission (POST), /v1/shr/summary (GET).
+  // Confirm correct outpatient SHR submission path with DHA before production use.
+  // Tracked: https://github.com/oortcloudcomputing/afiax-fhir/issues/4
   const response = await fetch(`${credentials.baseUrl}/v1/shr/patient-record`, {
     method: 'POST',
     headers: {

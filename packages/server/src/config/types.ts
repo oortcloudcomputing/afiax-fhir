@@ -172,6 +172,9 @@ export interface MedplumServerConfig {
    * Allows running separate server pools for HTTP request serving vs. background job processing.
    */
   workers?: MedplumWorkersConfig;
+
+  /** Optional Kafka configuration for the DHA audit trail streaming pipeline. */
+  kafka?: MedplumKafkaConfig;
 }
 
 export interface ArrayColumnPaddingConfig {
@@ -288,4 +291,22 @@ export interface MedplumKnativeConfig {
   readonly authHeader?: string;
   readonly authToken?: string;
   readonly timeoutMilliseconds?: number;
+}
+
+/** Kafka producer config for the DHA-mandated audit event streaming pipeline. */
+export interface MedplumKafkaConfig {
+  /** Kafka broker addresses, e.g. ["broker1:9092", "broker2:9092"] */
+  brokers: string[];
+  /** Client ID reported to Kafka brokers (default: "afiax-fhir-server") */
+  clientId?: string;
+  /** Topic to publish AuditEvent records to (default: "audit.events") */
+  auditTopic?: string;
+  /** Enable TLS for broker connections */
+  ssl?: boolean;
+  /** Optional SASL credentials for broker authentication */
+  sasl?: {
+    mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512';
+    username: string;
+    password: string;
+  };
 }

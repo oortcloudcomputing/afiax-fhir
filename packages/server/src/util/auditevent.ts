@@ -18,6 +18,7 @@ import type {
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
+import { publishAuditEvent as kafkaPublishAuditEvent } from '../kafka';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 
@@ -233,6 +234,8 @@ export function logAuditEvent(auditEvent: AuditEvent): void {
   if (config.logAuditEvents) {
     console.log(JSON.stringify(auditEvent));
   }
+  // Publish to Kafka audit pipeline (DHA Technical Spec §5.4 — fire-and-forget, non-blocking)
+  kafkaPublishAuditEvent(auditEvent);
 }
 
 function buildDurationExtension(duration: number): Extension {

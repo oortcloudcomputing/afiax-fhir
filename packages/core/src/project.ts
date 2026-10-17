@@ -202,19 +202,37 @@ export const KenyaProjectSettingNames = {
   khisEnvironment: 'kenyaKhisEnvironment',
   khisCredentialMode: 'kenyaKhisCredentialMode',
   // JSON string: Record<ICD11orICD10code, {suspected?: string, confirmed?: string, deaths?: string}>
+  // Keys are the ICD-11 (or ICD-10) code of the KHIS weekly table entry, not the clinician's child code.
   khisDataElementMapping: 'kenyaKhisDataElementMapping',
   // DHIS2 dataset UID for MOH 505
   khisMoh505DataSetUid: 'kenyaKhisMoh505DataSetUid',
   khisSchedulerBotId: 'kenyaKhisSchedulerBotId',
   // Email address for security alerts (break-glass, unusual access). Defaults to security@afiax.africa
   securityAlertEmail: 'kenyaSecurityAlertEmail',
+  // ICD-11 diagnosis coding rule: 'enforce' (default) | 'warn' | 'off'
+  icd11DiagnosisEnforcement: 'kenyaIcd11DiagnosisEnforcement',
 } as const;
 
 export const KenyaSecurityAlertEmailDefault = 'security@afiax.africa';
 
 export function getKenyaSecurityAlertEmail(source: ProjectSettingsSource): string {
-  return getProjectSettingString(source, KenyaProjectSettingNames.securityAlertEmail)?.trim()
-    || KenyaSecurityAlertEmailDefault;
+  return (
+    getProjectSettingString(source, KenyaProjectSettingNames.securityAlertEmail)?.trim() ||
+    KenyaSecurityAlertEmailDefault
+  );
+}
+
+export type KenyaIcd11DiagnosisEnforcement = 'enforce' | 'warn' | 'off';
+
+/**
+ * Returns how a Kenya project applies the ICD-11 diagnosis coding rule. Defaults to 'enforce';
+ * 'warn' logs instead of rejecting, for use while legacy integrations are migrated.
+ * @param source - The project or its settings.
+ * @returns The ICD-11 diagnosis enforcement mode.
+ */
+export function getKenyaIcd11DiagnosisEnforcement(source: ProjectSettingsSource): KenyaIcd11DiagnosisEnforcement {
+  const value = getProjectSettingString(source, KenyaProjectSettingNames.icd11DiagnosisEnforcement)?.trim();
+  return value === 'warn' || value === 'off' ? value : 'enforce';
 }
 
 export type KenyaKhisEnvironment = 'uat' | 'production';
@@ -288,18 +306,14 @@ export function getKenyaHieEnvironment(source: ProjectSettingsSource): KenyaHieE
   const value =
     getProjectSettingString(source, KenyaProjectSettingNames.hieEnvironment) ??
     getProjectSettingString(source, KenyaProjectSettingNames.afyaLinkEnvironment);
-  return value === 'production'
-    ? 'production'
-    : 'uat';
+  return value === 'production' ? 'production' : 'uat';
 }
 
 export function getKenyaHieCredentialMode(source: ProjectSettingsSource): KenyaHieCredentialMode {
   const value =
     getProjectSettingString(source, KenyaProjectSettingNames.hieCredentialMode) ??
     getProjectSettingString(source, KenyaProjectSettingNames.afyaLinkCredentialMode);
-  return value === 'afiax-managed'
-    ? 'afiax-managed'
-    : 'tenant-managed';
+  return value === 'afiax-managed' ? 'afiax-managed' : 'tenant-managed';
 }
 
 export function getKenyaHieAgentId(source: ProjectSettingsSource): string | undefined {
@@ -311,9 +325,7 @@ export function getKenyaShaClaimsEnvironment(source: ProjectSettingsSource): Ken
     getProjectSettingString(source, KenyaProjectSettingNames.shaClaimsEnvironment) ??
     getProjectSettingString(source, KenyaProjectSettingNames.hieEnvironment) ??
     getProjectSettingString(source, KenyaProjectSettingNames.afyaLinkEnvironment);
-  return value === 'production'
-    ? 'production'
-    : 'uat';
+  return value === 'production' ? 'production' : 'uat';
 }
 
 export function getKenyaShaClaimsCredentialMode(source: ProjectSettingsSource): KenyaShaClaimsCredentialMode {
@@ -374,7 +386,9 @@ export function getKenyaKhisMoh505DataSetUid(source: ProjectSettingsSource): str
   return getProjectSettingString(source, KenyaProjectSettingNames.khisMoh505DataSetUid)?.trim() || undefined;
 }
 
-export function getKenyaKhisDataElementMapping(source: ProjectSettingsSource): Record<string, { suspected?: string; confirmed?: string; deaths?: string }> | undefined {
+export function getKenyaKhisDataElementMapping(
+  source: ProjectSettingsSource
+): Record<string, { suspected?: string; confirmed?: string; deaths?: string }> | undefined {
   const raw = getProjectSettingString(source, KenyaProjectSettingNames.khisDataElementMapping);
   if (!raw) {
     return undefined;

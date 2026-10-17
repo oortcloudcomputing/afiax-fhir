@@ -73,7 +73,7 @@ Do not put these things in this folder:
 
 If the Kenya pack starts formalizing terminology, these are the most likely first candidates:
 
-1. Kenya IDSR Notifiable Conditions CodeSystem — ICD-10 codes for all immediately and weekly notifiable
+1. Kenya IDSR Notifiable Conditions CodeSystem — ICD-11 MMS codes (with legacy ICD-10 equivalents) for all immediately and weekly notifiable
    diseases under the Kenya Health Act 2017 and Kenya IDSR Technical Guidelines 3rd Edition (2024).
    URI: `https://afiax.africa/CodeSystem/kenya-idsr-conditions` — **in progress for v1.1**
 2. Kenya Encounter Type CodeSystem — OPD, IPD, ANC, MCH, ART, TB, Family Planning, Emergency aligned

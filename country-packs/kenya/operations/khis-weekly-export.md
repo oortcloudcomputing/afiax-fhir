@@ -49,7 +49,7 @@ ARI/Pneumonia (J00, J06, J18), Acute gastroenteritis (K52).
 | `kenyaKhisEnvironment` | `uat` (default) or `production` |
 | `kenyaKhisCredentialMode` | `tenant-managed` (default) or `afiax-managed` |
 | `kenyaKhisMoh505DataSetUid` | DHIS2 dataset UID for MOH 505 — obtain from your KHIS administrator |
-| `kenyaKhisDataElementMapping` | JSON mapping from ICD-10 code → DHIS2 data element UIDs |
+| `kenyaKhisDataElementMapping` | JSON mapping from condition code (ICD-11, or legacy ICD-10) → DHIS2 data element UIDs |
 
 ### Project secrets (tenant-managed mode)
 
@@ -61,8 +61,13 @@ ARI/Pneumonia (J00, J06, J18), Acute gastroenteritis (K52).
 
 ### Data element mapping format
 
-The `kenyaKhisDataElementMapping` setting is a JSON string mapping each ICD-10 code
-to the DHIS2 data element UIDs for that disease's suspected/confirmed/deaths counts.
+The `kenyaKhisDataElementMapping` setting is a JSON string mapping each KHIS weekly condition to the
+DHIS2 data element UIDs for its suspected/confirmed/deaths counts. Key each entry by the condition's
+ICD-11 MMS code from the KHIS weekly table (e.g. `1A00` Cholera, `1F40` P. falciparum malaria).
+Mappings keyed by the legacy ICD-10 code (e.g. `A00`) are still honoured.
+
+Conditions are counted once per table entry: a child code (e.g. `1F40.0`) counts under its parent
+(`1F40`), and a Condition coded in both ICD-11 and ICD-10 is counted once.
 
 Obtain the UIDs from your KHIS administrator or from the DHIS2 metadata API:
 
@@ -74,16 +79,16 @@ Example mapping (UIDs are illustrative — use actual values from your KHIS inst
 
 ```json
 {
-  "A00": {
+  "1A00": {
     "suspected": "xE7iSd2T1lH",
     "confirmed": "Ql6sE0Y2Y3m",
     "deaths":    "kZ9t1E3Bj4n"
   },
-  "B05": {
+  "1F03": {
     "suspected": "mP2kT8Ys1cQ",
     "confirmed": "uR5wV9Lq0aX"
   },
-  "B50": {
+  "1F40": {
     "suspected": "nJ4hF6Kv2bM",
     "confirmed": "pS7gD8Nm3cL",
     "deaths":    "qT0fG9Op4dK"
@@ -91,7 +96,7 @@ Example mapping (UIDs are illustrative — use actual values from your KHIS inst
 }
 ```
 
-Only ICD-10 codes present in the mapping generate DHIS2 data values. Codes without a
+Only conditions present in the mapping generate DHIS2 data values. Codes without a
 mapping entry are silently skipped — no error is raised.
 
 ## Input parameters
@@ -185,7 +190,7 @@ The response includes `dataValueCount` showing how many values would be pushed.
 |---------|-------------|
 | `KHIS credentials not found` | `kenyaKhisUsername`/`kenyaKhisPassword` not set in Project.secret |
 | `MOH 505 dataset UID not configured` | `kenyaKhisMoh505DataSetUid` project setting missing |
-| `dataValueCount: 0` | No ICD-10 codes in the Condition results match the data element mapping |
+| `dataValueCount: 0` | No KHIS weekly conditions in the Condition results match the data element mapping |
 | DHIS2 returns `status: ERROR` | Check `dhis2ImportStatus` in the Task output; inspect conflicts in the DHIS2 import summary |
 | `HTTP 401` | KHIS credentials invalid or expired |
 | `ECONNREFUSED` | Wrong `kenyaKhisEnvironment` (UAT vs production) or network issue |

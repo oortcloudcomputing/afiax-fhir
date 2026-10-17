@@ -41,12 +41,15 @@ export interface KhisImportSummary {
     readonly deleted?: number;
   };
   readonly description?: string;
-  readonly conflicts?: Array<{ readonly object?: string; readonly value?: string }>;
+  readonly conflicts?: { readonly object?: string; readonly value?: string }[];
 }
 
 // Per-condition aggregate counts collected from FHIR Condition resources
 export interface KhisConditionAggregate {
+  /** ICD-11 MMS code of the KHIS weekly table entry. */
   readonly code: string;
+  /** ICD-10 code of the same entry; used when a project's data element mapping is still keyed by ICD-10. */
+  readonly legacyCode?: string;
   readonly suspected: number;
   readonly confirmed: number;
   readonly deaths: number;
@@ -63,9 +66,7 @@ export function getKhisCredentials(project: Project): KhisCredentials {
   const credentialMode = getKenyaKhisCredentialMode(project);
   const envKey = getKhisBaseUrlKey(project);
 
-  const baseUrl =
-    getProjectSecretValue(project, KenyaKhisSecretNames.baseUrl) ??
-    KenyaKhisBaseUrls[envKey];
+  const baseUrl = getProjectSecretValue(project, KenyaKhisSecretNames.baseUrl) ?? KenyaKhisBaseUrls[envKey];
 
   const username = getProjectSecretValue(project, KenyaKhisSecretNames.username);
   const password = getProjectSecretValue(project, KenyaKhisSecretNames.password);
@@ -103,7 +104,9 @@ export function buildKhisDataValueSet(
   const dataValues: KhisDataValue[] = [];
 
   for (const agg of aggregates) {
-    const mapping = credentials.dataElementMapping[agg.code];
+    const mapping =
+      credentials.dataElementMapping[agg.code] ??
+      (agg.legacyCode ? credentials.dataElementMapping[agg.legacyCode] : undefined);
     if (!mapping) {
       continue;
     }

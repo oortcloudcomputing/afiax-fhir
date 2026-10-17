@@ -4,33 +4,46 @@ import type { Claim, Coverage, Organization, Practitioner } from '@medplum/fhirt
 import {
   applyKenyaFacilityRegistryToOrganization,
   applyKenyaPractitionerRegistryToPractitioner,
-  buildKenyaFacilityVerificationExtension,
   buildKenyaCoverageEligibilityExtension,
+  buildKenyaFacilityVerificationExtension,
   buildKenyaNationalClaimStatusExtension,
   buildKenyaNationalClaimSubmissionExtension,
   buildKenyaPractitionerVerificationExtension,
+  clearKenyaCoverageEligibilitySnapshot,
   clearKenyaFacilityRegistrySnapshot,
   clearKenyaFacilityVerificationSnapshot,
-  clearKenyaCoverageEligibilitySnapshot,
   clearKenyaNationalClaimStatusSnapshot,
   clearKenyaNationalClaimSubmissionSnapshot,
   clearKenyaPractitionerRegistrySnapshot,
   clearKenyaPractitionerVerificationSnapshot,
+  findKenyaIdsrImmediateCondition,
+  findKenyaKhisWeeklyCondition,
   getKenyaCoverageEligibilityLookupIdentifier,
   getKenyaCoverageEligibilitySnapshot,
-  getKenyaNationalClaimStatusSnapshot,
-  getKenyaFacilityVerificationSnapshot,
   getKenyaFacilityAuthorityIdentifier,
   getKenyaFacilityRegistrySnapshot,
+  getKenyaFacilityVerificationSnapshot,
+  getKenyaIcd11DiagnosisIssues,
+  getKenyaIdsrConditionCode,
+  getKenyaNationalClaimStatusSnapshot,
   getKenyaNationalClaimSubmissionSnapshot,
   getKenyaPractitionerAuthorityIdentifier,
   getKenyaPractitionerLookupIdentifier,
   getKenyaPractitionerRegistrySnapshot,
   getKenyaPractitionerVerificationSnapshot,
-  KenyaFacilityVerificationExtension,
+  isIcd11CodeUnder,
+  isKenyaIcd11CodeFormat,
+  isKenyaIdsrImmediateNotificationCode,
+  isKenyaKhisWeeklyNotificationCode,
+  KenyaCoverageNationalIdIdentifierSystem,
   KenyaFacilityAuthorityIdentifierSystem,
   KenyaFacilityRegistrationIdentifierSystem,
-  KenyaCoverageNationalIdIdentifierSystem,
+  KenyaFacilityVerificationExtension,
+  KenyaIcd10System,
+  KenyaIcd11System,
+  KenyaIdsrCodeSystemIcd10,
+  KenyaIdsrCodeSystemIcd11,
+  KenyaIdsrConditionDisplay,
   KenyaPractitionerAuthorityIdentifierSystem,
   KenyaPractitionerNationalIdIdentifierSystem,
   KenyaPractitionerVerificationExtension,
@@ -38,12 +51,6 @@ import {
   setKenyaFacilityAuthorityIdentifier,
   setKenyaPractitionerAuthorityIdentifier,
   setKenyaPractitionerLookupIdentifier,
-  getKenyaIdsrConditionCode,
-  isKenyaIdsrImmediateNotificationCode,
-  isKenyaKhisWeeklyNotificationCode,
-  KenyaIdsrCodeSystemIcd11,
-  KenyaIdsrCodeSystemIcd10,
-  KenyaIdsrConditionDisplay,
 } from './kenya';
 
 describe('Kenya facility verification helpers', () => {
@@ -648,5 +655,146 @@ describe('Kenya IDSR/KHIS dual ICD-11/ICD-10 coding', () => {
     expect(isKenyaKhisWeeklyNotificationCode('1F40.0')).toBe(true); // Malaria P. falciparum (ICD-11)
     expect(isKenyaKhisWeeklyNotificationCode('B50')).toBe(true); // Malaria P. falciparum (ICD-10)
     expect(isKenyaKhisWeeklyNotificationCode('1A00')).toBe(true); // Cholera (immediate superset, ICD-11)
+  });
+});
+
+describe('Kenya IDSR ICD-11 code table', () => {
+  test.each([
+    ['1B93', 'Plague'],
+    ['1B97', 'Anthrax'],
+    ['1C15', 'Neonatal tetanus'],
+    ['1C17', 'Diphtheria'],
+    ['1C1C', 'Meningococcal disease'],
+    ['1D61', 'Arenaviral haemorrhagic fever'],
+    ['1D60.0', 'Ebola virus disease'],
+    ['1D60.1', 'Marburg virus disease'],
+    ['1D86', 'Viral haemorrhagic fever, not elsewhere classified'],
+  ])('%s is %s', (code, display) => {
+    expect(findKenyaIdsrImmediateCondition(code, KenyaIcd11System)?.display).toBe(display);
+  });
+
+  test('matches ICD-11 child codes under a notifiable parent', () => {
+    expect(findKenyaIdsrImmediateCondition('1B93.2', KenyaIcd11System)?.display).toBe('Plague');
+    expect(findKenyaIdsrImmediateCondition('1D60.01', KenyaIcd11System)?.display).toBe('Ebola virus disease');
+    expect(findKenyaIdsrImmediateCondition('1C1C.0', KenyaIcd11System)?.display).toBe('Meningococcal disease');
+  });
+
+  test('matches postcoordinated ICD-11 codes by their stem code', () => {
+    expect(findKenyaIdsrImmediateCondition('1A00&XN6S0', KenyaIcd11System)?.display).toBe('Cholera');
+  });
+
+  test('does not confuse siblings with a notifiable code', () => {
+    // 1D65 is SARS and 1D62 is hantavirus disease — neither is on the immediate list as such.
+    expect(findKenyaIdsrImmediateCondition('1D62', KenyaIcd11System)).toBeUndefined();
+    expect(findKenyaIdsrImmediateCondition('1D60.Z', KenyaIcd11System)).toBeUndefined();
+  });
+
+  test('matches ICD-10 dotted children for legacy records', () => {
+    expect(findKenyaIdsrImmediateCondition('A20.2', KenyaIcd10System)?.display).toBe('Plague');
+  });
+
+  test('KHIS weekly matches corrected ICD-11 codes', () => {
+    expect(findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code: '1A40' })?.icd10).toBe('A09');
+    expect(findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code: '1F54.0' })?.display).toBe('Leishmaniasis');
+    expect(findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code: 'CA40.0Z' })?.display).toBe('Pneumonia');
+    // 1A90 is chancroid, not a diarrhoeal disease
+    expect(findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code: '1A90' })).toBeUndefined();
+  });
+});
+
+describe('Kenya ICD-11 code helpers', () => {
+  test.each(['1A00', 'RA01.0', '1D60.01', '1C1A.0', 'CA40.0Z', '1A00&XN6S0', '1D60.0/1A00'])(
+    'accepts ICD-11 code %s',
+    (code) => {
+      expect(isKenyaIcd11CodeFormat(code)).toBe(true);
+    }
+  );
+
+  test.each(['A00', 'J18.9', 'U07.1', '1IO0', '', '1A00.123', 'abc'])('rejects non-ICD-11 code %s', (code) => {
+    expect(isKenyaIcd11CodeFormat(code)).toBe(false);
+  });
+
+  test('isIcd11CodeUnder follows the hierarchy', () => {
+    expect(isIcd11CodeUnder('1B93', '1B93')).toBe(true);
+    expect(isIcd11CodeUnder('1B93.2', '1B93')).toBe(true);
+    expect(isIcd11CodeUnder('1D60.0Y', '1D60.0')).toBe(true);
+    expect(isIcd11CodeUnder('1B930', '1B93')).toBe(false);
+    expect(isIcd11CodeUnder('1D60.1', '1D60.0')).toBe(false);
+  });
+});
+
+describe('getKenyaIcd11DiagnosisIssues', () => {
+  test('accepts a Condition coded in ICD-11 with an additional ICD-10 coding', () => {
+    expect(
+      getKenyaIcd11DiagnosisIssues({
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/p1' },
+        code: {
+          coding: [
+            { system: KenyaIcd11System, code: '1F40', display: 'Malaria due to Plasmodium falciparum' },
+            { system: KenyaIcd10System, code: 'B50' },
+          ],
+        },
+      })
+    ).toEqual([]);
+  });
+
+  test('rejects a Condition coded only in ICD-10', () => {
+    const issues = getKenyaIcd11DiagnosisIssues({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/p1' },
+      code: { coding: [{ system: KenyaIcd10System, code: 'B50' }] },
+    });
+    expect(issues).toHaveLength(1);
+    expect(issues[0].expression).toBe('Condition.code');
+    expect(issues[0].message).toContain('ICD-11 MMS');
+  });
+
+  test('rejects a text-only diagnosis', () => {
+    expect(
+      getKenyaIcd11DiagnosisIssues({
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/p1' },
+        code: { text: 'Fever' },
+      })
+    ).toHaveLength(1);
+  });
+
+  test('rejects an ICD-10 code mislabelled with the ICD-11 system', () => {
+    const issues = getKenyaIcd11DiagnosisIssues({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/p1' },
+      code: { coding: [{ system: KenyaIcd11System, code: 'B50' }] },
+    });
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toContain("'B50' is not a valid ICD-11 MMS code");
+  });
+
+  test('ignores a Condition without a code', () => {
+    expect(getKenyaIcd11DiagnosisIssues({ resourceType: 'Condition', subject: { reference: 'Patient/p1' } })).toEqual(
+      []
+    );
+  });
+
+  test('checks each Claim diagnosis', () => {
+    const claim: Claim = {
+      resourceType: 'Claim',
+      status: 'active',
+      type: { text: 'Institutional' },
+      use: 'claim',
+      patient: { reference: 'Patient/p1' },
+      created: '2026-10-17',
+      provider: { reference: 'Organization/o1' },
+      priority: { text: 'normal' },
+      insurance: [{ sequence: 1, focal: true, coverage: { reference: 'Coverage/c1' } }],
+      diagnosis: [
+        { sequence: 1, diagnosisCodeableConcept: { coding: [{ system: KenyaIcd11System, code: 'CA40' }] } },
+        { sequence: 2, diagnosisCodeableConcept: { coding: [{ system: KenyaIcd10System, code: 'J18' }] } },
+        { sequence: 3, diagnosisReference: { reference: 'Condition/c1' } },
+      ],
+    };
+    const issues = getKenyaIcd11DiagnosisIssues(claim);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].expression).toBe('Claim.diagnosis[1].diagnosisCodeableConcept');
   });
 });

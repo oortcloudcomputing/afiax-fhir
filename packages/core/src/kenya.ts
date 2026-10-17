@@ -3,6 +3,8 @@
 import type {
   Claim,
   ClaimResponse,
+  CodeableConcept,
+  Coding,
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
@@ -13,6 +15,7 @@ import type {
   PaymentNotice,
   Practitioner,
   Reference,
+  Resource,
   Task,
 } from '@medplum/fhirtypes';
 import { getExtensionValue } from './utils';
@@ -1676,17 +1679,133 @@ function getKenyaCoverageEligibilitySystem(identificationType: KenyaCoverageElig
 // Notification must reach the County Director of Health within 24 hours of
 // clinical suspicion (not confirmed diagnosis).
 //
-// CODING SYSTEM TRANSITION: Kenya National Terminology Service (KNTS) has
-// adopted ICD-11 MMS as the standard for morbidity and mortality coding.
-// Both ICD-11 (preferred) and ICD-10 (backward compatibility) are accepted.
-// New Condition resources should use system: KenyaIdsrCodeSystemIcd11.
-// ICD-11 codes validated against WHO ICD-11 MMS linearization; cross-check
-// new additions at https://icd.who.int/browse/2024-01/mms/en before committing.
+// CODING SYSTEM: The MoH and DHA have adopted ICD-11 MMS as Kenya's national standard for
+// diagnosis, morbidity and mortality coding. Kenya projects require an ICD-11 MMS coding on every
+// diagnosis (see getKenyaIcd11DiagnosisIssues). ICD-10 is accepted only as an additional coding
+// on legacy records and is still matched here so historic data keeps reporting.
+// ICD-11 codes are matched hierarchically: a table entry also matches its children
+// (e.g. 1B93 Plague matches 1B93.2 Pneumonic plague).
+// Cross-check new codes at https://icd.who.int/browse/2024-01/mms/en before committing.
+
+/** FHIR system URI for ICD-11 MMS — Kenya's national standard for diagnosis coding (MoH / DHA). */
+export const KenyaIcd11System = 'http://id.who.int/icd/release/11/mms';
+/** FHIR system URI for WHO ICD-10 — accepted only as an additional coding on legacy records. */
+export const KenyaIcd10System = 'http://hl7.org/fhir/sid/icd-10';
 
 /** Preferred FHIR system URI for ICD-11 MMS (KNTS-mandated standard). */
-export const KenyaIdsrCodeSystemIcd11 = 'http://id.who.int/icd/release/11/mms';
+export const KenyaIdsrCodeSystemIcd11 = KenyaIcd11System;
 /** Legacy FHIR system URI for ICD-10 (retained for backward compatibility). */
-export const KenyaIdsrCodeSystemIcd10 = 'http://hl7.org/fhir/sid/icd-10';
+export const KenyaIdsrCodeSystemIcd10 = KenyaIcd10System;
+
+// ICD-11 MMS code structure: a stem code (chapter char, letter, digit, char, optional .x / .xx),
+// optionally postcoordinated with '&' (extension codes, X...) or '/' (stem code clusters).
+// I and O are never used in ICD-11 codes.
+const Icd11Char = '[0-9A-HJ-NP-Z]';
+const Icd11Stem = `[1-9A-HJ-NP-Z][A-HJ-NP-Z][0-9]${Icd11Char}(?:\\.${Icd11Char}{1,2})?`;
+const Icd11Extension = `X${Icd11Char}{2,8}`;
+const Icd11CodePattern = new RegExp(`^${Icd11Stem}(?:[&/](?:${Icd11Stem}|${Icd11Extension}))*$`);
+
+/**
+ * Returns true if `code` is structurally a valid ICD-11 MMS code (stem code, optionally postcoordinated).
+ * This is a format check only; it does not confirm the code exists in the current release.
+ * @param code - Candidate ICD-11 MMS code.
+ * @returns True if the code has valid ICD-11 MMS structure.
+ */
+export function isKenyaIcd11CodeFormat(code: string): boolean {
+  return Icd11CodePattern.test(code.trim());
+}
+
+/**
+ * Returns true if the ICD-11 `code` is `ancestor` or one of its descendants.
+ * Postcoordination is ignored: only the first stem code is compared.
+ * @param code - ICD-11 MMS code, possibly postcoordinated.
+ * @param ancestor - ICD-11 MMS stem code.
+ * @returns True if `code` falls under `ancestor` in the ICD-11 hierarchy.
+ */
+export function isIcd11CodeUnder(code: string, ancestor: string): boolean {
+  const stem = code.trim().split(/[&/]/)[0];
+  return stem === ancestor || stem.startsWith(ancestor.includes('.') ? ancestor : `${ancestor}.`);
+}
+
+function isIcd10CodeUnder(code: string, ancestor: string): boolean {
+  const normalized = code.trim();
+  return normalized === ancestor || normalized.startsWith(`${ancestor}.`);
+}
+
+/**
+ * Returns the ICD-11 MMS codings in a CodeableConcept that have a valid ICD-11 code.
+ * @param concept - The CodeableConcept to inspect.
+ * @returns The valid ICD-11 MMS codings.
+ */
+export function getKenyaIcd11Codings(concept: CodeableConcept | undefined): Coding[] {
+  return (concept?.coding ?? []).filter(
+    (coding) => coding.system === KenyaIcd11System && !!coding.code && isKenyaIcd11CodeFormat(coding.code)
+  );
+}
+
+/** A diagnosis CodeableConcept on a resource, with its FHIRPath-style location. */
+export interface KenyaDiagnosisConcept {
+  readonly expression: string;
+  readonly concept: CodeableConcept;
+}
+
+/**
+ * Returns the diagnosis CodeableConcepts that Kenya requires to be ICD-11 coded:
+ * Condition.code and Claim.diagnosis[].diagnosisCodeableConcept.
+ * @param resource - The resource being written.
+ * @returns The diagnosis concepts on the resource.
+ */
+export function getKenyaDiagnosisConcepts(resource: Resource): KenyaDiagnosisConcept[] {
+  if (resource.resourceType === 'Condition') {
+    return resource.code ? [{ expression: 'Condition.code', concept: resource.code }] : [];
+  }
+  if (resource.resourceType === 'Claim') {
+    const result: KenyaDiagnosisConcept[] = [];
+    resource.diagnosis?.forEach((diagnosis, index) => {
+      if (diagnosis.diagnosisCodeableConcept) {
+        result.push({
+          expression: `Claim.diagnosis[${index}].diagnosisCodeableConcept`,
+          concept: diagnosis.diagnosisCodeableConcept,
+        });
+      }
+    });
+    return result;
+  }
+  return [];
+}
+
+/** A Kenya ICD-11 diagnosis coding problem. */
+export interface KenyaDiagnosisCodingIssue {
+  readonly expression: string;
+  readonly message: string;
+}
+
+/**
+ * Checks that every diagnosis on the resource carries a valid ICD-11 MMS coding.
+ * ICD-10 or SNOMED CT codings are allowed alongside the ICD-11 coding, never instead of it.
+ * @param resource - The resource being written.
+ * @returns One issue per diagnosis that does not meet the Kenya ICD-11 requirement.
+ */
+export function getKenyaIcd11DiagnosisIssues(resource: Resource): KenyaDiagnosisCodingIssue[] {
+  const issues: KenyaDiagnosisCodingIssue[] = [];
+  for (const { expression, concept } of getKenyaDiagnosisConcepts(resource)) {
+    const invalid = (concept.coding ?? []).filter(
+      (coding) => coding.system === KenyaIcd11System && !isKenyaIcd11CodeFormat(coding.code ?? '')
+    );
+    for (const coding of invalid) {
+      issues.push({ expression, message: `'${coding.code ?? ''}' is not a valid ICD-11 MMS code.` });
+    }
+    if (getKenyaIcd11Codings(concept).length === 0 && invalid.length === 0) {
+      issues.push({
+        expression,
+        message:
+          `Diagnosis must be coded in ICD-11 MMS (system ${KenyaIcd11System}), the Kenya national standard. ` +
+          'ICD-10 may be included only as an additional coding.',
+      });
+    }
+  }
+  return issues;
+}
 /** @deprecated Use KenyaIdsrCodeSystemIcd11. Kept for backward compatibility. */
 export const KenyaIdsrCodeSystem = KenyaIdsrCodeSystemIcd11;
 
@@ -1703,18 +1822,18 @@ export interface KenyaIdsrNotifiableCondition {
 export const KenyaIdsrImmediateNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
   { icd11: '1A00', icd10: 'A00', display: 'Cholera' },
   { icd11: '1A07', icd10: 'A01', display: 'Typhoid fever' },
-  { icd11: '1B9E', icd10: 'A20', display: 'Plague' },
-  { icd11: '1B93', icd10: 'A22', display: 'Anthrax' },
-  { icd11: '1C1A.0', icd10: 'A33', display: 'Neonatal tetanus' },
-  { icd11: '1C42', icd10: 'A36', display: 'Diphtheria' },
-  { icd11: '1C1E.0', icd10: 'A39', display: 'Meningococcal disease' },
+  { icd11: '1B93', icd10: 'A20', display: 'Plague' },
+  { icd11: '1B97', icd10: 'A22', display: 'Anthrax' },
+  { icd11: '1C15', icd10: 'A33', display: 'Neonatal tetanus' },
+  { icd11: '1C17', icd10: 'A36', display: 'Diphtheria' },
+  { icd11: '1C1C', icd10: 'A39', display: 'Meningococcal disease' },
   { icd11: '1C81', icd10: 'A80', display: 'Acute poliomyelitis / AFP' },
   { icd11: '1C82', icd10: 'A82', display: 'Rabies' },
   { icd11: '1D47', icd10: 'A95', display: 'Yellow fever' },
-  { icd11: '1D65', icd10: 'A96', display: 'Arenaviral haemorrhagic fever' },
-  { icd11: '1D60', icd10: 'A98.4', display: 'Ebola virus disease' },
-  { icd11: '1D62', icd10: 'A98.5', display: 'Marburg virus disease' },
-  { icd11: '1D6Y', icd10: 'A99', display: 'Unspecified viral haemorrhagic fever' },
+  { icd11: '1D61', icd10: 'A96', display: 'Arenaviral haemorrhagic fever' },
+  { icd11: '1D60.0', icd10: 'A98.4', display: 'Ebola virus disease' },
+  { icd11: '1D60.1', icd10: 'A98.5', display: 'Marburg virus disease' },
+  { icd11: '1D86', icd10: 'A99', display: 'Viral haemorrhagic fever, not elsewhere classified' },
   { icd11: '1E70', icd10: 'B03', display: 'Smallpox' },
   { icd11: '1E71', icd10: 'B04', display: 'Mpox (monkeypox)' },
   { icd11: '1F03', icd10: 'B05', display: 'Measles' },
@@ -1722,9 +1841,36 @@ export const KenyaIdsrImmediateNotifiableConditions: readonly KenyaIdsrNotifiabl
   { icd11: 'RA01.0', icd10: 'U07.1', display: 'COVID-19' },
 ] as const;
 
-// Derived sets for efficient lookup
-const _icd11ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd11));
-const _icd10ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd10));
+/**
+ * Finds the notifiable condition table entry that a coding falls under.
+ * ICD-11 is matched hierarchically; ICD-10 matches the code or its dotted children.
+ * Codings without a system are matched against both, to support legacy data.
+ * @param conditions - The notifiable condition table to search.
+ * @param coding - The coding to match.
+ * @param coding.system - Coding system URI, if any.
+ * @param coding.code - Coding code.
+ * @returns The matching table entry, or undefined.
+ */
+function findNotifiableCondition(
+  conditions: readonly KenyaIdsrNotifiableCondition[],
+  coding: { system?: string; code?: string }
+): KenyaIdsrNotifiableCondition | undefined {
+  const code = coding.code?.trim();
+  if (!code) {
+    return undefined;
+  }
+  const { system } = coding;
+  if ((!system || system === KenyaIcd11System) && isKenyaIcd11CodeFormat(code)) {
+    const match = conditions.find((c) => isIcd11CodeUnder(code, c.icd11));
+    if (match) {
+      return match;
+    }
+  }
+  if (!system || system === KenyaIcd10System) {
+    return conditions.find((c) => isIcd10CodeUnder(code, c.icd10));
+  }
+  return undefined;
+}
 
 // Backward-compatible flat code array (ICD-10 values, for existing callers)
 export const KenyaIdsrImmediateNotificationCodes = KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd10);
@@ -1768,7 +1914,20 @@ export interface KenyaIdsrNotificationSnapshot {
  * @returns True if the code is immediately notifiable under IDSR.
  */
 export function isKenyaIdsrImmediateNotificationCode(code: string): boolean {
-  return _icd11ImmediateSet.has(code) || _icd10ImmediateSet.has(code);
+  return !!findNotifiableCondition(KenyaIdsrImmediateNotifiableConditions, { code });
+}
+
+/**
+ * Returns the immediately notifiable condition a code falls under, in either ICD-11 or ICD-10.
+ * @param code - ICD-11 MMS or ICD-10 code.
+ * @param system - Optional coding system URI.
+ * @returns The IDSR table entry, or undefined.
+ */
+export function findKenyaIdsrImmediateCondition(
+  code: string,
+  system?: string
+): KenyaIdsrNotifiableCondition | undefined {
+  return findNotifiableCondition(KenyaIdsrImmediateNotifiableConditions, { system, code });
 }
 
 /**
@@ -1788,15 +1947,7 @@ export function getKenyaIdsrConditionCode(condition: {
     if (!coding.code) {
       continue;
     }
-    const sys = coding.system;
-
-    // ICD-11 — preferred system
-    if ((!sys || sys === KenyaIdsrCodeSystemIcd11) && _icd11ImmediateSet.has(coding.code)) {
-      return coding.code;
-    }
-
-    // ICD-10 — accepted during transition period
-    if ((!sys || sys === KenyaIdsrCodeSystemIcd10) && _icd10ImmediateSet.has(coding.code)) {
+    if (findNotifiableCondition(KenyaIdsrImmediateNotifiableConditions, coding)) {
       return coding.code;
     }
   }
@@ -1817,7 +1968,7 @@ export function buildKenyaIdsrNotificationExtension(
       { url: KenyaIdsrNotificationExtension.conditionCode, valueCode: conditionCode },
       {
         url: KenyaIdsrNotificationExtension.conditionDisplay,
-        valueString: KenyaIdsrConditionDisplay[conditionCode] ?? conditionCode,
+        valueString: findKenyaIdsrImmediateCondition(conditionCode)?.display ?? conditionCode,
       },
       { url: KenyaIdsrNotificationExtension.notifiedAt, valueDateTime: notifiedAt },
       { url: KenyaIdsrNotificationExtension.correlationId, valueString: correlationId },
@@ -1844,41 +1995,36 @@ export function buildKenyaIdsrNotificationExtension(
 // Dual ICD-11/ICD-10 coding matches the IDSR section above.
 // Note: ICD-10 A92 (other mosquito-borne fevers) maps to two distinct ICD-11
 // codes — Rift Valley fever (1D43) and Chikungunya (1D40) are listed separately.
-// Similarly, G00 (bacterial meningitis) is organism-agnostic in ICD-10 but has
-// organism-specific children in ICD-11; the meningococcal parent (1C1E) is used
-// here for MOH 505 aggregate surveillance.
+// Entries marked TODO(knhts-verify) have not yet been confirmed against the KNHTS ICD-11
+// service (AfyaLink /terminology/v1/icd11); confirm before relying on them for MOH 505.
 
 export const KenyaKhisWeeklyNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
   // ── Immediately notifiable (superset) ────────────────────────────────────────
   ...KenyaIdsrImmediateNotifiableConditions,
   // ── Weekly reportable (MOH 505 endemic disease surveillance) ─────────────────
   { icd11: '1B10', icd10: 'A15', display: 'Tuberculosis (confirmed)' },
-  { icd11: '1B11', icd10: 'A16', display: 'Tuberculosis (unconfirmed)' },
-  { icd11: '1B12', icd10: 'A17', display: 'Tuberculosis of nervous system' },
-  { icd11: '1A36', icd10: 'A06', display: 'Amoebiasis' },
-  { icd11: '1A90', icd10: 'A09', display: 'Diarrhoeal diseases' },
-  { icd11: '1B90', icd10: 'A27', display: 'Leptospirosis' },
+  { icd11: '1B11', icd10: 'A16', display: 'Tuberculosis (unconfirmed)' }, // TODO(knhts-verify)
+  { icd11: '1B12', icd10: 'A17', display: 'Tuberculosis of nervous system' }, // TODO(knhts-verify)
+  { icd11: '1A36', icd10: 'A06', display: 'Amoebiasis' }, // TODO(knhts-verify)
+  { icd11: '1A40', icd10: 'A09', display: 'Diarrhoeal diseases (gastroenteritis or colitis)' },
+  { icd11: '1B90', icd10: 'A27', display: 'Leptospirosis' }, // TODO(knhts-verify)
   { icd11: '1B20', icd10: 'A30', display: 'Leprosy' },
   { icd11: '1C30', icd10: 'A75', display: 'Typhus fever' },
   { icd11: '1D2Z', icd10: 'A90', display: 'Dengue fever' },
-  { icd11: '1D43', icd10: 'A92', display: 'Rift Valley fever' },
+  { icd11: '1D44', icd10: 'A92', display: 'Rift Valley fever' },
   { icd11: '1D40', icd10: 'A92', display: 'Chikungunya' },
-  { icd11: '1F40.0', icd10: 'B50', display: 'Malaria (P. falciparum)' },
-  { icd11: '1F40.1', icd10: 'B51', display: 'Malaria (P. vivax)' },
+  { icd11: '1F40', icd10: 'B50', display: 'Malaria (P. falciparum)' },
+  { icd11: '1F41', icd10: 'B51', display: 'Malaria (P. vivax)' }, // TODO(knhts-verify)
   { icd11: '1F4Z', icd10: 'B54', display: 'Malaria (unspecified)' },
-  { icd11: '1F5Z', icd10: 'B55', display: 'Leishmaniasis' },
-  { icd11: '1F67.Z', icd10: 'B74', display: 'Filariasis' },
-  { icd11: '1C1E', icd10: 'G00', display: 'Bacterial meningitis' },
-  { icd11: 'DB50.Z', icd10: 'G03', display: 'Meningitis (other/unspecified)' },
-  { icd11: 'CA04', icd10: 'J00', display: 'Acute nasopharyngitis (ARI)' },
-  { icd11: 'CA0Z', icd10: 'J06', display: 'Acute upper respiratory infection' },
-  { icd11: 'CA40.0Z', icd10: 'J18', display: 'Pneumonia (unspecified)' },
-  { icd11: 'DA91.Z', icd10: 'K52', display: 'Acute gastroenteritis' },
+  { icd11: '1F54', icd10: 'B55', display: 'Leishmaniasis' },
+  { icd11: '1F66', icd10: 'B74', display: 'Filariasis' },
+  { icd11: '1C1E', icd10: 'G00', display: 'Bacterial meningitis' }, // TODO(knhts-verify)
+  { icd11: 'DB50.Z', icd10: 'G03', display: 'Meningitis (other/unspecified)' }, // TODO(knhts-verify)
+  { icd11: 'CA04', icd10: 'J00', display: 'Acute nasopharyngitis (ARI)' }, // TODO(knhts-verify)
+  { icd11: 'CA07', icd10: 'J06', display: 'Acute upper respiratory infection' },
+  { icd11: 'CA40', icd10: 'J18', display: 'Pneumonia' },
+  { icd11: 'DA91.Z', icd10: 'K52', display: 'Acute gastroenteritis' }, // TODO(knhts-verify)
 ] as const;
-
-// Derived sets for efficient lookup (union of immediate + weekly-only)
-const _icd11WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd11));
-const _icd10WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd10));
 
 // Backward-compatible flat code array (ICD-10 values)
 export const KenyaKhisWeeklyNotificationCodes = KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd10);
@@ -1930,7 +2076,21 @@ export interface KenyaKhisWeeklyExportSnapshot {
  * @returns True if the code is reported in the KHIS weekly aggregate.
  */
 export function isKenyaKhisWeeklyNotificationCode(code: string): boolean {
-  return _icd11WeeklySet.has(code) || _icd10WeeklySet.has(code);
+  return !!findNotifiableCondition(KenyaKhisWeeklyNotifiableConditions, { code });
+}
+
+/**
+ * Returns the KHIS weekly condition a coding falls under, in either ICD-11 or ICD-10.
+ * @param coding - The coding to match.
+ * @param coding.system - Coding system URI, if any.
+ * @param coding.code - Coding code.
+ * @returns The KHIS weekly table entry, or undefined.
+ */
+export function findKenyaKhisWeeklyCondition(coding: {
+  system?: string;
+  code?: string;
+}): KenyaIdsrNotifiableCondition | undefined {
+  return findNotifiableCondition(KenyaKhisWeeklyNotifiableConditions, coding);
 }
 
 export function toKhisWeekPeriod(date: Date): string {

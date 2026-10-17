@@ -5,6 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Claim, OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
+import { getConfig } from '../../config/loader';
 import type { KenyaPatientPaymentMethod } from '@medplum/core';
 import { handlePostPatientPayment } from '../../country-pack/kenya/post-patient-payment';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -85,9 +86,9 @@ export async function postPatientPaymentHandler(req: FhirRequest): Promise<FhirR
   }
 
   const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id) as Project & { id: string };
-  const baseUrl = req.headers?.['x-forwarded-host']
-    ? `${req.headers['x-forwarded-proto'] ?? 'https'}://${req.headers['x-forwarded-host']}`
-    : ctx.project.id; // fallback — callbacks use project ID when base URL not available
+  // Callback URLs are built from server config, never from request headers, so a caller
+  // cannot redirect payment gateway callbacks to a host they control.
+  const baseUrl = getConfig().baseUrl.replace(/\/+$/, '');
 
   const result = await handlePostPatientPayment({
     ctx,

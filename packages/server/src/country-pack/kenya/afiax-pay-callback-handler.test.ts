@@ -21,6 +21,10 @@ jest.mock('../../fhir/repo', () => ({
   SystemRepository: class {},
 }));
 
+jest.mock('../../config/loader', () => ({
+  getConfig: () => ({ baseUrl: 'https://api.afiax.africa/' }),
+}));
+
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 const mockGetGlobalRepo = getGlobalSystemRepo as jest.MockedFunction<typeof getGlobalSystemRepo>;
 const mockGetProjectRepo = getProjectSystemRepo as jest.MockedFunction<typeof getProjectSystemRepo>;
@@ -32,21 +36,42 @@ function makeProject(erpEnabled = true): Project {
     resourceType: 'Project',
     id: 'project-test',
     setting: [{ name: 'erpnextEnabled', valueBoolean: erpEnabled }],
-    systemSecret: erpEnabled
-      ? [
-          { name: 'erpnextBaseUrl', valueString: 'https://erp.afiax.africa' },
-          { name: 'erpnextApiKey', valueString: 'key' },
-          { name: 'erpnextApiSecret', valueString: 'secret' },
-          { name: 'erpnextCompany', valueString: 'Afiax Healthcare Ltd' },
-        ]
-      : [],
+    systemSecret: [
+      { name: 'afiaxPayBaseUrl', valueString: 'https://pay.afiax.africa' },
+      { name: 'afiaxPayApiKey', valueString: 'pay-key' },
+      { name: 'afiaxPaySecretKey', valueString: 'pay-secret' },
+      ...(erpEnabled
+        ? [
+            { name: 'erpnextBaseUrl', valueString: 'https://erp.afiax.africa' },
+            { name: 'erpnextApiKey', valueString: 'key' },
+            { name: 'erpnextApiSecret', valueString: 'secret' },
+            { name: 'erpnextCompany', valueString: 'Afiax Healthcare Ltd' },
+          ]
+        : []),
+    ],
   };
 }
 
-function makeNotice(paymentRequestId: string, claimRef = 'Claim/claim-001'): PaymentNotice {
+/**
+ * Queues the Afiax Pay payment-request lookup the handler uses to verify a callback.
+ * @param state - The payment request body Afiax Pay returns.
+ */
+function mockAfiaxPayLookup(state: Record<string, unknown>): void {
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify(state),
+  } as unknown as NodeFetchResponse);
+}
+
+function makeNotice(
+  paymentRequestId: string,
+  claimRef = 'Claim/claim-001',
+  paymentStatus: 'pending' | 'confirmed' | 'failed' = 'pending'
+): PaymentNotice {
   const ext = buildKenyaPatientPaymentExtension({
     method: 'afiax-pay',
-    paymentStatus: 'pending',
+    paymentStatus,
     amount: 1500,
     currency: 'KES',
     gatewayReference: paymentRequestId,
@@ -134,6 +159,14 @@ describe('handleKenyaAfiaxPayCallback', () => {
     mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
     mockGetProjectRepo.mockReturnValue(projectRepo);
 
+    mockAfiaxPayLookup({
+      payment_request_id: 'AP-2026-100',
+      status: 'success',
+      amount: 1500,
+      currency: 'KES',
+      transaction_ref: 'AFPAY-TXN-ABC',
+      paid_at: '2026-06-18T11:05:00.000Z',
+    });
     mockFetch.mockResolvedValueOnce({
       ok: true, status: 200,
       text: async () => JSON.stringify({ data: { name: 'ACC-PAY-AFPAY-001' } }),
@@ -171,6 +204,8 @@ describe('handleKenyaAfiaxPayCallback', () => {
     mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
     mockGetProjectRepo.mockReturnValue(projectRepo);
 
+    mockAfiaxPayLookup({ payment_request_id: 'AP-2026-200', status: 'failed', failure_reason: 'Insufficient funds' });
+
     const result = await handleKenyaAfiaxPayCallback('project-test', {
       payment_request_id: 'AP-2026-200',
       status: 'failed',
@@ -179,7 +214,8 @@ describe('handleKenyaAfiaxPayCallback', () => {
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe('failed');
-    expect(mockFetch).not.toHaveBeenCalled();
+    // Only the Afiax Pay lookup — no ERPNext calls
+    expect(mockFetch).toHaveBeenCalledTimes(1);
 
     const noticeUpdate = projectRepo.updateResource.mock.calls.find(
       (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
@@ -197,6 +233,8 @@ describe('handleKenyaAfiaxPayCallback', () => {
     mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
     mockGetProjectRepo.mockReturnValue(projectRepo);
 
+    mockAfiaxPayLookup({ payment_request_id: 'AP-2026-300', status: 'cancelled' });
+
     const result = await handleKenyaAfiaxPayCallback('project-test', {
       payment_request_id: 'AP-2026-300',
       status: 'cancelled',
@@ -204,6 +242,111 @@ describe('handleKenyaAfiaxPayCallback', () => {
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe('cancelled');
+  });
+
+  test('rejects a forged success callback when Afiax Pay reports the payment failed', async () => {
+    const project = makeProject();
+    const notice = makeNotice('AP-2026-FORGED');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockAfiaxPayLookup({ payment_request_id: 'AP-2026-FORGED', status: 'failed', failure_reason: 'Declined' });
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-2026-FORGED',
+      status: 'success',
+      amount: 1500,
+      transaction_ref: 'FAKE',
+    });
+
+    expect(result.status).toBe('failed');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const noticeUpdate = projectRepo.updateResource.mock.calls.find(
+      (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
+    );
+    expect(getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice)?.paymentStatus).toBe('failed');
+  });
+
+  test('makes no changes while Afiax Pay reports the payment as pending', async () => {
+    const project = makeProject();
+    const notice = makeNotice('AP-2026-PENDING');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockAfiaxPayLookup({ payment_request_id: 'AP-2026-PENDING', status: 'pending' });
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-2026-PENDING',
+      status: 'success',
+    });
+
+    expect(result.status).toBe('ignored');
+    expect(projectRepo.updateResource).not.toHaveBeenCalled();
+  });
+
+  test('makes no changes when the Afiax Pay lookup fails', async () => {
+    const project = makeProject();
+    const notice = makeNotice('AP-2026-UNVERIFIED');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: async () => 'Not found',
+    } as unknown as NodeFetchResponse);
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-2026-UNVERIFIED',
+      status: 'success',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('error');
+    expect(projectRepo.updateResource).not.toHaveBeenCalled();
+  });
+
+  test('ignores replayed callbacks for an already-confirmed payment', async () => {
+    const project = makeProject();
+    const notice = makeNotice('AP-2026-DONE', 'Claim/claim-001', 'confirmed');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-2026-DONE',
+      status: 'success',
+    });
+
+    expect(result.status).toBe('ignored');
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(projectRepo.updateResource).not.toHaveBeenCalled();
+  });
+
+  test('records the amount reported by Afiax Pay, not the callback body', async () => {
+    const project = makeProject(false);
+    const notice = makeNotice('AP-2026-AMOUNT');
+    const projectRepo = makeProjectRepo(project, notice, null);
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockAfiaxPayLookup({ payment_request_id: 'AP-2026-AMOUNT', status: 'success', amount: 1500, currency: 'KES' });
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-2026-AMOUNT',
+      status: 'success',
+      amount: 999999,
+    });
+
+    expect(result.status).toBe('confirmed');
+    const noticeUpdate = projectRepo.updateResource.mock.calls.find(
+      (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
+    );
+    expect(getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice)?.amount).toBe(1500);
   });
 
   test('returns ignored when no PaymentNotice matches the paymentRequestId', async () => {

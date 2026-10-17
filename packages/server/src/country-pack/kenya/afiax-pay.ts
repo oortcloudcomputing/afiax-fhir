@@ -110,6 +110,58 @@ export async function initiateAfiaxPayRequest(
   };
 }
 
+export type AfiaxPayPaymentRequestStatus = AfiaxPayCallbackPayload['status'] | 'pending';
+
+export interface AfiaxPayPaymentRequestState extends Omit<AfiaxPayCallbackPayload, 'status'> {
+  readonly status: AfiaxPayPaymentRequestStatus;
+}
+
+/**
+ * Reads the authoritative state of a payment request from the Afiax Pay API.
+ *
+ * Callback bodies are only a notification; this lookup is the source of truth.
+ * @param credentials - Afiax Pay credentials for the project.
+ * @param paymentRequestId - The payment_request_id returned when the request was created.
+ * @returns The payment request state according to Afiax Pay.
+ */
+export async function getAfiaxPayPaymentRequest(
+  credentials: KenyaAfiaxPayCredentials,
+  paymentRequestId: string
+): Promise<AfiaxPayPaymentRequestState> {
+  const response = await fetch(`${credentials.baseUrl}/api/v1/payment-requests/${encodeURIComponent(paymentRequestId)}`, {
+    method: 'GET',
+    headers: {
+      'X-API-Key': credentials.apiKey,
+      'X-API-Secret': credentials.secretKey,
+      Accept: 'application/json',
+    },
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Afiax Pay payment request lookup failed (${response.status}): ${text}`);
+  }
+
+  const data = JSON.parse(text) as Record<string, unknown>;
+  if (data.payment_request_id !== paymentRequestId) {
+    throw new Error(`Afiax Pay lookup returned a different payment_request_id: ${String(data.payment_request_id)}`);
+  }
+  const status = data.status as AfiaxPayPaymentRequestStatus | undefined;
+  if (status !== 'success' && status !== 'failed' && status !== 'cancelled' && status !== 'pending') {
+    throw new Error(`Afiax Pay lookup returned unknown status: ${String(data.status)}`);
+  }
+
+  return {
+    paymentRequestId,
+    status,
+    amount: data.amount as number | undefined,
+    currency: data.currency as string | undefined,
+    transactionRef: data.transaction_ref as string | undefined,
+    paidAt: data.paid_at as string | undefined,
+    failureReason: data.failure_reason as string | undefined,
+  };
+}
+
 export function parseAfiaxPayCallback(body: unknown): AfiaxPayCallbackPayload | null {
   try {
     const b = body as Record<string, unknown>;

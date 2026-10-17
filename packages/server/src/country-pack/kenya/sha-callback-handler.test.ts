@@ -15,6 +15,12 @@ jest.mock('./sync-to-erpnext', () => ({
   syncErpNextInvoice: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('./sha', () => ({
+  ...jest.requireActual('./sha'),
+  getKenyaShaClaimsCredentials: jest.fn(() => ({ baseUrl: 'https://sha.example', accessKey: 'ak', secretKey: 'sk' })),
+  checkKenyaShaClaimStatus: jest.fn(),
+}));
+
 jest.mock('../../logger', () => ({
   globalLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
@@ -23,6 +29,9 @@ const { getGlobalSystemRepo, getProjectSystemRepo } = jest.requireMock('../../fh
   getGlobalSystemRepo: jest.Mock;
   getProjectSystemRepo: jest.Mock;
 };
+
+const { checkKenyaShaClaimStatus }: { checkKenyaShaClaimStatus: jest.Mock } = jest.requireMock('./sha');
+const { syncErpNextShaPayment }: { syncErpNextShaPayment: jest.Mock } = jest.requireMock('./sync-to-erpnext');
 
 const PROJECT_ID = 'project-sha-1';
 const BUNDLE_ID = 'sha-bundle-uuid-001';
@@ -69,6 +78,14 @@ function makeSystemRepo(claim: Claim | undefined, existingClaimResponse: ClaimRe
   };
 }
 
+/**
+ * Builds the Authorization header for a callback signed the way SHA signs callbacks.
+ * @returns The Bearer Authorization header value.
+ */
+async function signedAuth(): Promise<string> {
+  return `Bearer ${await getKenyaShaClaimsToken({ baseUrl: '', accessKey: 'ak', secretKey: SECRET_KEY })}`;
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -82,7 +99,7 @@ describe('handleKenyaShaCallback', () => {
     const result = await handleKenyaShaCallback(
       PROJECT_ID,
       { bundleId: BUNDLE_ID, claim_state: 'Payment Approved', message: 'Claim ready for payment' },
-      undefined
+      await signedAuth()
     );
 
     expect(result.ok).toBe(true);
@@ -108,7 +125,7 @@ describe('handleKenyaShaCallback', () => {
     const result = await handleKenyaShaCallback(
       PROJECT_ID,
       { bundleId: BUNDLE_ID, claim_state: 'Rejected', message: 'Claim rejected by SHA' },
-      undefined
+      await signedAuth()
     );
 
     expect(result.ok).toBe(true);
@@ -123,7 +140,7 @@ describe('handleKenyaShaCallback', () => {
     const result = await handleKenyaShaCallback(
       PROJECT_ID,
       { bundleId: BUNDLE_ID, claim_state: 'Under Review' },
-      undefined
+      await signedAuth()
     );
 
     expect(result.ok).toBe(true);
@@ -149,7 +166,7 @@ describe('handleKenyaShaCallback', () => {
     const result = await handleKenyaShaCallback(
       PROJECT_ID,
       { bundleId: 'unknown-bundle-id', claim_state: 'Approved' },
-      undefined
+      await signedAuth()
     );
 
     expect(result.ok).toBe(true);
@@ -214,6 +231,60 @@ describe('handleKenyaShaCallback', () => {
     expect(result.status).toBe('adjudicated');
   });
 
+  test('rejects a JWT when no secretKey is configured', async () => {
+    const projectWithoutSecret = { ...baseProject, secret: [{ name: 'kenyaShaClaimsAccessKey', valueString: 'ak' }] };
+    const systemRepo = { ...makeSystemRepo(baseClaim), readResource: jest.fn(async () => projectWithoutSecret) };
+    getGlobalSystemRepo.mockReturnValue(systemRepo);
+
+    const result = await handleKenyaShaCallback(
+      PROJECT_ID,
+      { bundleId: BUNDLE_ID, claim_state: 'Payment Approved' },
+      await signedAuth()
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('Invalid SHA callback JWT');
+    expect(systemRepo.createResource).not.toHaveBeenCalled();
+  });
+
+  test('applies the SHA claim-status API result, not the body, for an unsigned callback', async () => {
+    const systemRepo = makeSystemRepo(baseClaim);
+    getGlobalSystemRepo.mockReturnValue(systemRepo);
+    getProjectSystemRepo.mockResolvedValue(systemRepo);
+    checkKenyaShaClaimStatus.mockResolvedValue({ claimState: 'Rejected', message: 'Claim rejected by SHA' });
+
+    const result = await handleKenyaShaCallback(
+      PROJECT_ID,
+      { bundleId: BUNDLE_ID, claim_state: 'Payment Approved', message: 'forged' },
+      undefined
+    );
+
+    expect(checkKenyaShaClaimStatus).toHaveBeenCalledWith(expect.anything(), BUNDLE_ID);
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe('rejected');
+    expect(result.message).toBe('Claim rejected by SHA');
+    expect(syncErpNextShaPayment).not.toHaveBeenCalled();
+  });
+
+  test('makes no changes when an unsigned callback cannot be verified with SHA', async () => {
+    const systemRepo = makeSystemRepo(baseClaim);
+    getGlobalSystemRepo.mockReturnValue(systemRepo);
+    getProjectSystemRepo.mockResolvedValue(systemRepo);
+    checkKenyaShaClaimStatus.mockRejectedValue(new Error('SHA unavailable'));
+
+    const result = await handleKenyaShaCallback(
+      PROJECT_ID,
+      { bundleId: BUNDLE_ID, claim_state: 'Payment Approved' },
+      undefined
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('error');
+    expect(systemRepo.createResource).not.toHaveBeenCalled();
+    expect(systemRepo.updateResource).not.toHaveBeenCalled();
+    expect(syncErpNextShaPayment).not.toHaveBeenCalled();
+  });
+
   test('updates open Tasks linked to the Claim', async () => {
     const openTask: Task & { id: string } = {
       resourceType: 'Task',
@@ -238,7 +309,7 @@ describe('handleKenyaShaCallback', () => {
     await handleKenyaShaCallback(
       PROJECT_ID,
       { bundleId: BUNDLE_ID, claim_state: 'Payment Approved' },
-      undefined
+      await signedAuth()
     );
 
     expect(systemRepo.updateResource).toHaveBeenCalledWith(
@@ -271,7 +342,7 @@ describe('handleKenyaShaCallback', () => {
         outcome: 'complete',
         disposition: 'Approved for payment',
       },
-      undefined
+      await signedAuth()
     );
 
     expect(result.ok).toBe(true);

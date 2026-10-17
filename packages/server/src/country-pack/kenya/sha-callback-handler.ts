@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, normalizeErrorString, Operator } from '@medplum/core';
 import { syncErpNextShaPayment } from './sync-to-erpnext';
-import { KenyaShaBundleIdIdentifierSystem } from './sha';
+import { checkKenyaShaClaimStatus, getKenyaShaClaimsCredentials, KenyaShaBundleIdIdentifierSystem } from './sha';
 import type { Bundle, Claim, ClaimResponse, Identifier, Task } from '@medplum/fhirtypes';
 import { jwtVerify } from 'jose';
 import type { Project } from '@medplum/fhirtypes';
@@ -90,9 +90,9 @@ function mergeIdentifier(identifiers: Identifier[] | undefined, claimId: string)
 }
 
 async function verifyCallbackJwt(authHeader: string | undefined, secretKey: string): Promise<boolean> {
-  if (!authHeader?.startsWith('Bearer ')) return true; // no JWT — accept without verification
+  if (!authHeader?.startsWith('Bearer ')) return false;
   const token = authHeader.slice(7).trim();
-  if (!token) return true;
+  if (!token) return false;
   try {
     await jwtVerify(token, new TextEncoder().encode(secretKey), { algorithms: ['HS256'] });
     return true;
@@ -112,6 +112,17 @@ export interface ShaCallbackResult {
   readonly claimResponseId?: string;
 }
 
+/**
+ * Handles an SHA claim status callback.
+ *
+ * The endpoint is public. A callback with a valid HS256 JWT (signed with `kenyaShaClaimsSecretKey`) is
+ * applied as sent. An unsigned callback is treated only as a notification: the claim status is pulled
+ * from the SHA claim-status API and that response is applied instead of the callback body.
+ * @param projectId - The project the callback URL was issued for.
+ * @param body - The raw callback body.
+ * @param authHeader - The Authorization header, if any.
+ * @returns The outcome of processing the callback.
+ */
 export async function handleKenyaShaCallback(
   projectId: string,
   body: unknown,
@@ -134,13 +145,14 @@ export async function handleKenyaShaCallback(
 
   const secretKey = getSecret('kenyaShaClaimsSecretKey');
 
-  // Verify JWT signature if secretKey is configured and JWT was provided
-  if (secretKey && authHeader?.startsWith('Bearer ')) {
-    const valid = await verifyCallbackJwt(authHeader, secretKey);
-    if (!valid) {
+  // A presented JWT must verify. Unsigned callbacks are allowed but are not trusted (see below).
+  let signedCallback = false;
+  if (authHeader?.startsWith('Bearer ')) {
+    if (!secretKey || !(await verifyCallbackJwt(authHeader, secretKey))) {
       globalLogger.warn('Kenya SHA callback JWT verification failed', { projectId });
       return { ok: false, projectId, status: 'error', message: 'Invalid SHA callback JWT signature' };
     }
+    signedCallback = true;
   }
 
   if (!isRecord(body)) {
@@ -149,10 +161,9 @@ export async function handleKenyaShaCallback(
 
   const payload = body as ShaCallbackPayload;
   const bundleId = extractBundleId(payload);
-  const claimState = extractClaimState(payload);
-  const remoteClaimResponse = extractClaimResponse(payload);
-  const statusLabel = normalizeCallbackStatus(claimState, remoteClaimResponse?.outcome);
-  const callbackMessage =
+  let claimState = extractClaimState(payload);
+  let remoteClaimResponse = extractClaimResponse(payload);
+  let callbackMessage =
     typeof payload.message === 'string' ? payload.message : `SHA callback: ${claimState ?? 'status update'}`;
 
   if (!bundleId) {
@@ -181,6 +192,31 @@ export async function handleKenyaShaCallback(
         message: `No Claim found with bundle ID ${bundleId} — callback acknowledged but not applied`,
       };
     }
+
+    if (!signedCallback) {
+      // Unsigned callback: use it only as a trigger and apply the status SHA reports through its API.
+      try {
+        const verified = await checkKenyaShaClaimStatus(getKenyaShaClaimsCredentials(project), bundleId);
+        claimState = verified.claimState;
+        remoteClaimResponse = verified.claimResponse;
+        callbackMessage = verified.message ?? `SHA claim status: ${claimState ?? 'status update'}`;
+      } catch (err) {
+        globalLogger.warn('Kenya SHA callback: could not verify unsigned callback with SHA claim-status API', {
+          projectId,
+          bundleId,
+          error: normalizeErrorString(err),
+        });
+        return {
+          ok: false,
+          projectId,
+          bundleId,
+          claimId: targetClaim.id,
+          status: 'error',
+          message: `Unsigned SHA callback could not be verified with the SHA claim-status API: ${normalizeErrorString(err)}`,
+        };
+      }
+    }
+    const statusLabel = normalizeCallbackStatus(claimState, remoteClaimResponse?.outcome);
 
     // Upsert ClaimResponse
     const insurer = remoteClaimResponse?.insurer ?? targetClaim.insurer;

@@ -5,6 +5,7 @@ import { addDefaults, isBooleanConfig, isIntegerConfig, isObjectConfig, setValue
 describe('utils', () => {
   test('isObjectConfig', () => {
     expect(isObjectConfig('smtp')).toBe(true);
+    expect(isObjectConfig('kafka')).toBe(true);
   });
 
   test('isBooleanConfig', () => {

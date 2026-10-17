@@ -156,6 +156,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
+  // Run any suite with PostgreSQL row-level security on: MEDPLUM_TEST_RLS=true npx jest ...
+  config.rowLevelSecurity = process.env['MEDPLUM_TEST_RLS'] === 'true';
   return config;
 }
 

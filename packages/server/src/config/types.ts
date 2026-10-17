@@ -175,6 +175,39 @@ export interface MedplumServerConfig {
 
   /** Optional Kafka configuration for the DHA audit trail streaming pipeline. */
   kafka?: MedplumKafkaConfig;
+
+  /** Optional field-level encryption of stored resource bodies (see fhir/encryption.ts). */
+  fieldEncryption?: MedplumFieldEncryptionConfig;
+
+  /** Optional PostgreSQL row-level security for project isolation (see fhir/rls.ts). */
+  rowLevelSecurity?: boolean;
+}
+
+/** Field-level encryption config: envelope encryption with Vault Transit data keys. */
+export interface MedplumFieldEncryptionConfig {
+  enabled: boolean;
+  /** Resource types to encrypt. Defaults to clinical, identity and payment resources. */
+  resourceTypes?: string[];
+  /** Hours between data-key rotations (Vault mode). Default 24; 0 disables rotation. */
+  rotationHours?: number;
+  vault?: {
+    /** Vault address, e.g. http://vault.vault.svc.cluster.local:8200 */
+    address: string;
+    /** Transit secrets engine mount. Default 'transit'. */
+    transitMount?: string;
+    /** Transit key name. Default 'afiax-fhir'. */
+    keyName?: string;
+    /** Vault Kubernetes auth role (preferred in-cluster). */
+    kubernetesRole?: string;
+    /** Vault Kubernetes auth mount. Default 'kubernetes'. */
+    kubernetesAuthMount?: string;
+    /** Service account token path. Default /var/run/secrets/kubernetes.io/serviceaccount/token */
+    kubernetesTokenPath?: string;
+    /** Static Vault token — local development only. */
+    token?: string;
+  };
+  /** Base64 32-byte key used instead of Vault — tests and local development only, never production. */
+  localKey?: string;
 }
 
 export interface ArrayColumnPaddingConfig {

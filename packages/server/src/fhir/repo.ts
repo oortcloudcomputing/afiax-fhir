@@ -125,6 +125,7 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { decryptStoredContent, encryptStoredContent, isEncryptedResourceType, parseStoredResource } from './encryption';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import type { HumanNameResource } from './lookups/humanname';
@@ -139,6 +140,7 @@ import { replaceConditionalReferences, validateResourceReferences } from './refe
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
+import { isRowLevelSecurityEnabled, RlsScopedPool, rlsScopeStatement } from './rls';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
@@ -505,7 +507,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(gone);
     }
 
-    const resource = JSON.parse(rows[0].content as string) as WithId<T>;
+    const resource = await parseStoredResource<WithId<T>>(rows[0].content as string);
 
     if (!this.transactionDepth) {
       // Only set cache entry if not in a transaction
@@ -651,7 +653,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
-        const resource = row.content ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+        const resource = row.content
+          ? this.removeHiddenFields(await parseStoredResource<WithId<T>>(row.content as string))
+          : undefined;
         const outcome: OperationOutcome = row.content
           ? allOk
           : {
@@ -729,7 +733,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(notFound);
       }
 
-      const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
+      const result = this.removeHiddenFields(await parseStoredResource<WithId<T>>(rows[0].content as string));
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
@@ -1750,7 +1754,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
-    const content = stringify(resource);
+    const content = encryptStoredContent(resourceType, resource.id, stringify(resource));
 
     const row: Record<string, any> = {
       id: resource.id,
@@ -1819,7 +1823,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
-    const content = stringify(resource);
+    const content = encryptStoredContent(resourceType, resource.id, stringify(resource));
 
     await new InsertQuery(resourceType + '_History', [
       {
@@ -2506,7 +2510,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // If we ever use a writer, then all subsequent operations must use a writer.
       this.mode = RepositoryMode.WRITER;
     }
-    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
+    const effectiveMode = this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode;
+    const pool = getDatabasePool(effectiveMode);
+    const rlsProjectIds = this.getRowLevelSecurityProjectIds();
+    if (rlsProjectIds) {
+      // Each query runs in a short transaction scoped to the caller's projects (see fhir/rls.ts)
+      return new RlsScopedPool(pool, rlsProjectIds, effectiveMode === DatabaseMode.READER) as unknown as Pool;
+    }
+    return pool;
+  }
+
+  /**
+   * Returns the project ids that PostgreSQL row-level security should allow for this repository,
+   * or undefined when RLS does not apply (RLS disabled, super admin, or no project context).
+   * @returns The project ids, or undefined.
+   */
+  private getRowLevelSecurityProjectIds(): string[] | undefined {
+    if (!isRowLevelSecurityEnabled() || this.isSuperAdmin() || !this.context.projects?.length) {
+      return undefined;
+    }
+    return [...new Set(this.context.projects.map((p) => p.id))];
   }
 
   /**
@@ -2610,6 +2633,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+      const rlsProjectIds = this.getRowLevelSecurityProjectIds();
+      if (rlsProjectIds) {
+        await conn.query(rlsScopeStatement(rlsProjectIds));
+      }
     } else {
       await conn.query('SAVEPOINT sp' + this.transactionDepth);
     }
@@ -2745,7 +2772,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return undefined;
     }
     const cachedValue = await getCacheRedis().get(getCacheKey(resourceType, id));
-    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
+    return cachedValue ? (JSON.parse(await decryptStoredContent(cachedValue)) as CacheEntry<WithId<T>>) : undefined;
   }
 
   /**
@@ -2786,7 +2813,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         result[i] = undefined;
       } else {
         const cachedValue = cachedValues[referenceKeyIndices[i]];
-        result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+        result[i] = cachedValue ? (JSON.parse(await decryptStoredContent(cachedValue)) as CacheEntry) : undefined;
       }
     }
     return result;
@@ -2807,9 +2834,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const projectId = resource.meta?.project;
+    const cacheValue = stringify({ resource, projectId });
     await getCacheRedis().set(
       getCacheKey(resource.resourceType, resource.id),
-      stringify({ resource, projectId }),
+      isEncryptedResourceType(resource.resourceType)
+        ? encryptStoredContent(resource.resourceType, resource.id, cacheValue)
+        : cacheValue,
       'EX',
       REDIS_CACHE_EX_SECONDS
     );

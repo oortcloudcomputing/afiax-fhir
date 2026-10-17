@@ -55,7 +55,7 @@ describe('PostgreSQL row-level security', () => {
     await shutdownApp();
   });
 
-  function rawClient(repo: Repository, mode = DatabaseMode.READER): Pool | PoolClient {
+  function rawClient(repo: Repository, mode: DatabaseMode = DatabaseMode.READER): Pool | PoolClient {
     return repo.getDatabaseClient(mode);
   }
 

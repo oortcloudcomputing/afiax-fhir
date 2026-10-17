@@ -1,0 +1,13 @@
+{
+  "status": "published",
+  "correlationId": "00000000-0000-0000-0000-000000000005",
+  "patientId": "example-patient",
+  "publicationId": "SHR-2026-0098765",
+  "endpoint": "https://afyalink.dha.go.ke/v1/shr/patient-record",
+  "publishedAt": "2026-06-16T08:30:00.000Z",
+  "message": "Patient record published to Kenya SHR. Publication ID: SHR-2026-0098765. Bundle entries: 4.",
+  "bundleEntryCount": 4,
+  "task": {
+    "reference": "Task/example-shr-task"
+  }
+}

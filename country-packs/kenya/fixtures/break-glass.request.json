@@ -1,0 +1,6 @@
+{
+  "patient": {
+    "reference": "Patient/example-patient"
+  },
+  "reason": "Emergency admission — patient unconscious, no next of kin present"
+}

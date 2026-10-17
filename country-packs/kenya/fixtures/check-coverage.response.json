@@ -1,0 +1,26 @@
+{
+  "status": "eligible",
+  "correlationId": "00000000-0000-0000-0000-000000000001",
+  "countryPack": "kenya",
+  "message": "Jane Wanjiku Mwangi is eligible for coverage checks in DHA.",
+  "nextState": "ready-for-claim-and-billing",
+  "identificationType": "national-id",
+  "identificationNumber": "12345678",
+  "eligible": true,
+  "fullName": "Jane Wanjiku Mwangi",
+  "reason": null,
+  "possibleSolution": null,
+  "coverageEndDate": "2026-12-31",
+  "transitionStatus": "active",
+  "requestId": "98765",
+  "requestIdType": "national-id",
+  "requestIdNumber": "12345678",
+  "meansTestingDone": true,
+  "employmentType": "formal",
+  "employerName": "Afiax Healthcare Ltd",
+  "eligibleEmployee": true,
+  "policyEndEmployer": null,
+  "task": {
+    "reference": "Task/example-coverage-task"
+  }
+}

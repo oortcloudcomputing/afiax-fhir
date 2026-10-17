@@ -1,0 +1,16 @@
+{
+  "status": "resolved",
+  "correlationId": "00000000-0000-0000-0000-000000000002",
+  "patientId": "example-patient",
+  "identificationType": "national-id",
+  "identificationNumber": "12345678",
+  "clientRegistryId": "KE-CR-2024-0098765",
+  "fullName": "Jane Wanjiku Mwangi",
+  "dateOfBirth": "1988-04-15",
+  "gender": "female",
+  "resolvedAt": "2026-06-16T08:30:00.000Z",
+  "message": "Patient identity resolved. DHA Client Registry ID: KE-CR-2024-0098765",
+  "task": {
+    "reference": "Task/example-identity-task"
+  }
+}

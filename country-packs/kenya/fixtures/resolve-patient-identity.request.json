@@ -1,0 +1,7 @@
+{
+  "patient": {
+    "reference": "Patient/example-patient"
+  },
+  "identificationType": "national-id",
+  "identificationNumber": "12345678"
+}

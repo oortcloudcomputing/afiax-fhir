@@ -9,19 +9,20 @@ import {
   normalizeErrorString,
   Operator,
 } from '@medplum/core';
-import type { Bundle, Claim, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
+import type { Bundle, Claim, Patient, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
-import { getGlobalSystemRepo, getProjectSystemRepo, SystemRepository } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
-import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
-import { AfiaxPayRequestSystem } from './post-patient-payment';
+import type { AfiaxPayPaymentRequestState } from './afiax-pay';
 import {
   getAfiaxPayPaymentRequest,
   getKenyaAfiaxPayCredentials,
   hasKenyaAfiaxPayCredentials,
   parseAfiaxPayCallback,
 } from './afiax-pay';
-import type { AfiaxPayPaymentRequestState } from './afiax-pay';
+import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
+import { AfiaxPayRequestSystem } from './post-patient-payment';
 
 export interface AfiaxPayCallbackResult {
   readonly ok: boolean;
@@ -97,7 +98,13 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     }
 
     if (!hasKenyaAfiaxPayCredentials(project)) {
-      return { ok: false, projectId, paymentRequestId, status: 'error', message: 'Afiax Pay credentials not configured — cannot verify callback' };
+      return {
+        ok: false,
+        projectId,
+        paymentRequestId,
+        status: 'error',
+        message: 'Afiax Pay credentials not configured — cannot verify callback',
+      };
     }
 
     let verified: AfiaxPayPaymentRequestState;
@@ -120,7 +127,13 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     }
 
     if (verified.status === 'pending') {
-      return { ok: true, projectId, paymentRequestId, status: 'ignored', message: 'Afiax Pay reports payment still pending — ignoring callback' };
+      return {
+        ok: true,
+        projectId,
+        paymentRequestId,
+        status: 'ignored',
+        message: 'Afiax Pay reports payment still pending — ignoring callback',
+      };
     }
     if (verified.status !== payload.status) {
       globalLogger.warn('Afiax Pay callback status disagrees with API — using API status', {
@@ -169,14 +182,20 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     if (!paymentSuccess) {
       const resultStatus = paymentCancelled ? 'cancelled' : 'failed';
       globalLogger.info('Afiax Pay payment not confirmed', { projectId, paymentRequestId, payStatus, failureReason });
-      return { ok: true, projectId, paymentRequestId, status: resultStatus, message: failureReason ?? `Payment ${payStatus}` };
+      return {
+        ok: true,
+        projectId,
+        paymentRequestId,
+        status: resultStatus,
+        message: failureReason ?? `Payment ${payStatus}`,
+      };
     }
 
     // Payment confirmed — create ERPNext Payment Entry and update Claim snapshot.
     if (notice.request?.reference?.startsWith('Claim/')) {
       const claimId = notice.request.reference.replace('Claim/', '');
       try {
-        let claim = await systemRepo.readResource<Claim>('Claim', claimId) as Claim & { id: string };
+        let claim = (await systemRepo.readResource<Claim>('Claim', claimId)) as Claim & { id: string };
         const snapshot = getKenyaErpNextSubmissionSnapshot(claim);
 
         if (snapshot?.invoiceName && hasKenyaErpNextCredentials(project as Project & { id: string })) {
@@ -208,7 +227,10 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
 
           const ext = buildKenyaErpNextSubmissionExtension(updatedSnapshot);
           const otherClaimExts = (claim.extension ?? []).filter((e) => e.url !== ext.url);
-          claim = await systemRepo.updateResource<Claim>({ ...claim, extension: [...otherClaimExts, ext] }) as Claim & { id: string };
+          claim = (await systemRepo.updateResource<Claim>({
+            ...claim,
+            extension: [...otherClaimExts, ext],
+          })) as Claim & { id: string };
         }
       } catch (err) {
         globalLogger.warn('Afiax Pay callback: ERPNext sync failed (non-blocking)', {
@@ -220,24 +242,48 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
       }
     }
 
-    await completeRelatedTask(systemRepo, projectId, notice as PaymentNotice & { id: string }, 'confirmed', `Afiax Pay payment confirmed. Reference: ${transactionRef ?? paymentRequestId}`);
+    await completeRelatedTask(
+      systemRepo,
+      projectId,
+      notice as PaymentNotice & { id: string },
+      'confirmed',
+      `Afiax Pay payment confirmed. Reference: ${transactionRef ?? paymentRequestId}`
+    );
 
-    globalLogger.info('Afiax Pay callback processed — payment confirmed', { projectId, paymentRequestId, transactionRef });
+    globalLogger.info('Afiax Pay callback processed — payment confirmed', {
+      projectId,
+      paymentRequestId,
+      transactionRef,
+    });
 
-    return { ok: true, projectId, paymentRequestId, status: 'confirmed', message: `Payment confirmed. Reference: ${transactionRef ?? paymentRequestId}` };
+    return {
+      ok: true,
+      projectId,
+      paymentRequestId,
+      status: 'confirmed',
+      message: `Payment confirmed. Reference: ${transactionRef ?? paymentRequestId}`,
+    };
   } catch (err) {
-    globalLogger.error('Afiax Pay callback processing failed', { projectId, paymentRequestId, error: normalizeErrorString(err) });
+    globalLogger.error('Afiax Pay callback processing failed', {
+      projectId,
+      paymentRequestId,
+      error: normalizeErrorString(err),
+    });
     return { ok: false, projectId, paymentRequestId, status: 'error', message: normalizeErrorString(err) };
   }
 }
 
 async function resolvePatientName(systemRepo: SystemRepository, claim: Claim & { id: string }): Promise<string> {
-  if (!claim.patient?.reference) return `Claim/${claim.id}`;
+  if (!claim.patient?.reference) {
+    return `Claim/${claim.id}`;
+  }
   try {
     const { getKenyaErpNextPatientSnapshot } = await import('@medplum/core');
     const patient = await systemRepo.readReference(claim.patient);
-    const snap = getKenyaErpNextPatientSnapshot(patient as import('@medplum/fhirtypes').Patient);
-    if (snap?.customerName) return snap.customerName;
+    const snap = getKenyaErpNextPatientSnapshot(patient as Patient);
+    if (snap?.customerName) {
+      return snap.customerName;
+    }
   } catch {
     // fall through
   }
@@ -265,7 +311,9 @@ async function completeRelatedTask(
 
     for (const entry of taskBundle.entry ?? []) {
       const task = entry.resource;
-      if (!task?.id) continue;
+      if (!task?.id) {
+        continue;
+      }
       await systemRepo.updateResource<Task>({
         ...task,
         status: 'completed',

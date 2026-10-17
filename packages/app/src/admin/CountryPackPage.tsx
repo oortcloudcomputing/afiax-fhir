@@ -8,10 +8,10 @@ import {
   getCountryPackCatalogEntry,
   getKenyaClaimStatusWorkflowBotId,
   getKenyaClaimSubmitWorkflowBotId,
+  getKenyaFacilityRegistrySnapshot,
   getKenyaHieAgentId,
   getKenyaHieCredentialMode,
   getKenyaHieEnvironment,
-  getKenyaFacilityRegistrySnapshot,
   getKenyaKhisSchedulerBotId,
   getKenyaShaClaimsCredentialMode,
   getKenyaShaClaimsEnvironment,
@@ -21,16 +21,12 @@ import {
 } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, MedplumLink, useMedplum } from '@medplum/react';
-import { KenyaClaimQueuePanel } from '../resource/KenyaClaimQueuePanel';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { KenyaClaimQueuePanel } from '../resource/KenyaClaimQueuePanel';
 import { getProjectId } from '../utils';
 
-const kenyaAfyaLinkSecretNames = [
-  'kenyaAfyaLinkConsumerKey',
-  'kenyaAfyaLinkUsername',
-  'kenyaAfyaLinkPassword',
-];
+const kenyaAfyaLinkSecretNames = ['kenyaAfyaLinkConsumerKey', 'kenyaAfyaLinkUsername', 'kenyaAfyaLinkPassword'];
 
 const kenyaShaClaimsSecretNames = [
   KenyaShaClaimsSecretNames.accessKey,
@@ -100,6 +96,9 @@ export function CountryPackPage(): JSX.Element {
   const [loadingOrganizations, setLoadingOrganizations] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
+  const [provisioningScheduler, setProvisioningScheduler] = useState(false);
+  const [schedulerResult, setSchedulerResult] = useState<string | undefined>();
+  const [schedulerError, setSchedulerError] = useState<string | undefined>();
   const lookupMessage = getLookupMessage(lookupResponse);
   const organizationOptions = useMemo(
     () => [
@@ -172,9 +171,9 @@ export function CountryPackPage(): JSX.Element {
     setLookingUp(true);
     setLookupError(undefined);
     try {
-      const response = (await medplum.post(`admin/projects/${projectId}/kenya/afyalink/facility-lookup`, {
+      const response = await medplum.post(`admin/projects/${projectId}/kenya/afyalink/facility-lookup`, {
         facilityCode: trimmedCode,
-      })) as KenyaFacilityLookupResponse;
+      });
       setLookupResponse(response);
       const message = getLookupMessage(response);
       if (message?.found === 1) {
@@ -302,9 +301,7 @@ export function CountryPackPage(): JSX.Element {
           <DescriptionListEntry term="Country Workflows">Not yet available</DescriptionListEntry>
         </DescriptionList>
         <List spacing="xs">
-          <List.Item>
-            Keep the profile if you want to reserve the project for that rollout.
-          </List.Item>
+          <List.Item>Keep the profile if you want to reserve the project for that rollout.</List.Item>
           <List.Item>
             Use <MedplumLink to="/admin/settings">Settings</MedplumLink> to switch back to Core or to Kenya.
           </List.Item>
@@ -313,21 +310,12 @@ export function CountryPackPage(): JSX.Element {
     );
   }
 
-  const [provisioningScheduler, setProvisioningScheduler] = useState(false);
-  const [schedulerResult, setSchedulerResult] = useState<string | undefined>();
-  const [schedulerError, setSchedulerError] = useState<string | undefined>();
-
   async function handleProvisionKhisScheduler(): Promise<void> {
     setProvisioningScheduler(true);
     setSchedulerResult(undefined);
     setSchedulerError(undefined);
     try {
-      const resp = (await medplum.post(`admin/projects/${projectId}/kenya/provision-khis-scheduler`, {})) as {
-        ok: boolean;
-        botId: string;
-        cronString: string;
-        message: string;
-      };
+      const resp = await medplum.post(`admin/projects/${projectId}/kenya/provision-khis-scheduler`, {});
       setSchedulerResult(`Bot ${resp.botId} provisioned. Cron: ${resp.cronString}. ${resp.message}`);
       showNotification({ color: 'green', message: 'KHIS weekly scheduler provisioned' });
     } catch (err) {
@@ -348,9 +336,13 @@ export function CountryPackPage(): JSX.Element {
     const kenyaClaimSubmitWorkflowBotId = getKenyaClaimSubmitWorkflowBotId(project);
     const kenyaClaimStatusWorkflowBotId = getKenyaClaimStatusWorkflowBotId(project);
     const kenyaKhisSchedulerBotId = getKenyaKhisSchedulerBotId(project);
-    const configuredHieSecretCount = kenyaAfyaLinkSecretNames.filter((name) => getProjectSettingString(project.secret, name)).length;
+    const configuredHieSecretCount = kenyaAfyaLinkSecretNames.filter((name) =>
+      getProjectSettingString(project.secret, name)
+    ).length;
     const missingHieSecretCount = kenyaAfyaLinkSecretNames.length - configuredHieSecretCount;
-    const configuredShaSecretCount = kenyaShaClaimsSecretNames.filter((name) => getProjectSettingString(project.secret, name)).length;
+    const configuredShaSecretCount = kenyaShaClaimsSecretNames.filter((name) =>
+      getProjectSettingString(project.secret, name)
+    ).length;
     const missingShaSecretCount = kenyaShaClaimsSecretNames.length - configuredShaSecretCount;
     const canLookupFacility =
       kenyaHieCredentialMode === 'afiax-managed' || configuredHieSecretCount === kenyaAfyaLinkSecretNames.length;
@@ -359,8 +351,8 @@ export function CountryPackPage(): JSX.Element {
       <Stack gap="md">
         <Title>Country Pack</Title>
         <Text>
-          Kenya is active for this project. Use this page as the setup checklist for HIE access, SHA claims
-          environment, credential ownership, and the first verification workflows.
+          Kenya is active for this project. Use this page as the setup checklist for HIE access, SHA claims environment,
+          credential ownership, and the first verification workflows.
         </Text>
         <DescriptionList>
           <DescriptionListEntry term="Current Pack">{countryPackEntry.title}</DescriptionListEntry>
@@ -414,7 +406,9 @@ export function CountryPackPage(): JSX.Element {
             {kenyaShaClaimsCredentialMode === 'afiax-managed'
               ? 'Coordinate with Afiax platform ops for managed SHA claim credentials.'
               : 'Complete the SHA access key, secret key, and callback URL in '}
-            {kenyaShaClaimsCredentialMode === 'tenant-managed' && <MedplumLink to="/admin/secrets">Secrets</MedplumLink>}
+            {kenyaShaClaimsCredentialMode === 'tenant-managed' && (
+              <MedplumLink to="/admin/secrets">Secrets</MedplumLink>
+            )}
             {kenyaShaClaimsCredentialMode === 'tenant-managed' && '.'}
           </List.Item>
           <List.Item>
@@ -423,20 +417,20 @@ export function CountryPackPage(): JSX.Element {
           <List.Item>Use an Organization with an MFL code when you are ready to run facility verification.</List.Item>
           <List.Item>
             Configure the Kenya claim submit and claim status workflow bots in{' '}
-            <MedplumLink to="/admin/settings">Settings</MedplumLink> if you want SHA submission and adjudication
-            updates to hand off to Afiax Billing, Afiax Pay, or other async workflows.
+            <MedplumLink to="/admin/settings">Settings</MedplumLink> if you want SHA submission and adjudication updates
+            to hand off to Afiax Billing, Afiax Pay, or other async workflows.
           </List.Item>
         </List>
         {kenyaHieCredentialMode === 'tenant-managed' && missingHieSecretCount > 0 && (
           <Text c="dimmed" size="sm">
-            {missingHieSecretCount} Kenya HIE credential{missingHieSecretCount === 1 ? '' : 's'} still missing from project
-            secrets.
+            {missingHieSecretCount} Kenya HIE credential{missingHieSecretCount === 1 ? '' : 's'} still missing from
+            project secrets.
           </Text>
         )}
         {kenyaShaClaimsCredentialMode === 'tenant-managed' && missingShaSecretCount > 0 && (
           <Text c="dimmed" size="sm">
-            {missingShaSecretCount} Kenya SHA credential{missingShaSecretCount === 1 ? '' : 's'} still missing from project
-            secrets.
+            {missingShaSecretCount} Kenya SHA credential{missingShaSecretCount === 1 ? '' : 's'} still missing from
+            project secrets.
           </Text>
         )}
         <Divider />
@@ -451,18 +445,17 @@ export function CountryPackPage(): JSX.Element {
               Scheduler active — Bot ID: <b>{kenyaKhisSchedulerBotId}</b>. Runs every Monday at 06:00 EAT.
             </Alert>
           )}
-          {schedulerResult && <Alert color="green" variant="light">{schedulerResult}</Alert>}
+          {schedulerResult && (
+            <Alert color="green" variant="light">
+              {schedulerResult}
+            </Alert>
+          )}
           {schedulerError && <Alert color="red">{schedulerError}</Alert>}
           <Group>
-            <Button
-              onClick={() => handleProvisionKhisScheduler().catch(console.error)}
-              loading={provisioningScheduler}
-            >
+            <Button onClick={() => handleProvisionKhisScheduler().catch(console.error)} loading={provisioningScheduler}>
               {kenyaKhisSchedulerBotId ? 'Re-provision Scheduler' : 'Provision KHIS Scheduler'}
             </Button>
-            {kenyaKhisSchedulerBotId && (
-              <MedplumLink to={`/Bot/${kenyaKhisSchedulerBotId}`}>View Bot</MedplumLink>
-            )}
+            {kenyaKhisSchedulerBotId && <MedplumLink to={`/Bot/${kenyaKhisSchedulerBotId}`}>View Bot</MedplumLink>}
           </Group>
         </Stack>
         <Divider />
@@ -482,7 +475,11 @@ export function CountryPackPage(): JSX.Element {
               onChange={(event) => setFacilityCode(event.currentTarget.value)}
               placeholder="24749"
             />
-            <Button onClick={() => handleLookupFacility().catch(console.error)} loading={lookingUp} disabled={!canLookupFacility}>
+            <Button
+              onClick={() => handleLookupFacility().catch(console.error)}
+              loading={lookingUp}
+              disabled={!canLookupFacility}
+            >
               Lookup Facility
             </Button>
           </Group>
@@ -496,21 +493,31 @@ export function CountryPackPage(): JSX.Element {
           {lookupResponse && (
             <>
               <DescriptionList>
-                <DescriptionListEntry term="Lookup Base URL">{lookupResponse.baseUrl ?? 'Not returned'}</DescriptionListEntry>
+                <DescriptionListEntry term="Lookup Base URL">
+                  {lookupResponse.baseUrl ?? 'Not returned'}
+                </DescriptionListEntry>
                 <DescriptionListEntry term="Lookup Facility Code">
                   {(lookupResponse.facilityCode ?? facilityCode) || 'Not returned'}
                 </DescriptionListEntry>
-                <DescriptionListEntry term="Registry Match">{lookupMessage?.found === 1 ? 'Found' : 'Not found'}</DescriptionListEntry>
+                <DescriptionListEntry term="Registry Match">
+                  {lookupMessage?.found === 1 ? 'Found' : 'Not found'}
+                </DescriptionListEntry>
               </DescriptionList>
               {lookupMessage?.found === 1 && registryPreview && (
                 <>
                   <DescriptionList>
-                    <DescriptionListEntry term="Facility Name">{registryPreview.facilityName ?? 'Not returned'}</DescriptionListEntry>
+                    <DescriptionListEntry term="Facility Name">
+                      {registryPreview.facilityName ?? 'Not returned'}
+                    </DescriptionListEntry>
                     <DescriptionListEntry term="Registration Number">
                       {registryPreview.registrationNumber ?? 'Not returned'}
                     </DescriptionListEntry>
-                    <DescriptionListEntry term="Facility Level">{registryPreview.facilityLevel ?? 'Not returned'}</DescriptionListEntry>
-                    <DescriptionListEntry term="County">{registryPreview.county ?? 'Not returned'}</DescriptionListEntry>
+                    <DescriptionListEntry term="Facility Level">
+                      {registryPreview.facilityLevel ?? 'Not returned'}
+                    </DescriptionListEntry>
+                    <DescriptionListEntry term="County">
+                      {registryPreview.county ?? 'Not returned'}
+                    </DescriptionListEntry>
                     <DescriptionListEntry term="Operational Status">
                       {registryPreview.operationalStatus ?? 'Not returned'}
                     </DescriptionListEntry>
@@ -524,21 +531,24 @@ export function CountryPackPage(): JSX.Element {
                       disabled={loadingOrganizations}
                     />
                     <Button onClick={() => handleCreateOrApplyFacility().catch(console.error)} loading={savingFacility}>
-                      {selectedOrganizationId === createNewFacilityOption ? 'Create Primary Facility' : 'Apply To Organization'}
+                      {selectedOrganizationId === createNewFacilityOption
+                        ? 'Create Primary Facility'
+                        : 'Apply To Organization'}
                     </Button>
                   </Group>
                   {organizations.length > 0 && (
                     <Text size="sm" c="dimmed">
-                      Existing organizations: {organizations.length}. Select one to update it with DHA registry data, or keep
-                      "Create new organization" to create the first Kenya facility record from the lookup.
+                      Existing organizations: {organizations.length}. Select one to update it with DHA registry data, or
+                      keep "Create new organization" to create the first Kenya facility record from the lookup.
                     </Text>
                   )}
                 </>
               )}
               {lookupMessage?.found !== 1 && (
                 <Alert color="yellow">
-                  DHA UAT did not return a facility match for this code. You can still create the organization manually from the
-                  regular Organization flow, but the setup wizard will not auto-populate it without a registry match.
+                  DHA UAT did not return a facility match for this code. You can still create the organization manually
+                  from the regular Organization flow, but the setup wizard will not auto-populate it without a registry
+                  match.
                 </Alert>
               )}
               <Stack gap={4}>

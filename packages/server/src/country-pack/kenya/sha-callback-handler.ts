@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, normalizeErrorString, Operator } from '@medplum/core';
-import { syncErpNextShaPayment } from './sync-to-erpnext';
-import { checkKenyaShaClaimStatus, getKenyaShaClaimsCredentials, KenyaShaBundleIdIdentifierSystem } from './sha';
-import type { Bundle, Claim, ClaimResponse, Identifier, Task } from '@medplum/fhirtypes';
+import type { Bundle, Claim, ClaimResponse, Identifier, Project, Task } from '@medplum/fhirtypes';
 import { jwtVerify } from 'jose';
-import type { Project } from '@medplum/fhirtypes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
+import { checkKenyaShaClaimStatus, getKenyaShaClaimsCredentials, KenyaShaBundleIdIdentifierSystem } from './sha';
+import { syncErpNextShaPayment } from './sync-to-erpnext';
 
 const KenyaShaClaimResponseIdentifierSystem = 'https://afiax.africa/kenya/identifier/sha-claim-id';
 
@@ -21,7 +20,7 @@ interface ShaCallbackPayload {
   readonly message?: string;
   readonly claimResponse?: ClaimResponse;
   readonly resourceType?: string;
-  readonly entry?: Array<{ resource?: unknown }>;
+  readonly entry?: { resource?: unknown }[];
   readonly [key: string]: unknown;
 }
 
@@ -31,10 +30,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function extractBundleId(body: ShaCallbackPayload): string | undefined {
   return (
-    body.bundleId?.toString().trim() ||
-    body.claim_id?.toString().trim() ||
-    body.claimId?.toString().trim() ||
-    undefined
+    body.bundleId?.toString().trim() || body.claim_id?.toString().trim() || body.claimId?.toString().trim() || undefined
   );
 }
 
@@ -74,13 +70,25 @@ function normalizeCallbackStatus(
   state: string | undefined,
   fhirOutcome?: string
 ): 'queued' | 'in-review' | 'adjudicated' | 'rejected' {
-  if (fhirOutcome === 'complete') return 'adjudicated';
-  if (fhirOutcome === 'error') return 'rejected';
-  if (fhirOutcome === 'partial') return 'in-review';
+  if (fhirOutcome === 'complete') {
+    return 'adjudicated';
+  }
+  if (fhirOutcome === 'error') {
+    return 'rejected';
+  }
+  if (fhirOutcome === 'partial') {
+    return 'in-review';
+  }
   const s = state?.trim().toLowerCase() ?? '';
-  if (s.includes('reject') || s.includes('declin') || s.includes('denied')) return 'rejected';
-  if (s.includes('review') || s.includes('surveillance') || s.includes('appeal')) return 'in-review';
-  if (s.includes('approved') || s.includes('payment') || s.includes('complete')) return 'adjudicated';
+  if (s.includes('reject') || s.includes('declin') || s.includes('denied')) {
+    return 'rejected';
+  }
+  if (s.includes('review') || s.includes('surveillance') || s.includes('appeal')) {
+    return 'in-review';
+  }
+  if (s.includes('approved') || s.includes('payment') || s.includes('complete')) {
+    return 'adjudicated';
+  }
   return 'queued';
 }
 
@@ -90,9 +98,13 @@ function mergeIdentifier(identifiers: Identifier[] | undefined, claimId: string)
 }
 
 async function verifyCallbackJwt(authHeader: string | undefined, secretKey: string): Promise<boolean> {
-  if (!authHeader?.startsWith('Bearer ')) return false;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return false;
+  }
   const token = authHeader.slice(7).trim();
-  if (!token) return false;
+  if (!token) {
+    return false;
+  }
   try {
     await jwtVerify(token, new TextEncoder().encode(secretKey), { algorithms: ['HS256'] });
     return true;
@@ -139,9 +151,9 @@ export async function handleKenyaShaCallback(
   }
 
   const getSecret = (name: string): string | undefined =>
-    (project.secret?.find((s) => s.name === name)?.valueString ||
-      project.systemSecret?.find((s) => s.name === name)?.valueString ||
-      undefined);
+    project.secret?.find((s) => s.name === name)?.valueString ||
+    project.systemSecret?.find((s) => s.name === name)?.valueString ||
+    undefined;
 
   const secretKey = getSecret('kenyaShaClaimsSecretKey');
 
@@ -167,7 +179,12 @@ export async function handleKenyaShaCallback(
     typeof payload.message === 'string' ? payload.message : `SHA callback: ${claimState ?? 'status update'}`;
 
   if (!bundleId) {
-    return { ok: true, projectId, status: 'ignored', message: 'No claim/bundle ID in callback payload — nothing to update' };
+    return {
+      ok: true,
+      projectId,
+      status: 'ignored',
+      message: 'No claim/bundle ID in callback payload — nothing to update',
+    };
   }
 
   try {
@@ -221,7 +238,14 @@ export async function handleKenyaShaCallback(
     // Upsert ClaimResponse
     const insurer = remoteClaimResponse?.insurer ?? targetClaim.insurer;
     if (!insurer) {
-      return { ok: false, projectId, bundleId, claimId: targetClaim.id, status: 'error', message: 'No insurer on Claim or callback ClaimResponse' };
+      return {
+        ok: false,
+        projectId,
+        bundleId,
+        claimId: targetClaim.id,
+        status: 'error',
+        message: 'No insurer on Claim or callback ClaimResponse',
+      };
     }
 
     const existing = await systemRepo.searchOne<ClaimResponse>({
@@ -232,8 +256,8 @@ export async function handleKenyaShaCallback(
       ],
     });
 
-    const outcome: ClaimResponse['outcome'] =
-      statusLabel === 'adjudicated' ? 'complete' : statusLabel === 'rejected' ? 'error' : 'queued';
+    const outcomes: Record<string, ClaimResponse['outcome']> = { adjudicated: 'complete', rejected: 'error' };
+    const outcome = outcomes[statusLabel] ?? 'queued';
 
     const nextClaimResponse: ClaimResponse = {
       ...(remoteClaimResponse ?? {}),
@@ -275,7 +299,9 @@ export async function handleKenyaShaCallback(
 
     for (const entry of taskBundle.entry ?? []) {
       const task = entry.resource;
-      if (!task?.id) continue;
+      if (!task?.id) {
+        continue;
+      }
       await systemRepo.updateResource<Task>({
         ...task,
         status: statusLabel === 'adjudicated' || statusLabel === 'rejected' ? 'completed' : 'in-progress',
@@ -290,12 +316,18 @@ export async function handleKenyaShaCallback(
     }
 
     if (statusLabel === 'adjudicated') {
-      void syncErpNextShaPayment(
+      syncErpNextShaPayment(
         systemRepo,
         targetClaim as Claim & { id: string },
         savedClaimResponse,
-        project as import('@medplum/fhirtypes').Project & { id: string }
-      );
+        project as Project & { id: string }
+      ).catch((err) => {
+        globalLogger.warn('Kenya SHA callback: ERPNext payment sync failed', {
+          projectId,
+          bundleId,
+          error: normalizeErrorString(err),
+        });
+      });
     }
 
     globalLogger.info('Kenya SHA callback processed', { projectId, bundleId, claimId: targetClaim.id, statusLabel });
@@ -311,7 +343,11 @@ export async function handleKenyaShaCallback(
       claimResponseId: savedClaimResponse.id,
     };
   } catch (err) {
-    globalLogger.error('Kenya SHA callback processing failed', { projectId, bundleId, error: normalizeErrorString(err) });
+    globalLogger.error('Kenya SHA callback processing failed', {
+      projectId,
+      bundleId,
+      error: normalizeErrorString(err),
+    });
     return { ok: false, projectId, bundleId, status: 'error', message: normalizeErrorString(err) };
   }
 }

@@ -12,20 +12,15 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AuditEvent, Claim, OperationDefinition, Reference, Task } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
-import { getProjectCountryPack } from '../../country-pack/registry';
-import { buildKenyaNationalClaimBundle } from '../../country-pack/kenya/submit-national-claim';
 import {
   getKenyaShaClaimsCredentials,
   hasKenyaShaClaimsCredentials,
   submitKenyaShaClaimBundle,
 } from '../../country-pack/kenya/sha';
+import { buildKenyaNationalClaimBundle } from '../../country-pack/kenya/submit-national-claim';
+import { getProjectCountryPack } from '../../country-pack/registry';
 import type { SubmitNationalClaimResult } from '../../country-pack/types';
-import {
-  AuditEventOutcome,
-  createAuditEvent,
-  OperationInteraction,
-  RestfulOperationType,
-} from '../../util/auditevent';
+import { AuditEventOutcome, createAuditEvent, OperationInteraction, RestfulOperationType } from '../../util/auditevent';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const requestPreauthorizationOperation: OperationDefinition = {
@@ -67,7 +62,7 @@ interface RequestPreauthorizationParameters {
 export async function requestPreauthorizationHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('Pre-authorization requires the Kenya country pack.'));
   }
 
@@ -79,7 +74,10 @@ export async function requestPreauthorizationHandler(req: FhirRequest): Promise<
   const updatedClaim = await persistPreauthResult(claim, updatedTask, result);
   await createPreauthAuditEvent(updatedTask, updatedClaim, result);
 
-  return [allOk, buildOutputParameters(requestPreauthorizationOperation, { ...result, task: createReference(updatedTask) })];
+  return [
+    allOk,
+    buildOutputParameters(requestPreauthorizationOperation, { ...result, task: createReference(updatedTask) }),
+  ];
 }
 
 async function getClaimForPreauth(req: FhirRequest): Promise<WithId<Claim>> {
@@ -94,7 +92,9 @@ async function getClaimForPreauth(req: FhirRequest): Promise<WithId<Claim>> {
     return ctx.repo.readReference<Claim>(params.claim);
   }
 
-  throw new OperationOutcomeError(badRequest('Must call this operation on a Claim instance or include a claim reference.'));
+  throw new OperationOutcomeError(
+    badRequest('Must call this operation on a Claim instance or include a claim reference.')
+  );
 }
 
 async function requestKenyaPreauthorization(
@@ -188,9 +188,15 @@ async function completePreauthTask(task: WithId<Task>, result: SubmitNationalCla
       { type: { text: 'message' }, valueString: result.message },
       { type: { text: 'nextState' }, valueString: result.nextState },
       ...(result.bundleId ? [{ type: { text: 'bundleId' }, valueString: result.bundleId }] : []),
-      ...(result.submissionEndpoint ? [{ type: { text: 'submissionEndpoint' }, valueString: result.submissionEndpoint }] : []),
-      ...(result.statusTrackingEndpoint ? [{ type: { text: 'statusTrackingEndpoint' }, valueString: result.statusTrackingEndpoint }] : []),
-      ...(result.responseStatusCode !== undefined ? [{ type: { text: 'responseStatusCode' }, valueInteger: result.responseStatusCode }] : []),
+      ...(result.submissionEndpoint
+        ? [{ type: { text: 'submissionEndpoint' }, valueString: result.submissionEndpoint }]
+        : []),
+      ...(result.statusTrackingEndpoint
+        ? [{ type: { text: 'statusTrackingEndpoint' }, valueString: result.statusTrackingEndpoint }]
+        : []),
+      ...(result.responseStatusCode !== undefined
+        ? [{ type: { text: 'responseStatusCode' }, valueInteger: result.responseStatusCode }]
+        : []),
     ],
   });
 }
@@ -222,15 +228,20 @@ async function createPreauthAuditEvent(
   const ctx = getAuthenticatedContext();
   const outcome = result.status === 'error' ? AuditEventOutcome.MajorFailure : AuditEventOutcome.Success;
 
-  const auditEvent = createAuditEvent(RestfulOperationType, OperationInteraction, ctx.project.id, ctx.profile, undefined, outcome, {
-    description: result.message,
-    resource: createReference(task),
-  });
+  const auditEvent = createAuditEvent(
+    RestfulOperationType,
+    OperationInteraction,
+    ctx.project.id,
+    ctx.profile,
+    undefined,
+    outcome,
+    {
+      description: result.message,
+      resource: createReference(task),
+    }
+  );
 
-  auditEvent.entity = [
-    ...(auditEvent.entity ?? []),
-    { what: createReference(claim) },
-  ];
+  auditEvent.entity = [...(auditEvent.entity ?? []), { what: createReference(claim) }];
 
   await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
 }

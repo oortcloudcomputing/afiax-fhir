@@ -17,15 +17,17 @@ import {
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type {
+  KenyaErpNextPaymentEntry,
+  KenyaErpNextSubmissionSnapshot,
+  KenyaPatientPaymentMethod,
+  KenyaPatientPaymentSnapshot,
+} from '@medplum/core';
 import {
   getKenyaErpNextSubmissionSnapshot,
   getKenyaPatientPaymentSnapshot,
   getProjectSettingString,
   normalizeErrorString,
-  type KenyaErpNextPaymentEntry,
-  type KenyaErpNextSubmissionSnapshot,
-  type KenyaPatientPaymentMethod,
-  type KenyaPatientPaymentSnapshot,
 } from '@medplum/core';
 import type { Bundle, Claim, Parameters, ParametersParameter, PaymentNotice } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, useMedplum } from '@medplum/react';
@@ -104,7 +106,9 @@ function parsePushResult(params: Parameters | undefined): PushToErpNextResult {
 }
 
 function fmt(amount: number | undefined, currency: string | undefined): string {
-  if (amount === undefined) return '—';
+  if (amount === undefined) {
+    return '—';
+  }
   return `${currency ?? 'KES'} ${amount.toLocaleString()}`;
 }
 
@@ -115,13 +119,48 @@ function snapshotStatusBadge(status: string | undefined): JSX.Element {
     'fully-settled': 'green',
     error: 'red',
   };
-  if (!status) return <Badge color="gray" variant="outline" size="sm">no snapshot</Badge>;
-  return <Badge color={map[status] ?? 'gray'} variant="outline" size="sm">{status}</Badge>;
+  if (!status) {
+    return (
+      <Badge color="gray" variant="outline" size="sm">
+        no snapshot
+      </Badge>
+    );
+  }
+  return (
+    <Badge color={map[status] ?? 'gray'} variant="outline" size="sm">
+      {status}
+    </Badge>
+  );
 }
 
 function paymentStatusBadge(status: string | undefined): JSX.Element {
   const map: Record<string, string> = { confirmed: 'green', pending: 'yellow', failed: 'red' };
-  return <Badge color={map[status ?? ''] ?? 'gray'} variant="light" size="xs">{status ?? '?'}</Badge>;
+  return (
+    <Badge color={map[status ?? ''] ?? 'gray'} variant="light" size="xs">
+      {status ?? '?'}
+    </Badge>
+  );
+}
+
+function postPaymentResultColor(status: string | undefined): string {
+  if (status === 'error') {
+    return 'red';
+  }
+  return status === 'pending' ? 'blue' : 'green';
+}
+
+function submitLabel(method: KenyaPatientPaymentMethod): string {
+  if (method === 'mpesa-stk') {
+    return 'Send STK Push';
+  }
+  return method === 'afiax-pay' ? 'Send Payment Link' : 'Confirm Payment';
+}
+
+function patientDueColor(patientDue: number): string | undefined {
+  if (patientDue === 0) {
+    return 'green';
+  }
+  return patientDue > 0 ? 'orange' : undefined;
 }
 
 function methodLabel(m: string): string {
@@ -207,15 +246,24 @@ function PendingPaymentsSection({
 
         {pending.map(({ notice, snap }) => (
           <Group key={notice.id} gap="sm" style={{ fontSize: 13 }}>
-            <Badge color="yellow" size="sm" variant="filled">pending</Badge>
-            <Text size="xs" fw={500}>{methodLabel(snap.method ?? '')}</Text>
+            <Badge color="yellow" size="sm" variant="filled">
+              pending
+            </Badge>
+            <Text size="xs" fw={500}>
+              {methodLabel(snap.method ?? '')}
+            </Text>
             <Text size="xs">{fmt(snap.amount, snap.currency)}</Text>
             {snap.gatewayReference && (
               <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-                {snap.gatewayReference.slice(0, 24)}{snap.gatewayReference.length > 24 ? '…' : ''}
+                {snap.gatewayReference.slice(0, 24)}
+                {snap.gatewayReference.length > 24 ? '…' : ''}
               </Text>
             )}
-            {snap.phone && <Text size="xs" c="dimmed">{snap.phone}</Text>}
+            {snap.phone && (
+              <Text size="xs" c="dimmed">
+                {snap.phone}
+              </Text>
+            )}
           </Group>
         ))}
 
@@ -275,20 +323,18 @@ function PostPaymentModal({ claimId, snapshot, opened, onClose, onSuccess }: Pos
           ...(notes ? [{ name: 'notes', valueString: notes } as ParametersParameter] : []),
         ],
       };
-      const params = (await medplum.post(
-        medplum.fhirUrl('Claim', claimId, '$post-patient-payment'),
-        body
-      )) as Parameters;
+      const params = await medplum.post(medplum.fhirUrl('Claim', claimId, '$post-patient-payment'), body);
       const result = parsePostPaymentResult(params);
-      const isAsync = result.status === 'pending';
-      const color = result.status === 'error' ? 'red' : isAsync ? 'blue' : 'green';
+      const color = postPaymentResultColor(result.status);
       showNotification({
         color,
         message: result.message ?? `Payment ${result.status ?? 'processed'}`,
         autoClose: result.status === 'error' ? false : 5000,
       });
       onSuccess(result);
-      if (result.status !== 'error') onClose();
+      if (result.status !== 'error') {
+        onClose();
+      }
     } catch (err) {
       setError(normalizeErrorString(err));
     } finally {
@@ -313,14 +359,7 @@ function PostPaymentModal({ claimId, snapshot, opened, onClose, onSuccess }: Pos
           ]}
           required
         />
-        <NumberInput
-          label="Amount"
-          value={amount}
-          onChange={setAmount}
-          min={0.01}
-          decimalScale={2}
-          required
-        />
+        <NumberInput label="Amount" value={amount} onChange={setAmount} min={0.01} decimalScale={2} required />
         <TextInput
           label="Currency"
           value={currency}
@@ -344,19 +383,13 @@ function PostPaymentModal({ claimId, snapshot, opened, onClose, onSuccess }: Pos
             onChange={(e) => setTransactionRef(e.currentTarget.value)}
           />
         )}
-        <TextInput
-          label="Notes (optional)"
-          value={notes}
-          onChange={(e) => setNotes(e.currentTarget.value)}
-        />
+        <TextInput label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} />
         <Group justify="flex-end" mt="xs">
-          <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button variant="default" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
           <Button onClick={() => handleSubmit().catch(console.error)} loading={loading}>
-            {method === 'mpesa-stk'
-              ? 'Send STK Push'
-              : method === 'afiax-pay'
-                ? 'Send Payment Link'
-                : 'Confirm Payment'}
+            {submitLabel(method)}
           </Button>
         </Group>
       </Stack>
@@ -374,12 +407,18 @@ const POLL_INTERVAL_MS = 10_000;
 
 export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Element | null {
   const medplum = useMedplum();
-  const project = medplum.getProject();
-  const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!claim.id || countryPack !== 'kenya') return null;
+  const countryPack = getProjectSettingString(medplum.getProject(), 'countryPack');
+  if (!claim.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <KenyaClaimBillingPanel claim={claim} claimId={claim.id} />;
+}
 
-  const claimId = claim.id;
-
+function KenyaClaimBillingPanel({
+  claim,
+  claimId,
+}: ClaimBillingPanelProps & { readonly claimId: string }): JSX.Element {
+  const medplum = useMedplum();
   const [pushing, setPushing] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [snapshot, setSnapshot] = useState<KenyaErpNextSubmissionSnapshot | undefined>(
@@ -404,7 +443,9 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
     const pending: PendingPayment[] = [];
     for (const n of notices) {
       const snap = getKenyaPatientPaymentSnapshot(n);
-      if (snap?.paymentStatus === 'pending') pending.push({ notice: n, snap });
+      if (snap?.paymentStatus === 'pending') {
+        pending.push({ notice: n, snap });
+      }
     }
     setPendingPayments(pending);
     return pending;
@@ -414,7 +455,9 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
   const refreshClaimSnapshot = useCallback(async (): Promise<void> => {
     const updated = (await medplum.readResource('Claim', claimId)) as Claim;
     const newSnap = getKenyaErpNextSubmissionSnapshot(updated) ?? undefined;
-    if (newSnap) setSnapshot(newSnap);
+    if (newSnap) {
+      setSnapshot(newSnap);
+    }
   }, [medplum, claimId]);
 
   // Combined refresh (both PaymentNotices and Claim snapshot)
@@ -425,7 +468,9 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
 
   // Polling effect — runs while isPolling is true
   useEffect(() => {
-    if (!isPolling) return;
+    if (!isPolling) {
+      return undefined;
+    }
     pollCountRef.current = 0;
 
     const tick = async (): Promise<void> => {
@@ -446,7 +491,9 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
     }, POLL_INTERVAL_MS);
 
     return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
   }, [isPolling, refresh]);
 
@@ -463,11 +510,21 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
 
   function handleManualRefresh(): void {
     setIsPolling(false); // pause interval while we do a one-shot refresh
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
     refresh()
       .then((pending) => {
-        if (pending.length > 0) setIsPolling(true); // resume if still pending
-        else showNotification({ color: 'green', message: 'No pending payments — billing snapshot updated.', autoClose: 4000 });
+        if (pending.length > 0) {
+          setIsPolling(true);
+        } // resume if still pending
+        else {
+          showNotification({
+            color: 'green',
+            message: 'No pending payments — billing snapshot updated.',
+            autoClose: 4000,
+          });
+        }
       })
       .catch(console.error);
   }
@@ -476,16 +533,12 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
     setPushing(true);
     setPushError(undefined);
     try {
-      const params = (await medplum.post(
-        medplum.fhirUrl('Claim', claimId, '$push-to-erpnext'),
-        {}
-      )) as Parameters;
+      const params = await medplum.post(medplum.fhirUrl('Claim', claimId, '$push-to-erpnext'), {});
       const result = parsePushResult(params);
       setPushResult(result);
       // Update snapshot after push (invoice / payments may have been created)
       await refreshClaimSnapshot();
-      const color =
-        result.status === 'error' || (result.paymentsFailed ?? 0) > 0 ? 'yellow' : 'green';
+      const color = result.status === 'error' || (result.paymentsFailed ?? 0) > 0 ? 'yellow' : 'green';
       showNotification({ color, message: result.message ?? `Sync: ${result.status}`, autoClose: 5000 });
     } catch (err) {
       const msg = normalizeErrorString(err);
@@ -496,8 +549,7 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
     }
   }
 
-  const displayPatientDue =
-    pushResult?.patientDue ?? snapshot?.patientDue;
+  const displayPatientDue = pushResult?.patientDue ?? snapshot?.patientDue;
 
   return (
     <>
@@ -517,16 +569,10 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
             {snapshotStatusBadge(snapshot?.status)}
           </Group>
           <Group>
-            <Button
-              variant="default"
-              onClick={() => handlePushToErpNext().catch(console.error)}
-              loading={pushing}
-            >
+            <Button variant="default" onClick={() => handlePushToErpNext().catch(console.error)} loading={pushing}>
               Sync to ERPNext
             </Button>
-            <Button onClick={() => setPayModalOpen(true)}>
-              Post Patient Payment
-            </Button>
+            <Button onClick={() => setPayModalOpen(true)}>Post Patient Payment</Button>
           </Group>
         </Group>
 
@@ -535,11 +581,7 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
         {/* ERPNext push result banner */}
         {pushResult && (
           <Alert
-            color={
-              pushResult.status === 'error' || (pushResult.paymentsFailed ?? 0) > 0
-                ? 'yellow'
-                : 'green'
-            }
+            color={pushResult.status === 'error' || (pushResult.paymentsFailed ?? 0) > 0 ? 'yellow' : 'green'}
             variant="light"
           >
             {pushResult.message ?? 'Sync complete.'}
@@ -550,11 +592,7 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
 
         {/* Pending payments — shown whenever there are unconfirmed async payments */}
         {pendingPayments.length > 0 && (
-          <PendingPaymentsSection
-            pending={pendingPayments}
-            isPolling={isPolling}
-            onRefresh={handleManualRefresh}
-          />
+          <PendingPaymentsSection pending={pendingPayments} isPolling={isPolling} onRefresh={handleManualRefresh} />
         )}
 
         {/* Billing summary */}
@@ -564,29 +602,21 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
             <DescriptionList>
               {snapshot.invoiceName && (
                 <DescriptionListEntry term="ERPNext invoice">
-                  <Text size="sm" style={{ fontFamily: 'monospace' }}>{snapshot.invoiceName}</Text>
+                  <Text size="sm" style={{ fontFamily: 'monospace' }}>
+                    {snapshot.invoiceName}
+                  </Text>
                 </DescriptionListEntry>
               )}
               {snapshot.invoiceTotal !== undefined && (
-                <DescriptionListEntry term="Invoice total">
-                  {fmt(snapshot.invoiceTotal, currency)}
-                </DescriptionListEntry>
+                <DescriptionListEntry term="Invoice total">{fmt(snapshot.invoiceTotal, currency)}</DescriptionListEntry>
               )}
               {snapshot.totalConfirmed !== undefined && (
-                <DescriptionListEntry term="Confirmed">
-                  {fmt(snapshot.totalConfirmed, currency)}
-                </DescriptionListEntry>
+                <DescriptionListEntry term="Confirmed">{fmt(snapshot.totalConfirmed, currency)}</DescriptionListEntry>
               )}
               {displayPatientDue !== undefined && (
                 <DescriptionListEntry term="Patient due">
-                  <Text
-                    size="sm"
-                    fw={displayPatientDue > 0 ? 700 : undefined}
-                    c={displayPatientDue === 0 ? 'green' : displayPatientDue > 0 ? 'orange' : undefined}
-                  >
-                    {displayPatientDue === 0
-                      ? `${currency} 0 — fully settled`
-                      : fmt(displayPatientDue, currency)}
+                  <Text size="sm" fw={displayPatientDue > 0 ? 700 : undefined} c={patientDueColor(displayPatientDue)}>
+                    {displayPatientDue === 0 ? `${currency} 0 — fully settled` : fmt(displayPatientDue, currency)}
                   </Text>
                 </DescriptionListEntry>
               )}
@@ -597,22 +627,21 @@ export function ClaimBillingPanel({ claim }: ClaimBillingPanelProps): JSX.Elemen
               )}
             </DescriptionList>
 
-            {(snapshot.payments?.length ?? 0) > 0 ? (
+            {snapshot.payments?.length ? (
               <>
-                <Divider
-                  label={`Payment entries (${snapshot.payments!.length})`}
-                  labelPosition="left"
-                />
-                <PaymentEntriesTable payments={snapshot.payments!} currency={currency} />
+                <Divider label={`Payment entries (${snapshot.payments.length})`} labelPosition="left" />
+                <PaymentEntriesTable payments={snapshot.payments} currency={currency} />
               </>
             ) : (
-              <Text size="sm" c="dimmed">No payment entries recorded yet.</Text>
+              <Text size="sm" c="dimmed">
+                No payment entries recorded yet.
+              </Text>
             )}
           </>
         ) : (
           <Alert color="gray" variant="light">
-            No ERPNext billing snapshot. Use <strong>Sync to ERPNext</strong> to create the Sales
-            Invoice and push any existing payments.
+            No ERPNext billing snapshot. Use <strong>Sync to ERPNext</strong> to create the Sales Invoice and push any
+            existing payments.
           </Alert>
         )}
       </Stack>

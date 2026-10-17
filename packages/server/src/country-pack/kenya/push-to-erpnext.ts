@@ -3,10 +3,11 @@
 //
 // Idempotent ERPNext sync retry for a Claim. Can be called any time to bring
 // ERPNext in sync with the current FHIR state. Safe to call repeatedly.
+import type { KenyaErpNextModeOfPayment, KenyaErpNextPayerType, KenyaErpNextSubmissionSnapshot } from '@medplum/core';
 import {
   addPaymentToErpNextSnapshot,
-  buildKenyaErpNextSubmissionExtension,
   buildKenyaErpNextPatientExtension,
+  buildKenyaErpNextSubmissionExtension,
   getKenyaErpNextPatientSnapshot,
   getKenyaErpNextSubmissionSnapshot,
   getKenyaInsuranceType,
@@ -14,22 +15,19 @@ import {
   KenyaClientRegistryIdSystem,
   normalizeErrorString,
   Operator,
-  type KenyaErpNextModeOfPayment,
-  type KenyaErpNextPayerType,
-  type KenyaErpNextSubmissionSnapshot,
-  type KenyaPatientPaymentMethod,
 } from '@medplum/core';
 import type { Bundle, Claim, ClaimResponse, Organization, Patient, PaymentNotice, Project } from '@medplum/fhirtypes';
 import type { Repository } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
+import type { KenyaErpNextCredentials } from './erpnext';
 import {
   createErpNextPaymentEntry,
-  ensureErpNextCustomer,
   createErpNextSalesInvoice,
+  ensureErpNextCustomer,
   getKenyaErpNextCredentials,
   hasKenyaErpNextCredentials,
-  type KenyaErpNextCredentials,
 } from './erpnext';
+import { methodToErpNextMode, methodToErpNextModeLabel } from './post-patient-payment';
 
 const ShaErpNextCustomerName = 'SHA - Social Health Authority';
 
@@ -48,7 +46,13 @@ export async function handlePushToErpNext(
   project: Project & { id: string }
 ): Promise<PushToErpNextResult> {
   if (!hasKenyaErpNextCredentials(project)) {
-    return { status: 'skipped', invoiceSynced: false, paymentsSynced: 0, paymentsFailed: 0, message: 'ERPNext not configured for this project.' };
+    return {
+      status: 'skipped',
+      invoiceSynced: false,
+      paymentsSynced: 0,
+      paymentsFailed: 0,
+      message: 'ERPNext not configured for this project.',
+    };
   }
 
   const credentials = getKenyaErpNextCredentials(project);
@@ -95,13 +99,25 @@ export async function handlePushToErpNext(
   // 2. Sync any payments that are missing a paymentEntryName
   // -----------------------------------------------------------------------
 
+  // Step 1 either found or created the invoice; this guard only narrows the type.
+  const invoiceName = snapshot.invoiceName;
+  if (!invoiceName) {
+    return {
+      status: 'error',
+      invoiceSynced,
+      paymentsSynced: 0,
+      paymentsFailed: 0,
+      message: 'ERPNext invoice is missing.',
+    };
+  }
+
   // Collect payment sources: ClaimResponses (insurer) and PaymentNotices (patient).
   const missingPayments = await collectMissingPayments(systemRepo, currentClaim, snapshot);
 
   for (const mp of missingPayments) {
     try {
       const entry = await createErpNextPaymentEntry(credentials, {
-        invoiceName: snapshot.invoiceName!,
+        invoiceName,
         amount: mp.amount,
         currency: mp.currency,
         modeOfPayment: mp.erpNextModeLabel,
@@ -176,14 +192,16 @@ async function collectMissingPayments(
       filters: [{ code: 'request', operator: Operator.EQUALS, value: `Claim/${claim.id}` }],
       count: 50,
     })) as Bundle<ClaimResponse>;
-    claimResponses = (crBundle.entry ?? []).map((e) => e.resource!).filter(Boolean);
+    claimResponses = (crBundle.entry ?? []).map((e) => e.resource).filter((r): r is ClaimResponse => !!r);
   } catch {
     // not fatal
   }
 
   for (const cr of claimResponses) {
     const amount = cr.payment?.amount?.value;
-    if (!amount || amount <= 0) continue;
+    if (!amount || amount <= 0) {
+      continue;
+    }
     const crCurrency = cr.payment?.amount?.currency ?? currency;
 
     // Determine if this is SHA or a private insurer.
@@ -203,16 +221,21 @@ async function collectMissingPayments(
         p.payerName === partyName &&
         p.amount === amount
     );
-    if (alreadyPosted) continue;
+    if (alreadyPosted) {
+      continue;
+    }
 
     // Check if we already tracked this specific CR.
     const trackedByCrId = (snapshot.payments ?? []).some(
       (p) => p.paymentEntryName && p.amount === amount && p.payerName === partyName
     );
-    if (trackedByCrId) continue;
+    if (trackedByCrId) {
+      continue;
+    }
 
+    const insurerPayerType = insuranceType && insuranceType !== 'private-manual' ? insuranceType : 'other';
     result.push({
-      payerType: isSha ? 'sha' : (insuranceType && insuranceType !== 'private-manual' ? insuranceType : 'other'),
+      payerType: isSha ? 'sha' : insurerPayerType,
       partyName,
       amount,
       currency: crCurrency,
@@ -233,19 +256,27 @@ async function collectMissingPayments(
       filters: [{ code: 'request', operator: Operator.EQUALS, value: `Claim/${claim.id}` }],
       count: 50,
     })) as Bundle<PaymentNotice>;
-    notices = (noticeBundle.entry ?? []).map((e) => e.resource!).filter(Boolean);
+    notices = (noticeBundle.entry ?? []).map((e) => e.resource).filter((r): r is PaymentNotice => !!r);
   } catch {
     // not fatal
   }
 
   for (const notice of notices) {
     const paymentSnap = getKenyaPatientPaymentSnapshot(notice);
-    if (!paymentSnap) continue;
-    if (paymentSnap.paymentStatus !== 'confirmed') continue;
-    if (paymentSnap.paymentEntryName) continue; // already has an ERPNext entry
+    if (!paymentSnap) {
+      continue;
+    }
+    if (paymentSnap.paymentStatus !== 'confirmed') {
+      continue;
+    }
+    if (paymentSnap.paymentEntryName) {
+      continue;
+    } // already has an ERPNext entry
 
     const amount = paymentSnap.amount ?? notice.amount?.value;
-    if (!amount || amount <= 0) continue;
+    if (!amount || amount <= 0) {
+      continue;
+    }
 
     const noticeCurrency = paymentSnap.currency ?? notice.amount?.currency ?? currency;
     const patientName = await resolvePatientNameFromClaim(systemRepo, claim);
@@ -306,13 +337,19 @@ async function resolveOrCreateErpNextCustomer(
 }
 
 async function resolvePatientNameFromClaim(systemRepo: Repository, claim: Claim & { id: string }): Promise<string> {
-  if (!claim.patient?.reference) return `Claim/${claim.id}`;
+  if (!claim.patient?.reference) {
+    return `Claim/${claim.id}`;
+  }
   try {
     const patient = await systemRepo.readReference<Patient>(claim.patient);
     const snap = getKenyaErpNextPatientSnapshot(patient as Patient);
-    if (snap?.customerName) return snap.customerName;
+    if (snap?.customerName) {
+      return snap.customerName;
+    }
     const name = (patient as Patient).name?.[0];
-    if (name) return [...(name.given ?? []), name.family].filter(Boolean).join(' ');
+    if (name) {
+      return [...(name.given ?? []), name.family].filter(Boolean).join(' ');
+    }
   } catch {
     // fall through
   }
@@ -334,25 +371,7 @@ async function persistSnapshot(
 ): Promise<Claim & { id: string }> {
   const ext = buildKenyaErpNextSubmissionExtension(snapshot);
   const otherExts = (claim.extension ?? []).filter((e) => e.url !== ext.url);
-  return systemRepo.updateResource<Claim>({ ...claim, extension: [...otherExts, ext] }) as Promise<Claim & { id: string }>;
-}
-
-function methodToErpNextMode(method: KenyaPatientPaymentMethod): import('@medplum/core').KenyaErpNextModeOfPayment {
-  switch (method) {
-    case 'cash': return 'cash';
-    case 'card': return 'card';
-    case 'mpesa-manual':
-    case 'mpesa-stk': return 'mpesa';
-    case 'afiax-pay': return 'afiax-pay';
-  }
-}
-
-function methodToErpNextModeLabel(method: KenyaPatientPaymentMethod): string {
-  switch (method) {
-    case 'cash': return 'Cash';
-    case 'card': return 'Card';
-    case 'mpesa-manual':
-    case 'mpesa-stk': return 'M-Pesa';
-    case 'afiax-pay': return 'Afiax Pay';
-  }
+  return systemRepo.updateResource<Claim>({ ...claim, extension: [...otherExts, ext] }) as Promise<
+    Claim & { id: string }
+  >;
 }

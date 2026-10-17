@@ -15,7 +15,7 @@ jest.mock('../../util/auditevent', () => ({
 // Mock helpers
 // ---------------------------------------------------------------------------
 
-function makeRepo() {
+function makeRepo(): any {
   const created: Record<string, object[]> = {};
   const updated: object[] = [];
   let idSeq = 0;
@@ -35,7 +35,7 @@ function makeRepo() {
   };
 }
 
-function makeCtx(repo: ReturnType<typeof makeRepo>) {
+function makeCtx(repo: any): any {
   return {
     project: { id: 'project-test' },
     profile: { reference: 'Practitioner/practitioner-test' },
@@ -143,7 +143,9 @@ describe('handleCapturePreauthorization', () => {
     let call = 0;
     repo.createResource.mockImplementation(async (resource: { resourceType: string }) => {
       call++;
-      if (call === 1) throw new Error('DB write failed');
+      if (call === 1) {
+        throw new Error('DB write failed');
+      }
       const r = { ...resource, id: `${resource.resourceType}-err` };
       (repo.created[resource.resourceType] ??= []).push(r);
       return r;

@@ -217,7 +217,7 @@ export function parseMpesaCallback(body: unknown): MpesaCallbackPayload | null {
     const resultCode = stk.ResultCode as number;
     const resultDesc = stk.ResultDesc as string;
 
-    const metadata = (stk.CallbackMetadata as Record<string, unknown>)?.Item as Array<Record<string, unknown>> | undefined;
+    const metadata = (stk.CallbackMetadata as Record<string, unknown>)?.Item as Record<string, unknown>[] | undefined;
     function metaValue(name: string): unknown {
       return metadata?.find((m) => m.Name === name)?.Value;
     }

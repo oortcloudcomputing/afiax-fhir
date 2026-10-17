@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import fetch from 'node-fetch';
 import type { Claim, Coverage, Organization, Patient, Practitioner, Project } from '@medplum/fhirtypes';
-import { requestKenyaShaPreauthorization } from './request-sha-preauthorization';
+import fetch from 'node-fetch';
 import type { ShaPreAuthItem } from './request-sha-preauthorization';
+import { requestKenyaShaPreauthorization } from './request-sha-preauthorization';
 
 jest.mock('node-fetch');
 
@@ -61,11 +61,13 @@ const projectWithCredentials: Project = {
   ],
 };
 
-function makeSystemRepo(overrides: Partial<{
-  createResource: jest.Mock;
-  readResource: jest.Mock;
-  updateResource: jest.Mock;
-}> = {}) {
+function makeSystemRepo(
+  overrides: Partial<{
+    createResource: jest.Mock;
+    readResource: jest.Mock;
+    updateResource: jest.Mock;
+  }> = {}
+): Record<'createResource' | 'readResource' | 'updateResource', jest.Mock> {
   let idSeq = 0;
   return {
     createResource: jest.fn(async (resource: { resourceType: string }) => ({
@@ -146,9 +148,11 @@ describe('requestKenyaShaPreauthorization', () => {
     expect(result.statusTrackingEndpoint).toContain('/v1/shr-med/claim-status');
     expect(fetch).not.toHaveBeenCalled();
 
-    const bundle = JSON.parse(result.rawBundle!);
+    const bundle = JSON.parse(result.rawBundle ?? '');
     expect(bundle.type).toBe('message');
-    const claimEntry = bundle.entry?.find((e: { resource?: { resourceType: string } }) => e.resource?.resourceType === 'Claim');
+    const claimEntry = bundle.entry?.find(
+      (e: { resource?: { resourceType: string } }) => e.resource?.resourceType === 'Claim'
+    );
     expect(claimEntry).toBeDefined();
     const bundledClaim = claimEntry.resource as Claim;
     expect(bundledClaim.use).toBe('preauthorization');
@@ -316,10 +320,7 @@ describe('requestKenyaShaPreauthorization', () => {
       patient: patient as Patient & { id: string },
       providerOrganization: providerOrganization as Organization & { id: string },
       insurerOrganization: insurerOrganization as Organization & { id: string },
-      practitioners: [
-        practitioner as Practitioner & { id: string },
-        practitioner2 as Practitioner & { id: string },
-      ],
+      practitioners: [practitioner as Practitioner & { id: string }, practitioner2 as Practitioner & { id: string }],
       requestedItems,
       estimatedTotal: 65000,
       currency: 'KES',
@@ -337,17 +338,14 @@ describe('requestKenyaShaPreauthorization', () => {
       patient: patient as Patient & { id: string },
       providerOrganization: providerOrganization as Organization & { id: string },
       insurerOrganization: insurerOrganization as Organization & { id: string },
-      practitioners: [
-        practitioner as Practitioner & { id: string },
-        practitioner2 as Practitioner & { id: string },
-      ],
+      practitioners: [practitioner as Practitioner & { id: string }, practitioner2 as Practitioner & { id: string }],
       requestedItems,
       estimatedTotal: 65000,
       currency: 'KES',
       correlationId: 'corr-multi-prac-bundle',
     });
 
-    const bundle = JSON.parse(result.rawBundle!);
+    const bundle = JSON.parse(result.rawBundle ?? '');
     const practEntries = bundle.entry?.filter(
       (e: { resource?: { resourceType: string } }) => e.resource?.resourceType === 'Practitioner'
     );

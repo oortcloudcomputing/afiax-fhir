@@ -1,15 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { KhisWeeklyExportStatus } from '@medplum/core';
 import {
   buildKenyaKhisWeeklyExportExtension,
   createReference,
   isKenyaKhisWeeklyNotificationCode,
   KenyaKhisCorrelationIdSystem,
   khisWeekPeriodToDateRange,
-  KhisWeeklyExportStatus,
   normalizeErrorString,
 } from '@medplum/core';
-import type { AuditEvent, Condition, DocumentReference, Organization, Project, Task } from '@medplum/fhirtypes';
+import type {
+  AuditEvent,
+  Condition,
+  DocumentReference,
+  Organization,
+  Project,
+  Reference,
+  Task,
+} from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
@@ -18,7 +26,7 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
-import type { KhisConditionAggregate } from './khis';
+import type { KhisConditionAggregate, KhisDataValueSet } from './khis';
 import { buildKhisDataValueSet, getKhisCredentials, pushKhisDataValueSet } from './khis';
 
 export interface KhisWeeklyExportInput {
@@ -41,8 +49,8 @@ export interface KhisWeeklyExportResult {
   readonly dhis2ImportCount?: number;
   readonly message: string;
   readonly exportedAt: string;
-  readonly task?: import('@medplum/fhirtypes').Reference<Task>;
-  readonly documentReference?: import('@medplum/fhirtypes').Reference<DocumentReference>;
+  readonly task?: Reference<Task>;
+  readonly documentReference?: Reference<DocumentReference>;
 }
 
 export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Promise<KhisWeeklyExportResult> {
@@ -58,7 +66,13 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
       facility.identifier?.find((id) => id.system === 'https://afiax.africa/kenya/identifier/mfl-code')?.value ??
       facilityId;
   } catch (err) {
-    return makeErrorResult(correlationId, period, facilityId, exportedAt, `Cannot read facility Organization/${facilityId}: ${normalizeErrorString(err)}`);
+    return makeErrorResult(
+      correlationId,
+      period,
+      facilityId,
+      exportedAt,
+      `Cannot read facility Organization/${facilityId}: ${normalizeErrorString(err)}`
+    );
   }
 
   // 2. Resolve date range for the period
@@ -74,15 +88,27 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   try {
     aggregates = await aggregateConditionsForWeek(ctx, facilityId, weekStart, weekEnd);
   } catch (err) {
-    return makeErrorResult(correlationId, period, facilityId, exportedAt, `FHIR Condition search failed: ${normalizeErrorString(err)}`);
+    return makeErrorResult(
+      correlationId,
+      period,
+      facilityId,
+      exportedAt,
+      `FHIR Condition search failed: ${normalizeErrorString(err)}`
+    );
   }
 
   // 4. Get KHIS credentials and build payload
   let project: Project;
   try {
-    project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id as string);
+    project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
   } catch (err) {
-    return makeErrorResult(correlationId, period, facilityId, exportedAt, `Cannot read project: ${normalizeErrorString(err)}`);
+    return makeErrorResult(
+      correlationId,
+      period,
+      facilityId,
+      exportedAt,
+      `Cannot read project: ${normalizeErrorString(err)}`
+    );
   }
 
   let credentials: ReturnType<typeof getKhisCredentials>;
@@ -123,13 +149,12 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   try {
     const importSummary = await pushKhisDataValueSet(credentials, payload);
     dhis2ImportStatus = importSummary.status;
-    dhis2ImportCount =
-      (importSummary.importCount?.imported ?? 0) +
-      (importSummary.importCount?.updated ?? 0);
+    dhis2ImportCount = (importSummary.importCount?.imported ?? 0) + (importSummary.importCount?.updated ?? 0);
     status = importSummary.status === 'ERROR' ? 'error' : 'exported';
-    message = status === 'exported'
-      ? `KHIS weekly export successful for ${period}. ${dhis2ImportCount} data values imported/updated.`
-      : `KHIS returned import status ERROR for ${period}: ${importSummary.description ?? 'no description'}`;
+    message =
+      status === 'exported'
+        ? `KHIS weekly export successful for ${period}. ${dhis2ImportCount} data values imported/updated.`
+        : `KHIS returned import status ERROR for ${period}: ${importSummary.description ?? 'no description'}`;
   } catch (err) {
     status = 'error';
     message = `KHIS push failed: ${normalizeErrorString(err)}`;
@@ -137,7 +162,16 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
 
   // 6. Persist export artifact as DocumentReference
   try {
-    docRef = await createExportDocumentReference(ctx, facility, task, period, payload, status, correlationId, exportedAt);
+    docRef = await createExportDocumentReference(
+      ctx,
+      facility,
+      task,
+      period,
+      payload,
+      status,
+      correlationId,
+      exportedAt
+    );
   } catch {
     // non-fatal — export result is already in Task
   }
@@ -198,10 +232,11 @@ async function aggregateConditionsForWeek(
         continue;
       }
 
-      if (!counts.has(code)) {
-        counts.set(code, { suspected: 0, confirmed: 0, deaths: 0 });
+      let agg = counts.get(code);
+      if (!agg) {
+        agg = { suspected: 0, confirmed: 0, deaths: 0 };
+        counts.set(code, agg);
       }
-      const agg = counts.get(code)!;
       const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
 
       if (verificationStatus === 'confirmed') {
@@ -272,7 +307,9 @@ async function updateExportTask(
       { type: { text: 'status' }, valueString: status },
       { type: { text: 'message' }, valueString: message },
       ...(dhis2ImportStatus ? [{ type: { text: 'dhis2ImportStatus' }, valueString: dhis2ImportStatus }] : []),
-      ...(dhis2ImportCount !== undefined ? [{ type: { text: 'dhis2ImportCount' }, valueInteger: dhis2ImportCount }] : []),
+      ...(dhis2ImportCount !== undefined
+        ? [{ type: { text: 'dhis2ImportCount' }, valueInteger: dhis2ImportCount }]
+        : []),
     ],
   });
 }
@@ -282,7 +319,7 @@ async function createExportDocumentReference(
   facility: Organization & { id: string },
   task: Task & { id: string },
   period: string,
-  payload: import('./khis').KhisDataValueSet,
+  payload: KhisDataValueSet,
   status: KhisWeeklyExportStatus,
   correlationId: string,
   exportedAt: string

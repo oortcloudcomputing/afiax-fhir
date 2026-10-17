@@ -10,7 +10,7 @@ import {
   KenyaBreakGlassFlagSystem,
   normalizeErrorString,
 } from '@medplum/core';
-import type { AuditEvent, Flag, Patient, Project } from '@medplum/fhirtypes';
+import type { AuditEvent, Flag, Patient, Project, Reference } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import { sendEmail } from '../../email/email';
 import {
@@ -40,7 +40,7 @@ export interface BreakGlassResult {
   readonly expiresAt: string;
   readonly durationHours: number;
   readonly message: string;
-  readonly flag?: import('@medplum/fhirtypes').Reference<Flag>;
+  readonly flag?: Reference<Flag>;
   readonly alertSent: boolean;
 }
 
@@ -51,7 +51,8 @@ export async function handleBreakGlassAccess(input: BreakGlassInput): Promise<Br
   const expiresAt = new Date(Date.parse(declaredAt) + durationHours * 3600 * 1000).toISOString();
 
   const declaredByRef = ctx.profile?.reference ?? 'unknown';
-  const patientDisplay = [patient.name?.[0]?.family, patient.name?.[0]?.given?.[0]].filter(Boolean).join(', ') || patient.id;
+  const patientDisplay =
+    [patient.name?.[0]?.family, patient.name?.[0]?.given?.[0]].filter(Boolean).join(', ') || patient.id;
 
   let flag: (Flag & { id: string }) | undefined;
   try {
@@ -79,8 +80,18 @@ export async function handleBreakGlassAccess(input: BreakGlassInput): Promise<Br
   // Security alert email — non-fatal if it fails
   let alertSent = false;
   try {
-    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id as string);
-    await sendBreakGlassAlert(ctx, project, patient, patientDisplay, reason, declaredAt, expiresAt, declaredByRef, correlationId);
+    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
+    await sendBreakGlassAlert(
+      ctx,
+      project,
+      patient,
+      patientDisplay,
+      reason,
+      declaredAt,
+      expiresAt,
+      declaredByRef,
+      correlationId
+    );
     alertSent = true;
   } catch (err) {
     // Log but don't fail the declaration — alert failure must not block emergency access
@@ -186,7 +197,7 @@ async function createBreakGlassAuditEvent(
   );
 
   // IHE ATNA emergency treatment purpose-of-use
-  (auditEvent as AuditEvent).purposeOfEvent = [
+  auditEvent.purposeOfEvent = [
     {
       coding: [
         {

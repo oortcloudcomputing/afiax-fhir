@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getExtensionValue } from './utils';
 import type {
   Claim,
   ClaimResponse,
@@ -16,6 +15,7 @@ import type {
   Reference,
   Task,
 } from '@medplum/fhirtypes';
+import { getExtensionValue } from './utils';
 
 export interface KenyaFacilityVerificationResultInput {
   readonly status: string;
@@ -59,8 +59,7 @@ export const KenyaCoverageNationalIdIdentifierSystem = 'https://afiax.africa/ken
 export const KenyaCoverageAlienIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/coverage-alien-id';
 export const KenyaCoverageMandateNumberIdentifierSystem =
   'https://afiax.africa/kenya/identifier/coverage-mandate-number';
-export const KenyaCoverageTemporaryIdIdentifierSystem =
-  'https://afiax.africa/kenya/identifier/coverage-temporary-id';
+export const KenyaCoverageTemporaryIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/coverage-temporary-id';
 export const KenyaCoverageShaNumberIdentifierSystem = 'https://afiax.africa/kenya/identifier/sha-number';
 export const KenyaCoverageRefugeeIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/coverage-refugee-id';
 
@@ -209,7 +208,10 @@ export function getKenyaFacilityVerificationSnapshot(
     nextState: getStringExtensionValue(organization, KenyaFacilityVerificationExtension.nextState),
     verifiedAt: getStringExtensionValue(organization, KenyaFacilityVerificationExtension.verifiedAt),
     task: isReference(taskValue) ? (taskValue as Reference<Task>) : undefined,
-    facilityApprovalStatus: getStringExtensionValue(organization, KenyaFacilityVerificationExtension.facilityApprovalStatus),
+    facilityApprovalStatus: getStringExtensionValue(
+      organization,
+      KenyaFacilityVerificationExtension.facilityApprovalStatus
+    ),
     facilityOperationalStatus: getStringExtensionValue(
       organization,
       KenyaFacilityVerificationExtension.facilityOperationalStatus
@@ -222,7 +224,10 @@ export function getKenyaFacilityVerificationSnapshot(
       organization,
       KenyaFacilityVerificationExtension.facilityAuthorityIdentifier
     ),
-    facilityAuthoritySystem: getStringExtensionValue(organization, KenyaFacilityVerificationExtension.facilityAuthoritySystem),
+    facilityAuthoritySystem: getStringExtensionValue(
+      organization,
+      KenyaFacilityVerificationExtension.facilityAuthoritySystem
+    ),
   };
 
   function getStringExtensionValue(resource: Pick<Organization, 'extension'>, childUrl: string): string | undefined {
@@ -239,7 +244,9 @@ export function getKenyaFacilityAuthorityIdentifier(
   organization: Pick<Organization, 'identifier'> | undefined,
   preferredSystem = KenyaFacilityAuthorityIdentifierSystem
 ): Identifier | undefined {
-  return organization?.identifier?.find((identifier) => isKenyaFacilityAuthorityIdentifier(identifier, preferredSystem));
+  return organization?.identifier?.find((identifier) =>
+    isKenyaFacilityAuthorityIdentifier(identifier, preferredSystem)
+  );
 }
 
 export function setKenyaFacilityAuthorityIdentifier(
@@ -258,7 +265,9 @@ export function setKenyaFacilityAuthorityIdentifier(
   };
 
   const identifiers = [...(organization.identifier ?? [])];
-  const existingIndex = identifiers.findIndex((identifier) => isKenyaFacilityAuthorityIdentifier(identifier, preferredSystem));
+  const existingIndex = identifiers.findIndex((identifier) =>
+    isKenyaFacilityAuthorityIdentifier(identifier, preferredSystem)
+  );
   if (existingIndex >= 0) {
     identifiers[existingIndex] = {
       ...identifiers[existingIndex],
@@ -296,10 +305,7 @@ export function clearKenyaFacilityRegistrySnapshot(organization: Organization): 
   };
 }
 
-export function buildKenyaFacilityRegistryExtension(
-  input: KenyaFacilityRegistryInput,
-  lookedUpAt: string
-): Extension {
+export function buildKenyaFacilityRegistryExtension(input: KenyaFacilityRegistryInput, lookedUpAt: string): Extension {
   const extension: Extension = {
     url: KenyaFacilityRegistryExtension.baseUrl,
     extension: [{ url: KenyaFacilityRegistryExtension.lookedUpAt, valueDateTime: lookedUpAt }],
@@ -324,11 +330,7 @@ export function buildKenyaFacilityRegistryExtension(
   pushString(extension, KenyaFacilityRegistryExtension.subCounty, input.subCounty);
   pushString(extension, KenyaFacilityRegistryExtension.ward, input.ward);
   pushString(extension, KenyaFacilityRegistryExtension.operationalStatus, input.operationalStatus);
-  pushString(
-    extension,
-    KenyaFacilityRegistryExtension.currentLicenseExpiryDate,
-    input.currentLicenseExpiryDate
-  );
+  pushString(extension, KenyaFacilityRegistryExtension.currentLicenseExpiryDate, input.currentLicenseExpiryDate);
 
   return extension;
 }
@@ -441,8 +443,7 @@ function isKenyaFacilityAuthorityIdentifier(identifier: Identifier | undefined, 
   }
 
   return (identifier.type?.coding ?? []).some(
-    (coding) =>
-      coding.code === 'facility-authority-id' || coding.display?.toLowerCase().includes('facility authority')
+    (coding) => coding.code === 'facility-authority-id' || coding.display?.toLowerCase().includes('facility authority')
   );
 }
 
@@ -457,7 +458,9 @@ function normalizeOptionalString(value: unknown): string | undefined {
   if (value === undefined || value === null || value === '') {
     return undefined;
   }
-  return String(value);
+  return typeof value === 'object'
+    ? JSON.stringify(value)
+    : String(value as string | number | boolean | bigint | symbol);
 }
 
 function getKenyaRegistryStringValue(
@@ -469,11 +472,11 @@ function getKenyaRegistryStringValue(
 }
 
 export type KenyaPractitionerIdentificationType =
-  | 'KMPDC'    // Medical Practitioners and Dentists Council — registration number
-  | 'COC'      // Clinical Officers Council — registration number
-  | 'PPB'      // Pharmacy and Poisons Board — National ID
-  | 'NCK'      // Nursing Council of Kenya — National ID
-  | 'ID'       // Generic National ID (legacy / no specific regulator)
+  | 'KMPDC' // Medical Practitioners and Dentists Council — registration number
+  | 'COC' // Clinical Officers Council — registration number
+  | 'PPB' // Pharmacy and Poisons Board — National ID
+  | 'NCK' // Nursing Council of Kenya — National ID
+  | 'ID' // Generic National ID (legacy / no specific regulator)
   | 'PASSPORT'; // Generic Passport (legacy)
 
 export const KenyaPractitionerIdentificationTypes: readonly KenyaPractitionerIdentificationType[] = [
@@ -635,7 +638,11 @@ export function getKenyaPractitionerVerificationSnapshot(
   const taskValue = getExtensionValue(practitioner, base, KenyaPractitionerVerificationExtension.task);
   return {
     status,
-    correlationId: getKenyaExtensionStringValue(practitioner, base, KenyaPractitionerVerificationExtension.correlationId),
+    correlationId: getKenyaExtensionStringValue(
+      practitioner,
+      base,
+      KenyaPractitionerVerificationExtension.correlationId
+    ),
     message: getKenyaExtensionStringValue(practitioner, base, KenyaPractitionerVerificationExtension.message),
     nextState: getKenyaExtensionStringValue(practitioner, base, KenyaPractitionerVerificationExtension.nextState),
     verifiedAt: getKenyaExtensionStringValue(practitioner, base, KenyaPractitionerVerificationExtension.verifiedAt),
@@ -711,7 +718,11 @@ export function getKenyaPractitionerRegistrySnapshot(
   }
 
   const base = KenyaPractitionerRegistryExtension.baseUrl;
-  const identificationNumber = getExtensionValue(practitioner, base, KenyaPractitionerRegistryExtension.identificationNumber);
+  const identificationNumber = getExtensionValue(
+    practitioner,
+    base,
+    KenyaPractitionerRegistryExtension.identificationNumber
+  );
   const lookedUpAt = getExtensionValue(practitioner, base, KenyaPractitionerRegistryExtension.lookedUpAt);
   if (typeof identificationNumber !== 'string' && typeof lookedUpAt !== 'string') {
     return undefined;
@@ -741,7 +752,9 @@ export function getKenyaPractitionerAuthorityIdentifier(
   practitioner: Pick<Practitioner, 'identifier'> | undefined,
   preferredSystem = KenyaPractitionerAuthorityIdentifierSystem
 ): Identifier | undefined {
-  return practitioner?.identifier?.find((identifier) => isKenyaPractitionerAuthorityIdentifier(identifier, preferredSystem));
+  return practitioner?.identifier?.find((identifier) =>
+    isKenyaPractitionerAuthorityIdentifier(identifier, preferredSystem)
+  );
 }
 
 export function setKenyaPractitionerAuthorityIdentifier(
@@ -760,7 +773,9 @@ export function setKenyaPractitionerAuthorityIdentifier(
   };
 
   const identifiers = [...(practitioner.identifier ?? [])];
-  const existingIndex = identifiers.findIndex((identifier) => isKenyaPractitionerAuthorityIdentifier(identifier, preferredSystem));
+  const existingIndex = identifiers.findIndex((identifier) =>
+    isKenyaPractitionerAuthorityIdentifier(identifier, preferredSystem)
+  );
   if (existingIndex >= 0) {
     identifiers[existingIndex] = {
       ...identifiers[existingIndex],
@@ -923,21 +938,45 @@ function getKenyaPractitionerIdentificationTypeForIdentifier(
   }
 
   const typeText = identifier.type?.text?.toLowerCase();
-  if (typeText?.includes('passport')) return 'PASSPORT';
-  if (typeText?.includes('national id') || typeText === 'id' || typeText?.includes('national identification')) return 'ID';
-  if (typeText?.includes('kmpdc') || typeText?.includes('medical practitioner')) return 'KMPDC';
-  if (typeText?.includes('clinical officer') || typeText?.includes(' coc')) return 'COC';
-  if (typeText?.includes('pharmacy') || typeText?.includes('ppb')) return 'PPB';
-  if (typeText?.includes('nursing') || typeText?.includes('nck')) return 'NCK';
+  if (typeText?.includes('passport')) {
+    return 'PASSPORT';
+  }
+  if (typeText?.includes('national id') || typeText === 'id' || typeText?.includes('national identification')) {
+    return 'ID';
+  }
+  if (typeText?.includes('kmpdc') || typeText?.includes('medical practitioner')) {
+    return 'KMPDC';
+  }
+  if (typeText?.includes('clinical officer') || typeText?.includes(' coc')) {
+    return 'COC';
+  }
+  if (typeText?.includes('pharmacy') || typeText?.includes('ppb')) {
+    return 'PPB';
+  }
+  if (typeText?.includes('nursing') || typeText?.includes('nck')) {
+    return 'NCK';
+  }
 
   for (const coding of identifier.type?.coding ?? []) {
     const code = coding.code?.toUpperCase();
-    if (code === 'KMPDC') return 'KMPDC';
-    if (code === 'COC') return 'COC';
-    if (code === 'PPB') return 'PPB';
-    if (code === 'NCK') return 'NCK';
-    if (code === 'PASSPORT') return 'PASSPORT';
-    if (code === 'ID') return 'ID';
+    if (code === 'KMPDC') {
+      return 'KMPDC';
+    }
+    if (code === 'COC') {
+      return 'COC';
+    }
+    if (code === 'PPB') {
+      return 'PPB';
+    }
+    if (code === 'NCK') {
+      return 'NCK';
+    }
+    if (code === 'PASSPORT') {
+      return 'PASSPORT';
+    }
+    if (code === 'ID') {
+      return 'ID';
+    }
   }
 
   return undefined;
@@ -989,7 +1028,11 @@ function normalizeOptionalBoolean(value: unknown): boolean | undefined {
 }
 
 function getKenyaExtensionStringValue(
-  resource: Pick<Organization, 'extension'> | Pick<Practitioner, 'extension'> | Pick<Coverage, 'extension'> | Pick<Claim, 'extension'>,
+  resource:
+    | Pick<Organization, 'extension'>
+    | Pick<Practitioner, 'extension'>
+    | Pick<Coverage, 'extension'>
+    | Pick<Claim, 'extension'>,
   baseUrl: string,
   childUrl: string
 ): string | undefined {
@@ -1152,8 +1195,14 @@ export function getKenyaCoverageEligibilitySnapshot(
     checkedAt: getKenyaExtensionStringValue(coverage, base, KenyaCoverageEligibilityExtension.checkedAt),
     task: isReference(taskValue) ? (taskValue as Reference<Task>) : undefined,
     eligibilityRequest: isReference(requestValue) ? (requestValue as Reference<CoverageEligibilityRequest>) : undefined,
-    eligibilityResponse: isReference(responseValue) ? (responseValue as Reference<CoverageEligibilityResponse>) : undefined,
-    identificationType: getKenyaExtensionStringValue(coverage, base, KenyaCoverageEligibilityExtension.identificationType),
+    eligibilityResponse: isReference(responseValue)
+      ? (responseValue as Reference<CoverageEligibilityResponse>)
+      : undefined,
+    identificationType: getKenyaExtensionStringValue(
+      coverage,
+      base,
+      KenyaCoverageEligibilityExtension.identificationType
+    ),
     identificationNumber: getKenyaExtensionStringValue(
       coverage,
       base,
@@ -1354,19 +1403,39 @@ export function getKenyaNationalClaimSubmissionSnapshot(
     nextState: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.nextState),
     submittedAt: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.submittedAt),
     task: isReference(taskValue) ? (taskValue as Reference<Task>) : undefined,
-    shaClaimsEnvironment: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.shaClaimsEnvironment),
-    submissionEndpoint: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.submissionEndpoint),
+    shaClaimsEnvironment: getKenyaExtensionStringValue(
+      claim,
+      base,
+      KenyaNationalClaimSubmissionExtension.shaClaimsEnvironment
+    ),
+    submissionEndpoint: getKenyaExtensionStringValue(
+      claim,
+      base,
+      KenyaNationalClaimSubmissionExtension.submissionEndpoint
+    ),
     statusTrackingEndpoint: getKenyaExtensionStringValue(
       claim,
       base,
       KenyaNationalClaimSubmissionExtension.statusTrackingEndpoint
     ),
-    responseStatusCode: getKenyaExtensionNumberValue(claim, base, KenyaNationalClaimSubmissionExtension.responseStatusCode),
+    responseStatusCode: getKenyaExtensionNumberValue(
+      claim,
+      base,
+      KenyaNationalClaimSubmissionExtension.responseStatusCode
+    ),
     bundleId: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.bundleId),
     bundleEntryCount: getKenyaExtensionNumberValue(claim, base, KenyaNationalClaimSubmissionExtension.bundleEntryCount),
     workflowBot: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.workflowBot),
-    workflowBotStatus: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.workflowBotStatus),
-    workflowBotMessage: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimSubmissionExtension.workflowBotMessage),
+    workflowBotStatus: getKenyaExtensionStringValue(
+      claim,
+      base,
+      KenyaNationalClaimSubmissionExtension.workflowBotStatus
+    ),
+    workflowBotMessage: getKenyaExtensionStringValue(
+      claim,
+      base,
+      KenyaNationalClaimSubmissionExtension.workflowBotMessage
+    ),
   };
 }
 
@@ -1501,7 +1570,11 @@ export function getKenyaNationalClaimStatusSnapshot(
     checkedAt: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimStatusExtension.checkedAt),
     task: isReference(taskValue) ? (taskValue as Reference<Task>) : undefined,
     claimResponse: isReference(claimResponseValue) ? (claimResponseValue as Reference<ClaimResponse>) : undefined,
-    shaClaimsEnvironment: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimStatusExtension.shaClaimsEnvironment),
+    shaClaimsEnvironment: getKenyaExtensionStringValue(
+      claim,
+      base,
+      KenyaNationalClaimStatusExtension.shaClaimsEnvironment
+    ),
     statusEndpoint: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimStatusExtension.statusEndpoint),
     responseStatusCode: getKenyaExtensionNumberValue(claim, base, KenyaNationalClaimStatusExtension.responseStatusCode),
     claimId: getKenyaExtensionStringValue(claim, base, KenyaNationalClaimStatusExtension.claimId),
@@ -1575,9 +1648,7 @@ function getKenyaCoverageEligibilityTypeForIdentifier(
   return undefined;
 }
 
-function getKenyaCoverageEligibilitySystem(
-  identificationType: KenyaCoverageEligibilityIdentificationType
-): string {
+function getKenyaCoverageEligibilitySystem(identificationType: KenyaCoverageEligibilityIdentificationType): string {
   switch (identificationType) {
     case 'National ID':
       return KenyaCoverageNationalIdIdentifierSystem;
@@ -1591,6 +1662,8 @@ function getKenyaCoverageEligibilitySystem(
       return KenyaCoverageShaNumberIdentifierSystem;
     case 'Refugee ID':
       return KenyaCoverageRefugeeIdIdentifierSystem;
+    default:
+      throw new Error(`Unsupported identification type: ${identificationType satisfies never}`);
   }
 }
 
@@ -1628,24 +1701,24 @@ export interface KenyaIdsrNotifiableCondition {
 
 // ─── Immediately notifiable (24-hour reporting) ───────────────────────────────
 export const KenyaIdsrImmediateNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
-  { icd11: '1A00',   icd10: 'A00',   display: 'Cholera' },
-  { icd11: '1A07',   icd10: 'A01',   display: 'Typhoid fever' },
-  { icd11: '1B9E',   icd10: 'A20',   display: 'Plague' },
-  { icd11: '1B93',   icd10: 'A22',   display: 'Anthrax' },
-  { icd11: '1C1A.0', icd10: 'A33',   display: 'Neonatal tetanus' },
-  { icd11: '1C42',   icd10: 'A36',   display: 'Diphtheria' },
-  { icd11: '1C1E.0', icd10: 'A39',   display: 'Meningococcal disease' },
-  { icd11: '1C81',   icd10: 'A80',   display: 'Acute poliomyelitis / AFP' },
-  { icd11: '1C82',   icd10: 'A82',   display: 'Rabies' },
-  { icd11: '1D47',   icd10: 'A95',   display: 'Yellow fever' },
-  { icd11: '1D65',   icd10: 'A96',   display: 'Arenaviral haemorrhagic fever' },
-  { icd11: '1D60',   icd10: 'A98.4', display: 'Ebola virus disease' },
-  { icd11: '1D62',   icd10: 'A98.5', display: 'Marburg virus disease' },
-  { icd11: '1D6Y',   icd10: 'A99',   display: 'Unspecified viral haemorrhagic fever' },
-  { icd11: '1E70',   icd10: 'B03',   display: 'Smallpox' },
-  { icd11: '1E71',   icd10: 'B04',   display: 'Mpox (monkeypox)' },
-  { icd11: '1F03',   icd10: 'B05',   display: 'Measles' },
-  { icd11: '1E31',   icd10: 'J09',   display: 'Influenza A (novel/pandemic subtype)' },
+  { icd11: '1A00', icd10: 'A00', display: 'Cholera' },
+  { icd11: '1A07', icd10: 'A01', display: 'Typhoid fever' },
+  { icd11: '1B9E', icd10: 'A20', display: 'Plague' },
+  { icd11: '1B93', icd10: 'A22', display: 'Anthrax' },
+  { icd11: '1C1A.0', icd10: 'A33', display: 'Neonatal tetanus' },
+  { icd11: '1C42', icd10: 'A36', display: 'Diphtheria' },
+  { icd11: '1C1E.0', icd10: 'A39', display: 'Meningococcal disease' },
+  { icd11: '1C81', icd10: 'A80', display: 'Acute poliomyelitis / AFP' },
+  { icd11: '1C82', icd10: 'A82', display: 'Rabies' },
+  { icd11: '1D47', icd10: 'A95', display: 'Yellow fever' },
+  { icd11: '1D65', icd10: 'A96', display: 'Arenaviral haemorrhagic fever' },
+  { icd11: '1D60', icd10: 'A98.4', display: 'Ebola virus disease' },
+  { icd11: '1D62', icd10: 'A98.5', display: 'Marburg virus disease' },
+  { icd11: '1D6Y', icd10: 'A99', display: 'Unspecified viral haemorrhagic fever' },
+  { icd11: '1E70', icd10: 'B03', display: 'Smallpox' },
+  { icd11: '1E71', icd10: 'B04', display: 'Mpox (monkeypox)' },
+  { icd11: '1F03', icd10: 'B05', display: 'Measles' },
+  { icd11: '1E31', icd10: 'J09', display: 'Influenza A (novel/pandemic subtype)' },
   { icd11: 'RA01.0', icd10: 'U07.1', display: 'COVID-19' },
 ] as const;
 
@@ -1654,9 +1727,7 @@ const _icd11ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c
 const _icd10ImmediateSet = new Set(KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd10));
 
 // Backward-compatible flat code array (ICD-10 values, for existing callers)
-export const KenyaIdsrImmediateNotificationCodes = KenyaIdsrImmediateNotifiableConditions.map(
-  (c) => c.icd10
-) as string[];
+export const KenyaIdsrImmediateNotificationCodes = KenyaIdsrImmediateNotifiableConditions.map((c) => c.icd10);
 
 export type KenyaIdsrImmediateNotificationCode = (typeof KenyaIdsrImmediateNotifiableConditions)[number]['icd10'];
 
@@ -1691,7 +1762,11 @@ export interface KenyaIdsrNotificationSnapshot {
   readonly task?: Reference<Task>;
 }
 
-/** Returns true if `code` is a notifiable condition code in either ICD-11 or ICD-10. */
+/**
+ * Returns true if `code` is a notifiable condition code in either ICD-11 or ICD-10.
+ * @param code - ICD-11 MMS or ICD-10 code.
+ * @returns True if the code is immediately notifiable under IDSR.
+ */
 export function isKenyaIdsrImmediateNotificationCode(code: string): boolean {
   return _icd11ImmediateSet.has(code) || _icd10ImmediateSet.has(code);
 }
@@ -1701,10 +1776,18 @@ export function isKenyaIdsrImmediateNotificationCode(code: string): boolean {
  * Accepts ICD-11 MMS (preferred) and ICD-10 (backward compatibility).
  * System URI is checked when present; codings without a system are matched
  * against both sets to support legacy data.
+ * @param condition - The Condition (or any object with a CodeableConcept `code`).
+ * @param condition.code - The condition code.
+ * @param condition.code.coding - Codings to search.
+ * @returns The first notifiable code, or undefined.
  */
-export function getKenyaIdsrConditionCode(condition: { code?: { coding?: Array<{ system?: string; code?: string }> } }): string | undefined {
+export function getKenyaIdsrConditionCode(condition: {
+  code?: { coding?: { system?: string; code?: string }[] };
+}): string | undefined {
   for (const coding of condition.code?.coding ?? []) {
-    if (!coding.code) continue;
+    if (!coding.code) {
+      continue;
+    }
     const sys = coding.system;
 
     // ICD-11 — preferred system
@@ -1732,7 +1815,10 @@ export function buildKenyaIdsrNotificationExtension(
     extension: [
       { url: KenyaIdsrNotificationExtension.status, valueCode: status },
       { url: KenyaIdsrNotificationExtension.conditionCode, valueCode: conditionCode },
-      { url: KenyaIdsrNotificationExtension.conditionDisplay, valueString: KenyaIdsrConditionDisplay[conditionCode] ?? conditionCode },
+      {
+        url: KenyaIdsrNotificationExtension.conditionDisplay,
+        valueString: KenyaIdsrConditionDisplay[conditionCode] ?? conditionCode,
+      },
       { url: KenyaIdsrNotificationExtension.notifiedAt, valueDateTime: notifiedAt },
       { url: KenyaIdsrNotificationExtension.correlationId, valueString: correlationId },
     ],
@@ -1766,28 +1852,28 @@ export const KenyaKhisWeeklyNotifiableConditions: readonly KenyaIdsrNotifiableCo
   // ── Immediately notifiable (superset) ────────────────────────────────────────
   ...KenyaIdsrImmediateNotifiableConditions,
   // ── Weekly reportable (MOH 505 endemic disease surveillance) ─────────────────
-  { icd11: '1B10',   icd10: 'A15',   display: 'Tuberculosis (confirmed)' },
-  { icd11: '1B11',   icd10: 'A16',   display: 'Tuberculosis (unconfirmed)' },
-  { icd11: '1B12',   icd10: 'A17',   display: 'Tuberculosis of nervous system' },
-  { icd11: '1A36',   icd10: 'A06',   display: 'Amoebiasis' },
-  { icd11: '1A90',   icd10: 'A09',   display: 'Diarrhoeal diseases' },
-  { icd11: '1B90',   icd10: 'A27',   display: 'Leptospirosis' },
-  { icd11: '1B20',   icd10: 'A30',   display: 'Leprosy' },
-  { icd11: '1C30',   icd10: 'A75',   display: 'Typhus fever' },
-  { icd11: '1D2Z',   icd10: 'A90',   display: 'Dengue fever' },
-  { icd11: '1D43',   icd10: 'A92',   display: 'Rift Valley fever' },
-  { icd11: '1D40',   icd10: 'A92',   display: 'Chikungunya' },
-  { icd11: '1F40.0', icd10: 'B50',   display: 'Malaria (P. falciparum)' },
-  { icd11: '1F40.1', icd10: 'B51',   display: 'Malaria (P. vivax)' },
-  { icd11: '1F4Z',   icd10: 'B54',   display: 'Malaria (unspecified)' },
-  { icd11: '1F5Z',   icd10: 'B55',   display: 'Leishmaniasis' },
-  { icd11: '1F67.Z', icd10: 'B74',   display: 'Filariasis' },
-  { icd11: '1C1E',   icd10: 'G00',   display: 'Bacterial meningitis' },
-  { icd11: 'DB50.Z', icd10: 'G03',   display: 'Meningitis (other/unspecified)' },
-  { icd11: 'CA04',   icd10: 'J00',   display: 'Acute nasopharyngitis (ARI)' },
-  { icd11: 'CA0Z',   icd10: 'J06',   display: 'Acute upper respiratory infection' },
-  { icd11: 'CA40.0Z',icd10: 'J18',   display: 'Pneumonia (unspecified)' },
-  { icd11: 'DA91.Z', icd10: 'K52',   display: 'Acute gastroenteritis' },
+  { icd11: '1B10', icd10: 'A15', display: 'Tuberculosis (confirmed)' },
+  { icd11: '1B11', icd10: 'A16', display: 'Tuberculosis (unconfirmed)' },
+  { icd11: '1B12', icd10: 'A17', display: 'Tuberculosis of nervous system' },
+  { icd11: '1A36', icd10: 'A06', display: 'Amoebiasis' },
+  { icd11: '1A90', icd10: 'A09', display: 'Diarrhoeal diseases' },
+  { icd11: '1B90', icd10: 'A27', display: 'Leptospirosis' },
+  { icd11: '1B20', icd10: 'A30', display: 'Leprosy' },
+  { icd11: '1C30', icd10: 'A75', display: 'Typhus fever' },
+  { icd11: '1D2Z', icd10: 'A90', display: 'Dengue fever' },
+  { icd11: '1D43', icd10: 'A92', display: 'Rift Valley fever' },
+  { icd11: '1D40', icd10: 'A92', display: 'Chikungunya' },
+  { icd11: '1F40.0', icd10: 'B50', display: 'Malaria (P. falciparum)' },
+  { icd11: '1F40.1', icd10: 'B51', display: 'Malaria (P. vivax)' },
+  { icd11: '1F4Z', icd10: 'B54', display: 'Malaria (unspecified)' },
+  { icd11: '1F5Z', icd10: 'B55', display: 'Leishmaniasis' },
+  { icd11: '1F67.Z', icd10: 'B74', display: 'Filariasis' },
+  { icd11: '1C1E', icd10: 'G00', display: 'Bacterial meningitis' },
+  { icd11: 'DB50.Z', icd10: 'G03', display: 'Meningitis (other/unspecified)' },
+  { icd11: 'CA04', icd10: 'J00', display: 'Acute nasopharyngitis (ARI)' },
+  { icd11: 'CA0Z', icd10: 'J06', display: 'Acute upper respiratory infection' },
+  { icd11: 'CA40.0Z', icd10: 'J18', display: 'Pneumonia (unspecified)' },
+  { icd11: 'DA91.Z', icd10: 'K52', display: 'Acute gastroenteritis' },
 ] as const;
 
 // Derived sets for efficient lookup (union of immediate + weekly-only)
@@ -1795,9 +1881,7 @@ const _icd11WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c
 const _icd10WeeklySet = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd10));
 
 // Backward-compatible flat code array (ICD-10 values)
-export const KenyaKhisWeeklyNotificationCodes = KenyaKhisWeeklyNotifiableConditions.map(
-  (c) => c.icd10
-) as string[];
+export const KenyaKhisWeeklyNotificationCodes = KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd10);
 
 export type KenyaKhisWeeklyNotificationCode = (typeof KenyaKhisWeeklyNotifiableConditions)[number]['icd10'];
 
@@ -1840,7 +1924,11 @@ export interface KenyaKhisWeeklyExportSnapshot {
   readonly task?: Reference<Task>;
 }
 
-/** Returns true if `code` is a weekly-reportable condition in either ICD-11 or ICD-10. */
+/**
+ * Returns true if `code` is a weekly-reportable condition in either ICD-11 or ICD-10.
+ * @param code - ICD-11 MMS or ICD-10 code.
+ * @returns True if the code is reported in the KHIS weekly aggregate.
+ */
 export function isKenyaKhisWeeklyNotificationCode(code: string): boolean {
   return _icd11WeeklySet.has(code) || _icd10WeeklySet.has(code);
 }
@@ -1852,7 +1940,7 @@ export function toKhisWeekPeriod(date: Date): string {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return `${d.getUTCFullYear()}W${String(weekNo).padStart(2, '0')}`;
 }
 
@@ -1885,17 +1973,13 @@ export function buildKenyaKhisWeeklyExportExtension(
     task?: Reference<Task>;
   }
 ): Extension {
-  const extension: Extension = {
-    url: KenyaKhisWeeklyExportExtension.baseUrl,
-    extension: [
-      { url: KenyaKhisWeeklyExportExtension.status, valueCode: status },
-      { url: KenyaKhisWeeklyExportExtension.period, valueString: period },
-      { url: KenyaKhisWeeklyExportExtension.exportedAt, valueDateTime: exportedAt },
-      { url: KenyaKhisWeeklyExportExtension.correlationId, valueString: correlationId },
-    ],
-  };
-
-  const ext = extension.extension!;
+  const ext: Extension[] = [
+    { url: KenyaKhisWeeklyExportExtension.status, valueCode: status },
+    { url: KenyaKhisWeeklyExportExtension.period, valueString: period },
+    { url: KenyaKhisWeeklyExportExtension.exportedAt, valueDateTime: exportedAt },
+    { url: KenyaKhisWeeklyExportExtension.correlationId, valueString: correlationId },
+  ];
+  const extension: Extension = { url: KenyaKhisWeeklyExportExtension.baseUrl, extension: ext };
   if (options?.facilityOrgUnit) {
     ext.push({ url: KenyaKhisWeeklyExportExtension.facilityOrgUnit, valueString: options.facilityOrgUnit });
   }
@@ -1963,18 +2047,14 @@ export function buildKenyaBreakGlassExtension(
   declaredBy?: string,
   flag?: Reference
 ): Extension {
-  const extension: Extension = {
-    url: KenyaBreakGlassExtension.baseUrl,
-    extension: [
-      { url: KenyaBreakGlassExtension.status, valueCode: status },
-      { url: KenyaBreakGlassExtension.reason, valueString: reason },
-      { url: KenyaBreakGlassExtension.declaredAt, valueDateTime: declaredAt },
-      { url: KenyaBreakGlassExtension.expiresAt, valueDateTime: expiresAt },
-      { url: KenyaBreakGlassExtension.correlationId, valueString: correlationId },
-    ],
-  };
-
-  const ext = extension.extension!;
+  const ext: Extension[] = [
+    { url: KenyaBreakGlassExtension.status, valueCode: status },
+    { url: KenyaBreakGlassExtension.reason, valueString: reason },
+    { url: KenyaBreakGlassExtension.declaredAt, valueDateTime: declaredAt },
+    { url: KenyaBreakGlassExtension.expiresAt, valueDateTime: expiresAt },
+    { url: KenyaBreakGlassExtension.correlationId, valueString: correlationId },
+  ];
+  const extension: Extension = { url: KenyaBreakGlassExtension.baseUrl, extension: ext };
   if (declaredBy) {
     ext.push({ url: KenyaBreakGlassExtension.declaredBy, valueString: declaredBy });
   }
@@ -2014,7 +2094,7 @@ export function getKenyaBreakGlassSnapshot(
     expiresAt: child(KenyaBreakGlassExtension.expiresAt),
     correlationId: child(KenyaBreakGlassExtension.correlationId),
     declaredBy: child(KenyaBreakGlassExtension.declaredBy),
-    flag: flagVal?.valueReference as Reference | undefined,
+    flag: flagVal?.valueReference,
   };
 }
 
@@ -2298,18 +2378,55 @@ export function buildKenyaPrivateInsurancePreauthorizationExtension(
   input: KenyaPrivateInsurancePreauthorizationSnapshot
 ): Extension {
   const children: Extension[] = [
-    ...(input.insurerReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerReference, valueString: input.insurerReference }] : []),
-    ...(input.insurerName ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerName, valueString: input.insurerName }] : []),
-    ...(input.preauthorizationCode ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.preauthorizationCode, valueString: input.preauthorizationCode }] : []),
-    ...(input.approvedAmount !== undefined ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.approvedAmount, valueDecimal: input.approvedAmount }] : []),
-    ...(input.currency ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.currency, valueCode: input.currency }] : []),
-    ...(input.validFrom ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validFrom, valueDate: input.validFrom }] : []),
-    ...(input.validTo ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validTo, valueDate: input.validTo }] : []),
-    ...(input.approvedProcedures ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.approvedProcedures, valueString: input.approvedProcedures }] : []),
+    ...(input.insurerReference
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerReference, valueString: input.insurerReference }]
+      : []),
+    ...(input.insurerName
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.insurerName, valueString: input.insurerName }]
+      : []),
+    ...(input.preauthorizationCode
+      ? [
+          {
+            url: KenyaPrivateInsurancePreauthorizationExtension.preauthorizationCode,
+            valueString: input.preauthorizationCode,
+          },
+        ]
+      : []),
+    ...(input.approvedAmount !== undefined
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.approvedAmount, valueDecimal: input.approvedAmount }]
+      : []),
+    ...(input.currency
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.currency, valueCode: input.currency }]
+      : []),
+    ...(input.validFrom
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validFrom, valueDate: input.validFrom }]
+      : []),
+    ...(input.validTo
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.validTo, valueDate: input.validTo }]
+      : []),
+    ...(input.approvedProcedures
+      ? [
+          {
+            url: KenyaPrivateInsurancePreauthorizationExtension.approvedProcedures,
+            valueString: input.approvedProcedures,
+          },
+        ]
+      : []),
     ...(input.notes ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.notes, valueString: input.notes }] : []),
-    ...(input.capturedAt ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.capturedAt, valueDateTime: input.capturedAt }] : []),
-    ...(input.claimReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.claimReference, valueString: input.claimReference }] : []),
-    ...(input.claimResponseReference ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.claimResponseReference, valueString: input.claimResponseReference }] : []),
+    ...(input.capturedAt
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.capturedAt, valueDateTime: input.capturedAt }]
+      : []),
+    ...(input.claimReference
+      ? [{ url: KenyaPrivateInsurancePreauthorizationExtension.claimReference, valueString: input.claimReference }]
+      : []),
+    ...(input.claimResponseReference
+      ? [
+          {
+            url: KenyaPrivateInsurancePreauthorizationExtension.claimResponseReference,
+            valueString: input.claimResponseReference,
+          },
+        ]
+      : []),
   ];
   return { url: KenyaPrivateInsurancePreauthorizationExtension.baseUrl, extension: children };
 }
@@ -2366,7 +2483,9 @@ export interface KenyaErpNextPatientSnapshot {
 
 export function buildKenyaErpNextPatientExtension(input: KenyaErpNextPatientSnapshot): Extension {
   const children: Extension[] = [
-    ...(input.customerName ? [{ url: KenyaErpNextPatientExtension.customerName, valueString: input.customerName }] : []),
+    ...(input.customerName
+      ? [{ url: KenyaErpNextPatientExtension.customerName, valueString: input.customerName }]
+      : []),
     ...(input.syncedAt ? [{ url: KenyaErpNextPatientExtension.syncedAt, valueDateTime: input.syncedAt }] : []),
     ...(input.status ? [{ url: KenyaErpNextPatientExtension.status, valueCode: input.status }] : []),
     ...(input.message ? [{ url: KenyaErpNextPatientExtension.message, valueString: input.message }] : []),
@@ -2441,13 +2560,23 @@ export interface KenyaErpNextSubmissionSnapshot {
 
 export function buildKenyaErpNextSubmissionExtension(input: KenyaErpNextSubmissionSnapshot): Extension {
   const children: Extension[] = [
-    ...(input.invoiceName ? [{ url: KenyaErpNextSubmissionExtension.invoiceName, valueString: input.invoiceName }] : []),
-    ...(input.invoiceTotal !== undefined ? [{ url: KenyaErpNextSubmissionExtension.invoiceTotal, valueDecimal: input.invoiceTotal }] : []),
+    ...(input.invoiceName
+      ? [{ url: KenyaErpNextSubmissionExtension.invoiceName, valueString: input.invoiceName }]
+      : []),
+    ...(input.invoiceTotal !== undefined
+      ? [{ url: KenyaErpNextSubmissionExtension.invoiceTotal, valueDecimal: input.invoiceTotal }]
+      : []),
     ...(input.currency ? [{ url: KenyaErpNextSubmissionExtension.currency, valueCode: input.currency }] : []),
     ...(input.status ? [{ url: KenyaErpNextSubmissionExtension.status, valueCode: input.status }] : []),
-    ...(input.payments?.length ? [{ url: KenyaErpNextSubmissionExtension.payments, valueString: JSON.stringify(input.payments) }] : []),
-    ...(input.totalConfirmed !== undefined ? [{ url: KenyaErpNextSubmissionExtension.totalConfirmed, valueDecimal: input.totalConfirmed }] : []),
-    ...(input.patientDue !== undefined ? [{ url: KenyaErpNextSubmissionExtension.patientDue, valueDecimal: input.patientDue }] : []),
+    ...(input.payments?.length
+      ? [{ url: KenyaErpNextSubmissionExtension.payments, valueString: JSON.stringify(input.payments) }]
+      : []),
+    ...(input.totalConfirmed !== undefined
+      ? [{ url: KenyaErpNextSubmissionExtension.totalConfirmed, valueDecimal: input.totalConfirmed }]
+      : []),
+    ...(input.patientDue !== undefined
+      ? [{ url: KenyaErpNextSubmissionExtension.patientDue, valueDecimal: input.patientDue }]
+      : []),
     ...(input.message ? [{ url: KenyaErpNextSubmissionExtension.message, valueString: input.message }] : []),
     ...(input.syncedAt ? [{ url: KenyaErpNextSubmissionExtension.syncedAt, valueDateTime: input.syncedAt }] : []),
   ];
@@ -2493,7 +2622,10 @@ export function addPaymentToErpNextSnapshot(
   existing: KenyaErpNextSubmissionSnapshot,
   payment: KenyaErpNextPaymentEntry
 ): KenyaErpNextSubmissionSnapshot {
-  const payments = [...(existing.payments ?? []).filter((p) => p.paymentEntryName !== payment.paymentEntryName), payment];
+  const payments = [
+    ...(existing.payments ?? []).filter((p) => p.paymentEntryName !== payment.paymentEntryName),
+    payment,
+  ];
   const totalConfirmed = payments
     .filter((p) => !p.pendingCallbackRef && p.patientPaymentStatus !== 'pending' && p.patientPaymentStatus !== 'failed')
     .reduce((sum, p) => sum + p.amount, 0);
@@ -2547,15 +2679,25 @@ export interface KenyaPatientPaymentSnapshot {
 export function buildKenyaPatientPaymentExtension(input: KenyaPatientPaymentSnapshot): Extension {
   const children: Extension[] = [
     ...(input.method ? [{ url: KenyaPatientPaymentExtension.method, valueCode: input.method }] : []),
-    ...(input.paymentStatus ? [{ url: KenyaPatientPaymentExtension.paymentStatus, valueCode: input.paymentStatus }] : []),
+    ...(input.paymentStatus
+      ? [{ url: KenyaPatientPaymentExtension.paymentStatus, valueCode: input.paymentStatus }]
+      : []),
     ...(input.amount !== undefined ? [{ url: KenyaPatientPaymentExtension.amount, valueDecimal: input.amount }] : []),
     ...(input.currency ? [{ url: KenyaPatientPaymentExtension.currency, valueCode: input.currency }] : []),
-    ...(input.gatewayReference ? [{ url: KenyaPatientPaymentExtension.gatewayReference, valueString: input.gatewayReference }] : []),
-    ...(input.transactionRef ? [{ url: KenyaPatientPaymentExtension.transactionRef, valueString: input.transactionRef }] : []),
+    ...(input.gatewayReference
+      ? [{ url: KenyaPatientPaymentExtension.gatewayReference, valueString: input.gatewayReference }]
+      : []),
+    ...(input.transactionRef
+      ? [{ url: KenyaPatientPaymentExtension.transactionRef, valueString: input.transactionRef }]
+      : []),
     ...(input.phone ? [{ url: KenyaPatientPaymentExtension.phone, valueString: input.phone }] : []),
-    ...(input.paymentEntryName ? [{ url: KenyaPatientPaymentExtension.paymentEntryName, valueString: input.paymentEntryName }] : []),
+    ...(input.paymentEntryName
+      ? [{ url: KenyaPatientPaymentExtension.paymentEntryName, valueString: input.paymentEntryName }]
+      : []),
     ...(input.confirmedAt ? [{ url: KenyaPatientPaymentExtension.confirmedAt, valueDateTime: input.confirmedAt }] : []),
-    ...(input.failureReason ? [{ url: KenyaPatientPaymentExtension.failureReason, valueString: input.failureReason }] : []),
+    ...(input.failureReason
+      ? [{ url: KenyaPatientPaymentExtension.failureReason, valueString: input.failureReason }]
+      : []),
   ];
   return { url: KenyaPatientPaymentExtension.baseUrl, extension: children };
 }

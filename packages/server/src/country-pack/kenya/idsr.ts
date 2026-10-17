@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { IdsrNotificationStatus } from '@medplum/core';
 import {
   buildKenyaIdsrNotificationExtension,
   createReference,
@@ -8,8 +9,7 @@ import {
   KenyaIdsrCorrelationIdSystem,
   normalizeErrorString,
 } from '@medplum/core';
-import type { IdsrNotificationStatus } from '@medplum/core';
-import type { AuditEvent, Condition, Task } from '@medplum/fhirtypes';
+import type { AuditEvent, Condition, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
@@ -32,7 +32,7 @@ export interface IdsrNotificationResult {
   readonly conditionDisplay: string;
   readonly message: string;
   readonly notifiedAt: string;
-  readonly task?: import('@medplum/fhirtypes').Reference<Task>;
+  readonly task?: Reference<Task>;
 }
 
 export async function handleKenyaIdsrNotification(input: IdsrNotificationInput): Promise<IdsrNotificationResult> {
@@ -46,7 +46,8 @@ export async function handleKenyaIdsrNotification(input: IdsrNotificationInput):
       conditionCode: '',
       conditionDisplay: '',
       notifiedAt: new Date().toISOString(),
-      message: 'Condition does not carry a Kenya IDSR immediately notifiable condition code (ICD-11 or ICD-10 accepted).',
+      message:
+        'Condition does not carry a Kenya IDSR immediately notifiable condition code (ICD-11 or ICD-10 accepted).',
     };
   }
 

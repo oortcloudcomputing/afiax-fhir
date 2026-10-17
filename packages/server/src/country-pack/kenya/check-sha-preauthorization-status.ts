@@ -25,7 +25,10 @@ export interface CheckShaPreauthorizationStatusResult {
 
 const KenyaShaPreAuthResponseIdentifierSystem = 'https://afiax.africa/kenya/identifier/sha-preauth-bundle-id';
 
-function normalizePreAuthStatus(claimState: string | undefined, outcome: ClaimResponse['outcome'] | undefined): {
+function normalizePreAuthStatus(
+  claimState: string | undefined,
+  outcome: ClaimResponse['outcome'] | undefined
+): {
   readonly status: CheckShaPreauthorizationStatusResult['status'];
   readonly nextState: string;
 } {
@@ -35,7 +38,12 @@ function normalizePreAuthStatus(claimState: string | undefined, outcome: ClaimRe
     return { status: 'approved', nextState: 'preauth-approved-ready-for-claim' };
   }
 
-  if (outcome === 'error' || normalized.includes('reject') || normalized.includes('declin') || normalized.includes('denied')) {
+  if (
+    outcome === 'error' ||
+    normalized.includes('reject') ||
+    normalized.includes('declin') ||
+    normalized.includes('denied')
+  ) {
     return { status: 'denied', nextState: 'review-preauth-denial' };
   }
 
@@ -58,13 +66,11 @@ export async function checkKenyaShaPreauthorizationStatus(
     const credentials = getKenyaShaClaimsCredentials(ctx.project);
     const response = await checkKenyaShaClaimStatus(credentials, bundleId);
     const { status, nextState } = normalizePreAuthStatus(response.claimState, response.claimResponse?.outcome);
-    const message =
-      response.message ??
-      (status === 'approved'
-        ? 'SHA pre-authorization approved.'
-        : status === 'denied'
-          ? 'SHA pre-authorization was denied.'
-          : 'SHA pre-authorization is still queued for review.');
+    const defaultMessages: Record<string, string> = {
+      approved: 'SHA pre-authorization approved.',
+      denied: 'SHA pre-authorization was denied.',
+    };
+    const message = response.message ?? defaultMessages[status] ?? 'SHA pre-authorization is still queued for review.';
 
     const insurer = response.claimResponse?.insurer ?? preAuthClaim.insurer;
     if (!insurer) {
@@ -75,12 +81,16 @@ export async function checkKenyaShaPreauthorizationStatus(
       resourceType: 'ClaimResponse',
       filters: [
         { code: '_project', operator: Operator.EQUALS, value: ctx.project.id },
-        { code: 'identifier', operator: Operator.EXACT, value: `${KenyaShaPreAuthResponseIdentifierSystem}|${bundleId}` },
+        {
+          code: 'identifier',
+          operator: Operator.EXACT,
+          value: `${KenyaShaPreAuthResponseIdentifierSystem}|${bundleId}`,
+        },
       ],
     });
 
-    const outcome: ClaimResponse['outcome'] =
-      status === 'approved' ? 'complete' : status === 'denied' ? 'error' : 'queued';
+    const outcomes: Record<string, ClaimResponse['outcome']> = { approved: 'complete', denied: 'error' };
+    const outcome = outcomes[status] ?? 'queued';
 
     const preAuthRef = extractPreAuthRef(response.claimResponse);
 
@@ -90,9 +100,9 @@ export async function checkKenyaShaPreauthorizationStatus(
       resourceType: 'ClaimResponse',
       meta: { ...(response.claimResponse?.meta ?? existing?.meta ?? {}), project: ctx.project.id },
       identifier: [
-        ...((response.claimResponse?.identifier ?? existing?.identifier ?? []).filter(
+        ...(response.claimResponse?.identifier ?? existing?.identifier ?? []).filter(
           (id) => id.system !== KenyaShaPreAuthResponseIdentifierSystem
-        )),
+        ),
         { system: KenyaShaPreAuthResponseIdentifierSystem, value: bundleId },
       ],
       status: response.claimResponse?.status ?? existing?.status ?? 'active',
@@ -109,10 +119,14 @@ export async function checkKenyaShaPreauthorizationStatus(
 
     let savedClaimResponse: ClaimResponse & { id: string };
     if (existing?.id) {
-      savedClaimResponse = await ctx.systemRepo.updateResource<ClaimResponse>(nextClaimResponse) as ClaimResponse & { id: string };
+      savedClaimResponse = (await ctx.systemRepo.updateResource<ClaimResponse>(nextClaimResponse)) as ClaimResponse & {
+        id: string;
+      };
     } else {
       delete (nextClaimResponse as { id?: string }).id;
-      savedClaimResponse = await ctx.systemRepo.createResource<ClaimResponse>(nextClaimResponse) as ClaimResponse & { id: string };
+      savedClaimResponse = (await ctx.systemRepo.createResource<ClaimResponse>(nextClaimResponse)) as ClaimResponse & {
+        id: string;
+      };
     }
 
     if (status === 'approved') {

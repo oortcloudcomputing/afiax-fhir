@@ -23,6 +23,7 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
+import { globalLogger } from '../../logger';
 import type { CountryPackSubmitNationalClaimInput, SubmitNationalClaimResult } from '../types';
 import {
   getKenyaShaClaimsBaseUrl,
@@ -32,17 +33,14 @@ import {
   normalizeKenyaShaClaimsError,
   submitKenyaShaClaimBundle,
 } from './sha';
-import { triggerKenyaClaimWorkflowBot } from './workflow-bot';
 import { syncErpNextInvoice } from './sync-to-erpnext';
+import { triggerKenyaClaimWorkflowBot } from './workflow-bot';
 
 function buildResourceFullUrl(baseUrl: string, resource: WithId<Resource>): string {
   return `${baseUrl}/fhir/${resource.resourceType}/${resource.id}`;
 }
 
-function rewriteReference<T extends Reference | undefined>(
-  reference: T,
-  referenceMap: ReadonlyMap<string, string>
-): T {
+function rewriteReference<T extends Reference | undefined>(reference: T, referenceMap: ReadonlyMap<string, string>): T {
   if (!reference?.reference) {
     return reference;
   }
@@ -69,20 +67,18 @@ function ensureClaimReadiness(claim: WithId<Claim>): void {
 
   if (!claim.insurance?.length || !claim.insurance.some((entry) => !!entry.coverage?.reference)) {
     throw new OperationOutcomeError(
-      badRequest('Claim must include at least one insurance entry with a Coverage reference before Kenya SHA submission.')
+      badRequest(
+        'Claim must include at least one insurance entry with a Coverage reference before Kenya SHA submission.'
+      )
     );
   }
 }
 
-async function readRequiredClaimPatient(
-  input: CountryPackSubmitNationalClaimInput
-): Promise<WithId<Patient>> {
+async function readRequiredClaimPatient(input: CountryPackSubmitNationalClaimInput): Promise<WithId<Patient>> {
   return input.ctx.repo.readReference<Patient>(input.claim.patient);
 }
 
-async function readClaimCoverages(
-  input: CountryPackSubmitNationalClaimInput
-): Promise<WithId<Coverage>[]> {
+async function readClaimCoverages(input: CountryPackSubmitNationalClaimInput): Promise<WithId<Coverage>[]> {
   const coverages: WithId<Coverage>[] = [];
   for (const insurance of input.claim.insurance) {
     if (!insurance.coverage?.reference) {
@@ -137,9 +133,7 @@ async function readClaimOrganizations(
   return [...organizationMap.values()];
 }
 
-async function readClaimPractitioners(
-  input: CountryPackSubmitNationalClaimInput
-): Promise<WithId<Practitioner>[]> {
+async function readClaimPractitioners(input: CountryPackSubmitNationalClaimInput): Promise<WithId<Practitioner>[]> {
   const practitionerMap = new Map<string, WithId<Practitioner>>();
 
   async function addPractitioner(reference: Reference<Practitioner> | undefined): Promise<void> {
@@ -159,7 +153,7 @@ async function readClaimPractitioners(
     }
     const role = await input.ctx.repo.readReference<PractitionerRole>(reference);
     if (role.practitioner?.reference?.startsWith('Practitioner/')) {
-      await addPractitioner(role.practitioner as Reference<Practitioner>);
+      await addPractitioner(role.practitioner);
     }
   }
 
@@ -179,25 +173,23 @@ async function readClaimPractitioners(
 
   if (!practitionerMap.size) {
     throw new OperationOutcomeError(
-      badRequest('Kenya SHA claim preparation requires at least one Practitioner from Claim.provider or Claim.careTeam.')
+      badRequest(
+        'Kenya SHA claim preparation requires at least one Practitioner from Claim.provider or Claim.careTeam.'
+      )
     );
   }
 
   return [...practitionerMap.values()];
 }
 
-async function readClaimLocation(
-  input: CountryPackSubmitNationalClaimInput
-): Promise<WithId<Location> | undefined> {
+async function readClaimLocation(input: CountryPackSubmitNationalClaimInput): Promise<WithId<Location> | undefined> {
   if (!input.claim.facility?.reference?.startsWith('Location/')) {
     return undefined;
   }
   return input.ctx.repo.readReference<Location>(input.claim.facility);
 }
 
-export async function buildKenyaNationalClaimBundle(
-  input: CountryPackSubmitNationalClaimInput
-): Promise<{
+export async function buildKenyaNationalClaimBundle(input: CountryPackSubmitNationalClaimInput): Promise<{
   readonly bundle: Bundle;
   readonly bundleId: string;
   readonly bundleEntryCount: number;
@@ -228,17 +220,14 @@ export async function buildKenyaNationalClaimBundle(
   ];
   const referenceMap = new Map<string, string>();
   for (const resource of bundleResources) {
-    referenceMap.set(createReference(resource).reference as string, buildResourceFullUrl(claimsBaseUrl, resource));
+    referenceMap.set(createReference(resource).reference, buildResourceFullUrl(claimsBaseUrl, resource));
   }
 
   const claimFullUrl = `${claimsBaseUrl}/fhir/Claim/${bundleId}`;
   const transformedClaim: Claim = {
     ...input.claim,
     id: bundleId,
-    identifier: [
-      ...(input.claim.identifier ?? []),
-      { system: `${claimsBaseUrl}/fhir/Claim`, value: bundleId },
-    ],
+    identifier: [...(input.claim.identifier ?? []), { system: `${claimsBaseUrl}/fhir/Claim`, value: bundleId }],
     patient: rewriteReference(input.claim.patient, referenceMap),
     provider: rewriteReference(input.claim.provider, referenceMap),
     insurer: rewriteReference(input.claim.insurer, referenceMap),
@@ -254,7 +243,10 @@ export async function buildKenyaNationalClaimBundle(
   };
 
   const bundleEntries: BundleEntry[] = [
-    ...organizations.map((organization) => ({ fullUrl: buildResourceFullUrl(claimsBaseUrl, organization), resource: organization })),
+    ...organizations.map((organization) => ({
+      fullUrl: buildResourceFullUrl(claimsBaseUrl, organization),
+      resource: organization,
+    })),
     ...coverages.map((coverage) => ({
       fullUrl: buildResourceFullUrl(claimsBaseUrl, coverage),
       resource: {
@@ -309,7 +301,12 @@ export async function submitKenyaNationalClaim(
 
   // Sync to ERPNext regardless of SHA credential state — invoice creation is independent.
   const project = await input.ctx.systemRepo.readResource<Project>('Project', input.ctx.project.id);
-  void syncErpNextInvoice(input.ctx.systemRepo, input.claim, project as Project & { id: string });
+  syncErpNextInvoice(input.ctx.systemRepo, input.claim, project as Project & { id: string }).catch((err) => {
+    globalLogger.warn('Kenya SHA claim submission: ERPNext invoice sync failed', {
+      claimId: input.claim.id,
+      error: normalizeErrorString(err),
+    });
+  });
 
   if (!hasKenyaShaClaimsCredentials(input.ctx.project)) {
     return {

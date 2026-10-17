@@ -1,17 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Alert,
-  Badge,
-  Button,
-  Group,
-  Loader,
-  NativeSelect,
-  Stack,
-  Table,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Alert, Badge, Button, Group, Loader, NativeSelect, Stack, Table, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   getKenyaNationalClaimStatusSnapshot,
@@ -52,7 +41,9 @@ function buildRows(claims: Claim[]): ClaimRow[] {
   const rows: ClaimRow[] = [];
   for (const claim of claims) {
     const sub = getKenyaNationalClaimSubmissionSnapshot(claim);
-    if (!sub) continue;
+    if (!sub) {
+      continue;
+    }
     const status = getKenyaNationalClaimStatusSnapshot(claim);
     rows.push({
       claim,
@@ -89,7 +80,9 @@ export function KenyaClaimQueuePanel(): JSX.Element {
   }
 
   async function refreshStatus(claim: Claim): Promise<void> {
-    if (!claim.id) return;
+    if (!claim.id) {
+      return;
+    }
     setRefreshing(claim.id);
     try {
       await medplum.post(`fhir/R4/Claim/${claim.id}/$check-national-claim-status`, {});
@@ -104,14 +97,28 @@ export function KenyaClaimQueuePanel(): JSX.Element {
   }
 
   const filtered = rows?.filter((r) => {
-    if (filter === 'all') return true;
+    if (filter === 'all') {
+      return true;
+    }
     const sub = r.submissionStatus;
     const state = r.claimState?.toLowerCase() ?? '';
-    if (filter === 'queued') return sub === 'submitted' && (state.includes('queue') || state === '');
-    if (filter === 'in-review') return state.includes('review') || state.includes('surveillance');
-    if (filter === 'adjudicated') return state.includes('approved') || state.includes('payment') || state.includes('complete') || sub === 'adjudicated';
-    if (filter === 'rejected') return state.includes('reject') || state.includes('declin');
-    if (filter === 'error') return sub === 'error';
+    if (filter === 'queued') {
+      return sub === 'submitted' && (state.includes('queue') || state === '');
+    }
+    if (filter === 'in-review') {
+      return state.includes('review') || state.includes('surveillance');
+    }
+    if (filter === 'adjudicated') {
+      return (
+        state.includes('approved') || state.includes('payment') || state.includes('complete') || sub === 'adjudicated'
+      );
+    }
+    if (filter === 'rejected') {
+      return state.includes('reject') || state.includes('declin');
+    }
+    if (filter === 'error') {
+      return sub === 'error';
+    }
     return true;
   });
 
@@ -148,13 +155,17 @@ export function KenyaClaimQueuePanel(): JSX.Element {
       {loading && (
         <Group gap="xs">
           <Loader size="sm" />
-          <Text size="sm" c="dimmed">Loading claims...</Text>
+          <Text size="sm" c="dimmed">
+            Loading claims...
+          </Text>
         </Group>
       )}
 
-      {filtered !== undefined && (
-        filtered.length === 0 ? (
-          <Text size="sm" c="dimmed">No claims match the current filter.</Text>
+      {filtered !== undefined &&
+        (filtered.length === 0 ? (
+          <Text size="sm" c="dimmed">
+            No claims match the current filter.
+          </Text>
         ) : (
           <Table striped highlightOnHover withTableBorder>
             <Table.Thead>
@@ -171,9 +182,7 @@ export function KenyaClaimQueuePanel(): JSX.Element {
               {filtered.map((row) => (
                 <Table.Tr key={row.claim.id}>
                   <Table.Td>
-                    <MedplumLink to={`/Claim/${row.claim.id}`}>
-                      {row.claim.id}
-                    </MedplumLink>
+                    <MedplumLink to={`/Claim/${row.claim.id}`}>{row.claim.id}</MedplumLink>
                   </Table.Td>
                   <Table.Td>
                     <Badge color={statusColor(row.submissionStatus)} size="sm">
@@ -186,7 +195,9 @@ export function KenyaClaimQueuePanel(): JSX.Element {
                         {row.claimState}
                       </Badge>
                     ) : (
-                      <Text size="xs" c="dimmed">—</Text>
+                      <Text size="xs" c="dimmed">
+                        —
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td>
@@ -212,8 +223,7 @@ export function KenyaClaimQueuePanel(): JSX.Element {
               ))}
             </Table.Tbody>
           </Table>
-        )
-      )}
+        ))}
 
       {filtered !== undefined && (
         <Text size="xs" c="dimmed">

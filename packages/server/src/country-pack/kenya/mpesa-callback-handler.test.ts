@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { jest } from '@jest/globals';
+import type { KenyaErpNextSubmissionSnapshot } from '@medplum/core';
 import {
   buildKenyaErpNextSubmissionExtension,
   buildKenyaPatientPaymentExtension,
   getKenyaPatientPaymentSnapshot,
-  type KenyaErpNextSubmissionSnapshot,
 } from '@medplum/core';
 import type { Bundle, Claim, PaymentNotice, Project } from '@medplum/fhirtypes';
-import { jest } from '@jest/globals';
-import fetch, { type Response as NodeFetchResponse } from 'node-fetch';
+import type { Response as NodeFetchResponse } from 'node-fetch';
+import fetch from 'node-fetch';
 import { handleKenyaMpesaCallback } from './mpesa-callback-handler';
 import { MpesaCheckoutRequestSystem } from './post-patient-payment';
 
@@ -18,7 +19,9 @@ const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 jest.mock('../../fhir/repo', () => ({
   getGlobalSystemRepo: jest.fn(),
   getProjectSystemRepo: jest.fn(),
-  SystemRepository: class {},
+  SystemRepository: function SystemRepository() {
+    // Mocked class stand-in
+  },
 }));
 
 jest.mock('../../config/loader', () => ({
@@ -69,7 +72,12 @@ function mockDarajaQuery(checkoutRequestId: string, resultCode: number, resultDe
     ok: true,
     status: 200,
     text: async () =>
-      JSON.stringify({ ResponseCode: '0', CheckoutRequestID: checkoutRequestId, ResultCode: String(resultCode), ResultDesc: resultDesc }),
+      JSON.stringify({
+        ResponseCode: '0',
+        CheckoutRequestID: checkoutRequestId,
+        ResultCode: String(resultCode),
+        ResultDesc: resultDesc,
+      }),
   } as unknown as NodeFetchResponse);
 }
 
@@ -96,9 +104,7 @@ function makeNotice(
     payment: { display: 'Patient mpesa-stk payment' },
     recipient: { display: 'Afiax Healthcare' },
     extension: [ext],
-    identifier: [
-      { system: MpesaCheckoutRequestSystem, value: checkoutRequestId },
-    ],
+    identifier: [{ system: MpesaCheckoutRequestSystem, value: checkoutRequestId }],
   };
 }
 
@@ -128,10 +134,12 @@ function makeClaimWithInvoice(): Claim {
   };
 }
 
-function makeProjectRepo(project: Project, notice: PaymentNotice | null, claim: Claim | null) {
+function makeProjectRepo(project: Project, notice: PaymentNotice | null, claim: Claim | null): any {
   return {
     readResource: jest.fn(async (type: string, id: string) => {
-      if (type === 'Claim') return claim;
+      if (type === 'Claim') {
+        return claim;
+      }
       throw new Error(`Unexpected readResource: ${type}/${id}`);
     }),
     readReference: jest.fn(async (ref: { reference?: string }) => {
@@ -157,13 +165,32 @@ function makeProjectRepo(project: Project, notice: PaymentNotice | null, claim: 
   } as any;
 }
 
-function makeGlobalRepo(project: Project) {
+function makeGlobalRepo(project: Project): any {
   return {
     readResource: jest.fn(async () => project),
   } as any;
 }
 
-function makeMpesaSuccessCallback(checkoutRequestId: string, receipt = 'MPE001XYZ') {
+interface MpesaCallbackBody {
+  Body: {
+    stkCallback: {
+      CheckoutRequestID: string;
+      ResultCode: number;
+      ResultDesc: string;
+      CallbackMetadata?: { Item: { Name: string; Value: string | number }[] };
+    };
+  };
+}
+
+interface MpesaSuccessCallbackBody extends MpesaCallbackBody {
+  Body: {
+    stkCallback: MpesaCallbackBody['Body']['stkCallback'] & {
+      CallbackMetadata: { Item: { Name: string; Value: string | number }[] };
+    };
+  };
+}
+
+function makeMpesaSuccessCallback(checkoutRequestId: string, receipt = 'MPE001XYZ'): MpesaSuccessCallbackBody {
   return {
     Body: {
       stkCallback: {
@@ -182,7 +209,7 @@ function makeMpesaSuccessCallback(checkoutRequestId: string, receipt = 'MPE001XY
   };
 }
 
-function makeMpesaFailureCallback(checkoutRequestId: string) {
+function makeMpesaFailureCallback(checkoutRequestId: string): MpesaCallbackBody {
   return {
     Body: {
       stkCallback: {
@@ -211,7 +238,8 @@ describe('handleKenyaMpesaCallback', () => {
     mockDarajaQuery('ws_CO_001', 0, 'The service request is processed successfully.');
     // ERPNext payment entry
     mockFetch.mockResolvedValueOnce({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: async () => JSON.stringify({ data: { name: 'ACC-PAY-MPESA-001' } }),
     } as unknown as NodeFetchResponse);
 
@@ -229,7 +257,7 @@ describe('handleKenyaMpesaCallback', () => {
       return r.resourceType === 'PaymentNotice';
     });
     expect(noticeUpdate).toBeDefined();
-    const updatedNotice = noticeUpdate![0] as PaymentNotice;
+    const updatedNotice = noticeUpdate?.[0] as PaymentNotice;
     const snap = getKenyaPatientPaymentSnapshot(updatedNotice);
     expect(snap?.paymentStatus).toBe('confirmed');
     expect(snap?.transactionRef).toBe('MPE001XYZ');
@@ -256,7 +284,7 @@ describe('handleKenyaMpesaCallback', () => {
     const noticeUpdate = updateCalls.find((args: unknown[]) => {
       return (args[0] as { resourceType: string }).resourceType === 'PaymentNotice';
     });
-    const updatedNotice = noticeUpdate![0] as PaymentNotice;
+    const updatedNotice = noticeUpdate?.[0] as PaymentNotice;
     const snap = getKenyaPatientPaymentSnapshot(updatedNotice);
     expect(snap?.paymentStatus).toBe('failed');
     expect(snap?.failureReason).toContain('cancelled');
@@ -364,7 +392,9 @@ describe('handleKenyaMpesaCallback', () => {
 
   test('returns error when project is not found', async () => {
     mockGetGlobalRepo.mockReturnValue({
-      readResource: jest.fn(async () => { throw new Error('Not found'); }),
+      readResource: jest.fn(async () => {
+        throw new Error('Not found');
+      }),
     } as any);
 
     const result = await handleKenyaMpesaCallback('bad-project-id', makeMpesaSuccessCallback('ws_CO_003'));

@@ -38,7 +38,9 @@ const mockProject: Project = {
   setting: [{ name: 'countryPack', valueString: 'kenya' }],
 };
 
-function buildCtx(overrides?: Partial<{ createResource: jest.Mock; updateResource: jest.Mock; readResource: jest.Mock }>): any {
+function buildCtx(
+  overrides?: Partial<{ createResource: jest.Mock; updateResource: jest.Mock; readResource: jest.Mock }>
+): any {
   return {
     project: mockProject,
     profile: { reference: 'Practitioner/prac-1' },
@@ -91,18 +93,22 @@ describe('handleResolvePatientIdentity', () => {
 
     // Extension written to Patient
     const extUpdate = updateResource.mock.calls.find(
-      (c) => c[0].resourceType === 'Patient' &&
-      c[0].extension?.some((e: any) => e.url === 'https://afiax.africa/fhir/StructureDefinition/kenya-patient-identity')
+      (c) =>
+        c[0].resourceType === 'Patient' &&
+        c[0].extension?.some(
+          (e: any) => e.url === 'https://afiax.africa/fhir/StructureDefinition/kenya-patient-identity'
+        )
     );
     expect(extUpdate).toBeDefined();
 
     // Identifier written for Client Registry ID
     const idUpdate = updateResource.mock.calls.find(
-      (c) => c[0].resourceType === 'Patient' &&
-      c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
+      (c) =>
+        c[0].resourceType === 'Patient' &&
+        c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
     );
     expect(idUpdate).toBeDefined();
-    const crIdentifier = idUpdate![0].identifier?.find(
+    const crIdentifier = idUpdate?.[0].identifier?.find(
       (id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id'
     );
     expect(crIdentifier?.value).toBe('CR-12345678');
@@ -127,8 +133,8 @@ describe('handleResolvePatientIdentity', () => {
     expect(result.status).toBe('not-found');
     expect(result.clientRegistryId).toBeNull();
     // Should not write a Client Registry identifier
-    const idUpdate = updateResource.mock.calls.find(
-      (c) => c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
+    const idUpdate = updateResource.mock.calls.find((c) =>
+      c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
     );
     expect(idUpdate).toBeUndefined();
   });

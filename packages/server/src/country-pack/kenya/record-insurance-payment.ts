@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { KenyaErpNextPayerType } from '@medplum/core';
 import {
   addPaymentToErpNextSnapshot,
   buildKenyaErpNextSubmissionExtension,
@@ -7,7 +8,6 @@ import {
   getKenyaErpNextSubmissionSnapshot,
   getKenyaInsuranceType,
   normalizeErrorString,
-  type KenyaErpNextPayerType,
 } from '@medplum/core';
 import type { AuditEvent, Claim, ClaimResponse, Organization, Project, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
@@ -141,7 +141,9 @@ export async function handleRecordInsurancePayment(
       requester: ctx.profile as Task['requester'],
       focus: createReference(claim),
       description: `Private insurer payment recorded: ${insurerName} approved ${currency} ${approvedAmount} (code: ${approvalCode})`,
-      code: { coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'private-insurance-payment' }] },
+      code: {
+        coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'private-insurance-payment' }],
+      },
       businessStatus: { text: erpNextFailed ? 'recorded-erpnext-failed' : 'recorded' },
       identifier: [{ system: 'https://afiax.africa/identifier/correlation-id', value: correlationId }],
     });

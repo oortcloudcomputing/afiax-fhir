@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { NationalRecordPublicationStatus } from '@medplum/core';
 import {
   buildKenyaNationalRecordPublicationExtension,
   createReference,
   KenyaShrPublicationCorrelationIdSystem,
   normalizeErrorString,
-  type NationalRecordPublicationStatus,
 } from '@medplum/core';
 import type { Bundle, BundleEntry, Condition, Encounter, Patient, Project, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
@@ -16,7 +16,8 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
-import { getKenyaAfyaLinkCredentials, publishToAfyaLinkShr, type KenyaAfyaLinkCredentials } from './afyalink';
+import type { KenyaAfyaLinkCredentials } from './afyalink';
+import { getKenyaAfyaLinkCredentials, publishToAfyaLinkShr } from './afyalink';
 
 export interface PublishNationalRecordInput {
   readonly ctx: AuthenticatedRequestContext;
@@ -38,13 +39,15 @@ export interface PublishNationalRecordResult {
   readonly task?: Reference<Task>;
 }
 
-export async function handlePublishNationalRecord(input: PublishNationalRecordInput): Promise<PublishNationalRecordResult> {
+export async function handlePublishNationalRecord(
+  input: PublishNationalRecordInput
+): Promise<PublishNationalRecordResult> {
   const { ctx, patient, correlationId } = input;
   const publishedAt = new Date().toISOString();
 
   let credentials: KenyaAfyaLinkCredentials;
   try {
-    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id as string);
+    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
     credentials = getKenyaAfyaLinkCredentials(project);
   } catch (err) {
     await writeAuditEvent(ctx, patient, correlationId, AuditEventOutcome.MajorFailure);
@@ -72,7 +75,16 @@ export async function handlePublishNationalRecord(input: PublishNationalRecordIn
   }
 
   // Persist publication snapshot on the Patient
-  await persistPublicationExtension(ctx, patient, status, publishedAt, correlationId, message, publicationId ?? undefined, endpoint);
+  await persistPublicationExtension(
+    ctx,
+    patient,
+    status,
+    publishedAt,
+    correlationId,
+    message,
+    publicationId ?? undefined,
+    endpoint
+  );
 
   // Create audit Task
   const task = await ctx.systemRepo.createResource({
@@ -90,7 +102,17 @@ export async function handlePublishNationalRecord(input: PublishNationalRecordIn
 
   await writeAuditEvent(ctx, patient, correlationId, AuditEventOutcome.Success);
 
-  return { status, correlationId, patientId: patient.id, publicationId, endpoint, publishedAt, message, bundleEntryCount, task: createReference(task) };
+  return {
+    status,
+    correlationId,
+    patientId: patient.id,
+    publicationId,
+    endpoint,
+    publishedAt,
+    message,
+    bundleEntryCount,
+    task: createReference(task),
+  };
 }
 
 async function buildPublicationBundle(
@@ -160,7 +182,12 @@ async function persistPublicationExtension(
   endpoint?: string
 ): Promise<void> {
   const ext = buildKenyaNationalRecordPublicationExtension(
-    status, publishedAt, correlationId, message, publicationId, endpoint
+    status,
+    publishedAt,
+    correlationId,
+    message,
+    publicationId,
+    endpoint
   );
   const otherExtensions = (patient.extension ?? []).filter((e) => e.url !== ext.url);
   await ctx.systemRepo.updateResource<Patient>({

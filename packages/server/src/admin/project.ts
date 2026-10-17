@@ -169,7 +169,9 @@ projectAdminRouter.post('/:projectId/kenya/afyalink/practitioner-lookup', async 
     return;
   }
 
-  const identificationType = String(req.body?.identificationType ?? '').trim().toUpperCase();
+  const identificationType = String(req.body?.identificationType ?? '')
+    .trim()
+    .toUpperCase();
   const identificationNumber = String(req.body?.identificationNumber ?? '').trim();
   if (!identificationType || !identificationNumber) {
     sendOutcome(res, badRequest('identificationType and identificationNumber are required'));
@@ -275,7 +277,10 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
         bot = await ctx.repo.updateResource({
           ...existing,
           cronString: '0 3 * * 1',
-          sourceCode: { contentType: 'application/typescript', url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}` },
+          sourceCode: {
+            contentType: 'application/typescript',
+            url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}`,
+          },
         });
       } catch {
         // If the bot no longer exists, fall through and create a new one
@@ -287,9 +292,13 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
       bot = await ctx.repo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'Kenya KHIS Weekly Scheduler',
-        description: 'Runs every Monday at 06:00 EAT (03:00 UTC) to export MOH 505 weekly aggregate data for all active facilities to KHIS.',
+        description:
+          'Runs every Monday at 06:00 EAT (03:00 UTC) to export MOH 505 weekly aggregate data for all active facilities to KHIS.',
         cronString: '0 3 * * 1',
-        sourceCode: { contentType: 'application/typescript', url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}` },
+        sourceCode: {
+          contentType: 'application/typescript',
+          url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}`,
+        },
       });
     }
 
@@ -298,7 +307,7 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
     const updatedProject = await ctx.repo.updateResource({
       ...ctx.project,
       features: features.includes('cron') ? features : ([...features, 'cron'] as typeof features),
-      setting: upsertProjectSetting(ctx.project.setting ?? [], 'kenyaKhisSchedulerBotId', bot.id as string),
+      setting: upsertProjectSetting(ctx.project.setting ?? [], 'kenyaKhisSchedulerBotId', bot.id),
     });
 
     res.json({
@@ -313,11 +322,7 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
   }
 });
 
-function upsertProjectSetting(
-  settings: ProjectSetting[],
-  name: string,
-  valueString: string
-): ProjectSetting[] {
+function upsertProjectSetting(settings: ProjectSetting[], name: string, valueString: string): ProjectSetting[] {
   const filtered = settings.filter((s) => s.name !== name);
   return [...filtered, { name, valueString }];
 }

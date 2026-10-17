@@ -63,10 +63,7 @@ function buildResourceFullUrl(baseUrl: string, resource: WithId<Resource>): stri
   return `${baseUrl}/fhir/${resource.resourceType}/${resource.id}`;
 }
 
-function rewriteReference<T extends Reference | undefined>(
-  reference: T,
-  referenceMap: ReadonlyMap<string, string>
-): T {
+function rewriteReference<T extends Reference | undefined>(reference: T, referenceMap: ReadonlyMap<string, string>): T {
   if (!reference?.reference) {
     return reference;
   }
@@ -80,7 +77,18 @@ function rewriteReference<T extends Reference | undefined>(
 export async function requestKenyaShaPreauthorization(
   input: RequestShaPreauthorizationInput
 ): Promise<RequestShaPreauthorizationResult> {
-  const { ctx, coverage, patient, providerOrganization, insurerOrganization, practitioners, requestedItems, estimatedTotal, currency, correlationId } = input;
+  const {
+    ctx,
+    coverage,
+    patient,
+    providerOrganization,
+    insurerOrganization,
+    practitioners,
+    requestedItems,
+    estimatedTotal,
+    currency,
+    correlationId,
+  } = input;
 
   const shaClaimsEnvironment = getKenyaShaClaimsEnvironment(ctx.project);
   const claimsBaseUrl = getKenyaShaClaimsBaseUrl(ctx.project);
@@ -109,7 +117,10 @@ export async function requestKenyaShaPreauthorization(
         text: item.description,
       },
       quantity: { value: item.quantity ?? 1 },
-      unitPrice: item.unitPrice !== undefined ? { value: item.unitPrice, currency: currency as 'KES' | 'USD' | 'EUR' } : undefined,
+      unitPrice:
+        item.unitPrice !== undefined
+          ? { value: item.unitPrice, currency: currency as 'KES' | 'USD' | 'EUR' }
+          : undefined,
     })),
     total: { value: estimatedTotal, currency: currency as 'KES' | 'USD' | 'EUR' },
   });
@@ -124,7 +135,7 @@ export async function requestKenyaShaPreauthorization(
 
   const referenceMap = new Map<string, string>();
   for (const resource of bundleResources) {
-    referenceMap.set(createReference(resource).reference as string, buildResourceFullUrl(claimsBaseUrl, resource));
+    referenceMap.set(createReference(resource).reference, buildResourceFullUrl(claimsBaseUrl, resource));
   }
 
   const transformedClaim: Claim = {

@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Claim, ClaimResponse, Task } from '@medplum/fhirtypes';
+import { KenyaShaBundleIdIdentifierSystem, getKenyaShaClaimsToken } from './sha';
 import { handleKenyaShaCallback } from './sha-callback-handler';
-import { KenyaShaBundleIdIdentifierSystem } from './sha';
-import { getKenyaShaClaimsToken } from './sha';
 
 jest.mock('../../fhir/repo', () => ({
   getGlobalSystemRepo: jest.fn(),
@@ -25,10 +24,7 @@ jest.mock('../../logger', () => ({
   globalLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-const { getGlobalSystemRepo, getProjectSystemRepo } = jest.requireMock('../../fhir/repo') as {
-  getGlobalSystemRepo: jest.Mock;
-  getProjectSystemRepo: jest.Mock;
-};
+const { getGlobalSystemRepo, getProjectSystemRepo } = jest.requireMock('../../fhir/repo');
 
 const { checkKenyaShaClaimStatus }: { checkKenyaShaClaimStatus: jest.Mock } = jest.requireMock('./sha');
 const { syncErpNextShaPayment }: { syncErpNextShaPayment: jest.Mock } = jest.requireMock('./sync-to-erpnext');
@@ -61,12 +57,19 @@ const baseClaim: Claim & { id: string } = {
   identifier: [{ system: KenyaShaBundleIdIdentifierSystem, value: BUNDLE_ID }],
 };
 
-function makeSystemRepo(claim: Claim | undefined, existingClaimResponse: ClaimResponse | undefined = undefined) {
+function makeSystemRepo(
+  claim: Claim | undefined,
+  existingClaimResponse: ClaimResponse | undefined = undefined
+): Record<'readResource' | 'searchOne' | 'search' | 'createResource' | 'updateResource', jest.Mock> {
   return {
     readResource: jest.fn(async () => baseProject),
     searchOne: jest.fn(async ({ resourceType }: { resourceType: string }) => {
-      if (resourceType === 'Claim') return claim;
-      if (resourceType === 'ClaimResponse') return existingClaimResponse;
+      if (resourceType === 'Claim') {
+        return claim;
+      }
+      if (resourceType === 'ClaimResponse') {
+        return existingClaimResponse;
+      }
       return undefined;
     }),
     search: jest.fn(async () => ({

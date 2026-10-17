@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildKenyaErpNextSubmissionExtension, type KenyaErpNextSubmissionSnapshot } from '@medplum/core';
-import type { Claim, ClaimResponse, Organization, Project, Task } from '@medplum/fhirtypes';
 import { jest } from '@jest/globals';
-import fetch, { type Response as NodeFetchResponse } from 'node-fetch';
+import type { KenyaErpNextSubmissionSnapshot } from '@medplum/core';
+import { buildKenyaErpNextSubmissionExtension } from '@medplum/core';
+import type { Claim, ClaimResponse, Organization, Project, Task } from '@medplum/fhirtypes';
+import type { Response as NodeFetchResponse } from 'node-fetch';
+import fetch from 'node-fetch';
 import { handleRecordInsurancePayment } from './record-insurance-payment';
 
 jest.mock('../../util/auditevent', () => ({
@@ -19,21 +21,23 @@ const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 
 function mockOkResponse(data: unknown): void {
   mockFetch.mockResolvedValueOnce({
-    ok: true, status: 200,
+    ok: true,
+    status: 200,
     text: async () => JSON.stringify(data),
   } as unknown as NodeFetchResponse);
 }
 
 function mockErrorResponse(status: number, text: string): void {
   mockFetch.mockResolvedValueOnce({
-    ok: false, status,
+    ok: false,
+    status,
     text: async () => text,
   } as unknown as NodeFetchResponse);
 }
 
 // ---------------------------------------------------------------------------
 
-function makeRepo(claimExtensions?: Claim['extension']) {
+function makeRepo(): any {
   const created: Record<string, object[]> = {};
   const updated: object[] = [];
   let idSeq = 0;
@@ -53,7 +57,7 @@ function makeRepo(claimExtensions?: Claim['extension']) {
   };
 }
 
-function makeCtx(repo: ReturnType<typeof makeRepo>) {
+function makeCtx(repo: any): any {
   return {
     project: { id: 'project-test' },
     profile: { reference: 'Practitioner/test' },

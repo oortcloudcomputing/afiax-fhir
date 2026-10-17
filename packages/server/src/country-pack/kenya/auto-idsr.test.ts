@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Condition, Project } from '@medplum/fhirtypes';
 import { allOk } from '@medplum/core';
-import { maybeAutoTriggerIdsr } from './auto-idsr';
 import type { FhirResponse } from '@medplum/fhir-router';
+import type { Condition, Project } from '@medplum/fhirtypes';
+import { maybeAutoTriggerIdsr } from './auto-idsr';
 
 // Mock the heavy IDSR handler — tests for that logic are in idsr.test.ts
 jest.mock('./idsr', () => ({
@@ -127,7 +127,9 @@ describe('maybeAutoTriggerIdsr', () => {
     const result: FhirResponse = [allOk, notifiableCondition()];
     maybeAutoTriggerIdsr(ctx, 'POST', result);
     // Allow the async fire-and-forget to settle
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => {
+      setTimeout(r, 10);
+    });
     expect(handleKenyaIdsrNotification).toHaveBeenCalledWith(
       expect.objectContaining({ condition: notifiableCondition(), correlationId: expect.any(String) })
     );
@@ -137,7 +139,9 @@ describe('maybeAutoTriggerIdsr', () => {
     const ctx = makeCtx();
     const result: FhirResponse = [allOk, notifiableCondition()];
     maybeAutoTriggerIdsr(ctx, 'PUT', result);
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => {
+      setTimeout(r, 10);
+    });
     expect(handleKenyaIdsrNotification).toHaveBeenCalled();
   });
 
@@ -146,7 +150,9 @@ describe('maybeAutoTriggerIdsr', () => {
     const condition = notifiableCondition();
     const result: FhirResponse = [allOk, condition];
     maybeAutoTriggerIdsr(ctx, 'POST', result);
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => {
+      setTimeout(r, 10);
+    });
     expect(ctx.systemRepo.readResource).toHaveBeenCalledWith('Condition', condition.id);
     expect(applyIdsrNotificationExtension).toHaveBeenCalled();
     expect(ctx.systemRepo.updateResource).toHaveBeenCalled();

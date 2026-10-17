@@ -9,14 +9,20 @@ import {
   normalizeErrorString,
   Operator,
 } from '@medplum/core';
-import type { Bundle, Claim, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
+import type { Bundle, Claim, Patient, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
-import { getGlobalSystemRepo, getProjectSystemRepo, SystemRepository } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
 import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
-import { MpesaCheckoutRequestSystem } from './post-patient-payment';
-import { getKenyaMpesaCredentials, hasKenyaMpesaCredentials, parseMpesaCallback, queryMpesaStkPushStatus } from './mpesa';
 import type { MpesaStkQueryResult } from './mpesa';
+import {
+  getKenyaMpesaCredentials,
+  hasKenyaMpesaCredentials,
+  parseMpesaCallback,
+  queryMpesaStkPushStatus,
+} from './mpesa';
+import { MpesaCheckoutRequestSystem } from './post-patient-payment';
 
 export interface MpesaCallbackResult {
   readonly ok: boolean;
@@ -92,7 +98,13 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
     }
 
     if (!hasKenyaMpesaCredentials(project)) {
-      return { ok: false, projectId, checkoutRequestId, status: 'error', message: 'M-Pesa credentials not configured — cannot verify callback' };
+      return {
+        ok: false,
+        projectId,
+        checkoutRequestId,
+        status: 'error',
+        message: 'M-Pesa credentials not configured — cannot verify callback',
+      };
     }
 
     let verified: MpesaStkQueryResult;
@@ -173,7 +185,7 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
     if (notice.request?.reference?.startsWith('Claim/')) {
       const claimId = notice.request.reference.replace('Claim/', '');
       try {
-        let claim = await systemRepo.readResource<Claim>('Claim', claimId) as Claim & { id: string };
+        let claim = (await systemRepo.readResource<Claim>('Claim', claimId)) as Claim & { id: string };
         const snapshot = getKenyaErpNextSubmissionSnapshot(claim);
 
         if (snapshot?.invoiceName && hasKenyaErpNextCredentials(project as Project & { id: string })) {
@@ -205,7 +217,10 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
 
           const ext = buildKenyaErpNextSubmissionExtension(updatedSnapshot);
           const otherClaimExts = (claim.extension ?? []).filter((e) => e.url !== ext.url);
-          claim = await systemRepo.updateResource<Claim>({ ...claim, extension: [...otherClaimExts, ext] }) as Claim & { id: string };
+          claim = (await systemRepo.updateResource<Claim>({
+            ...claim,
+            extension: [...otherClaimExts, ext],
+          })) as Claim & { id: string };
         }
       } catch (err) {
         globalLogger.warn('M-Pesa callback: ERPNext sync failed (non-blocking)', {
@@ -218,24 +233,48 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
     }
 
     // Complete any in-progress Task for this payment.
-    await completeRelatedTask(systemRepo, projectId, notice as PaymentNotice & { id: string }, 'confirmed', `M-Pesa payment confirmed. Receipt: ${mpesaReceiptNumber ?? checkoutRequestId}`);
+    await completeRelatedTask(
+      systemRepo,
+      projectId,
+      notice as PaymentNotice & { id: string },
+      'confirmed',
+      `M-Pesa payment confirmed. Receipt: ${mpesaReceiptNumber ?? checkoutRequestId}`
+    );
 
-    globalLogger.info('M-Pesa callback processed — payment confirmed', { projectId, checkoutRequestId, mpesaReceiptNumber });
+    globalLogger.info('M-Pesa callback processed — payment confirmed', {
+      projectId,
+      checkoutRequestId,
+      mpesaReceiptNumber,
+    });
 
-    return { ok: true, projectId, checkoutRequestId, status: 'confirmed', message: `Payment confirmed. Receipt: ${mpesaReceiptNumber ?? checkoutRequestId}` };
+    return {
+      ok: true,
+      projectId,
+      checkoutRequestId,
+      status: 'confirmed',
+      message: `Payment confirmed. Receipt: ${mpesaReceiptNumber ?? checkoutRequestId}`,
+    };
   } catch (err) {
-    globalLogger.error('M-Pesa callback processing failed', { projectId, checkoutRequestId, error: normalizeErrorString(err) });
+    globalLogger.error('M-Pesa callback processing failed', {
+      projectId,
+      checkoutRequestId,
+      error: normalizeErrorString(err),
+    });
     return { ok: false, projectId, checkoutRequestId, status: 'error', message: normalizeErrorString(err) };
   }
 }
 
 async function resolvePatientName(systemRepo: SystemRepository, claim: Claim & { id: string }): Promise<string> {
-  if (!claim.patient?.reference) return `Claim/${claim.id}`;
+  if (!claim.patient?.reference) {
+    return `Claim/${claim.id}`;
+  }
   try {
     const { getKenyaErpNextPatientSnapshot } = await import('@medplum/core');
     const patient = await systemRepo.readReference(claim.patient);
-    const snap = getKenyaErpNextPatientSnapshot(patient as import('@medplum/fhirtypes').Patient);
-    if (snap?.customerName) return snap.customerName;
+    const snap = getKenyaErpNextPatientSnapshot(patient as Patient);
+    if (snap?.customerName) {
+      return snap.customerName;
+    }
   } catch {
     // fall through
   }
@@ -263,7 +302,9 @@ async function completeRelatedTask(
 
     for (const entry of taskBundle.entry ?? []) {
       const task = entry.resource;
-      if (!task?.id) continue;
+      if (!task?.id) {
+        continue;
+      }
       await systemRepo.updateResource<Task>({
         ...task,
         status: 'completed',

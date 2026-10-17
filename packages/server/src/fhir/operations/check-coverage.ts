@@ -15,9 +15,8 @@ import type {
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   OperationDefinition,
-  Patient,
-  Practitioner,
   Organization,
+  Practitioner,
   Reference,
   Task,
 } from '@medplum/fhirtypes';
@@ -25,12 +24,7 @@ import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import type { CheckCoverageResult } from '../../country-pack/types';
-import {
-  AuditEventOutcome,
-  createAuditEvent,
-  OperationInteraction,
-  RestfulOperationType,
-} from '../../util/auditevent';
+import { AuditEventOutcome, createAuditEvent, OperationInteraction, RestfulOperationType } from '../../util/auditevent';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const checkCoverageOperation: OperationDefinition = {
@@ -83,7 +77,9 @@ interface CheckCoverageParameters {
 function getCoverageInsurer(coverage: WithId<Coverage>): Reference<Organization> {
   const payor = coverage.payor?.find((ref) => ref.reference?.startsWith('Organization/'));
   if (!payor) {
-    throw new OperationOutcomeError(badRequest('Coverage must include an Organization payor before eligibility checks.'));
+    throw new OperationOutcomeError(
+      badRequest('Coverage must include an Organization payor before eligibility checks.')
+    );
   }
   return payor as Reference<Organization>;
 }
@@ -110,7 +106,13 @@ export async function checkCoverageHandler(req: FhirRequest): Promise<FhirRespon
   const eligibilityRequest = await createCoverageEligibilityRequestResource(coverage, result);
   const eligibilityResponse = await createCoverageEligibilityResponseResource(coverage, eligibilityRequest, result);
   const updatedTask = await completeCoverageTask(task, result);
-  const updatedCoverage = await persistCoverageResult(coverage, updatedTask, eligibilityRequest, eligibilityResponse, result);
+  const updatedCoverage = await persistCoverageResult(
+    coverage,
+    updatedTask,
+    eligibilityRequest,
+    eligibilityResponse,
+    result
+  );
   await createCoverageAuditEvent(updatedTask, updatedCoverage, result);
 
   return [
@@ -136,7 +138,9 @@ async function getCoverageForCheck(req: FhirRequest): Promise<WithId<Coverage>> 
     return ctx.repo.readReference<Coverage>(params.coverage);
   }
 
-  throw new OperationOutcomeError(badRequest('Must call this operation on a Coverage instance or include a coverage reference.'));
+  throw new OperationOutcomeError(
+    badRequest('Must call this operation on a Coverage instance or include a coverage reference.')
+  );
 }
 
 async function createCoverageTask(coverage: WithId<Coverage>, correlationId: string): Promise<WithId<Task>> {
@@ -175,7 +179,7 @@ async function createCoverageEligibilityRequestResource(
     },
     status: 'active',
     purpose: ['validation'],
-    patient: coverage.beneficiary as Reference<Patient>,
+    patient: coverage.beneficiary,
     created: new Date().toISOString(),
     enterer: ctx.profile as CoverageEligibilityRequest['enterer'],
     provider: ctx.profile as Reference<Practitioner>,
@@ -206,7 +210,7 @@ async function createCoverageEligibilityResponseResource(
     },
     status: 'active',
     purpose: ['validation'],
-    patient: coverage.beneficiary as Reference<Patient>,
+    patient: coverage.beneficiary,
     created: new Date().toISOString(),
     request: createReference(eligibilityRequest),
     outcome: result.status === 'error' ? 'error' : 'complete',
@@ -287,17 +291,25 @@ async function createCoverageAuditEvent(
   result: CheckCoverageResult
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const outcome =
-    result.status === 'eligible'
-      ? AuditEventOutcome.Success
-      : result.status === 'error'
-        ? AuditEventOutcome.MajorFailure
-        : AuditEventOutcome.MinorFailure;
+  let outcome: AuditEventOutcome = AuditEventOutcome.MinorFailure;
+  if (result.status === 'eligible') {
+    outcome = AuditEventOutcome.Success;
+  } else if (result.status === 'error') {
+    outcome = AuditEventOutcome.MajorFailure;
+  }
 
-  const auditEvent = createAuditEvent(RestfulOperationType, OperationInteraction, ctx.project.id, ctx.profile, undefined, outcome, {
-    description: result.message,
-    resource: createReference(task),
-  });
+  const auditEvent = createAuditEvent(
+    RestfulOperationType,
+    OperationInteraction,
+    ctx.project.id,
+    ctx.profile,
+    undefined,
+    outcome,
+    {
+      description: result.message,
+      resource: createReference(task),
+    }
+  );
 
   auditEvent.entity = [
     ...(auditEvent.entity ?? []),

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { KenyaErpNextModeOfPayment, KenyaPatientPaymentMethod } from '@medplum/core';
 import {
   addPaymentToErpNextSnapshot,
   buildKenyaErpNextSubmissionExtension,
@@ -8,8 +9,6 @@ import {
   getKenyaErpNextPatientSnapshot,
   getKenyaErpNextSubmissionSnapshot,
   normalizeErrorString,
-  type KenyaErpNextModeOfPayment,
-  type KenyaPatientPaymentMethod,
 } from '@medplum/core';
 import type { AuditEvent, Claim, Patient, PaymentNotice, Project, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
@@ -21,8 +20,8 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
-import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
 import { getKenyaAfiaxPayCredentials, hasKenyaAfiaxPayCredentials, initiateAfiaxPayRequest } from './afiax-pay';
+import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
 import { getKenyaMpesaCredentials, hasKenyaMpesaCredentials, normalizeMpesaError, sendMpesaStkPush } from './mpesa';
 
 export interface PostPatientPaymentInput {
@@ -249,7 +248,9 @@ async function handleMpesaStkPayment(
     requester: ctx.profile as Task['requester'],
     focus: createReference(claim),
     description: `M-Pesa STK push sent for ${currency} ${amount} to ${input.phone}`,
-    code: { coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-payment-mpesa-stk' }] },
+    code: {
+      coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-payment-mpesa-stk' }],
+    },
     businessStatus: { text: 'pending' },
     identifier: [{ system: 'https://afiax.africa/identifier/correlation-id', value: correlationId }],
   });
@@ -314,7 +315,9 @@ async function handleAfiaxPayPayment(
     requester: ctx.profile as Task['requester'],
     focus: createReference(claim),
     description: `Afiax Pay payment request initiated for ${currency} ${amount}`,
-    code: { coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-payment-afiax-pay' }] },
+    code: {
+      coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-payment-afiax-pay' }],
+    },
     businessStatus: { text: 'pending' },
     identifier: [{ system: 'https://afiax.africa/identifier/correlation-id', value: correlationId }],
   });
@@ -413,33 +416,29 @@ async function resolvePatientName(ctx: AuthenticatedRequestContext, claim: Claim
   return `Claim/${claim.id}`;
 }
 
-function methodToErpNextMode(method: KenyaPatientPaymentMethod): KenyaErpNextModeOfPayment {
-  switch (method) {
-    case 'cash':
-      return 'cash';
-    case 'card':
-      return 'card';
-    case 'mpesa-manual':
-    case 'mpesa-stk':
-      return 'mpesa';
-    case 'afiax-pay':
-      return 'afiax-pay';
-  }
+const ErpNextModeByMethod: Record<KenyaPatientPaymentMethod, KenyaErpNextModeOfPayment> = {
+  cash: 'cash',
+  card: 'card',
+  'mpesa-manual': 'mpesa',
+  'mpesa-stk': 'mpesa',
+  'afiax-pay': 'afiax-pay',
+};
+
+export function methodToErpNextMode(method: KenyaPatientPaymentMethod): KenyaErpNextModeOfPayment {
+  return ErpNextModeByMethod[method];
 }
 
 // ERPNext uses string labels — must match a configured Mode of Payment in ERPNext.
-function methodToErpNextModeLabel(method: KenyaPatientPaymentMethod): string {
-  switch (method) {
-    case 'cash':
-      return 'Cash';
-    case 'card':
-      return 'Card';
-    case 'mpesa-manual':
-    case 'mpesa-stk':
-      return 'M-Pesa';
-    case 'afiax-pay':
-      return 'Afiax Pay';
-  }
+const ErpNextModeLabelByMethod: Record<KenyaPatientPaymentMethod, string> = {
+  cash: 'Cash',
+  card: 'Card',
+  'mpesa-manual': 'M-Pesa',
+  'mpesa-stk': 'M-Pesa',
+  'afiax-pay': 'Afiax Pay',
+};
+
+export function methodToErpNextModeLabel(method: KenyaPatientPaymentMethod): string {
+  return ErpNextModeLabelByMethod[method];
 }
 
 async function writeAuditEvent(

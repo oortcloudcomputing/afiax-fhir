@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import fetch from 'node-fetch';
-import { getAfyaLinkToken, type KenyaAfyaLinkCredentials } from './afyalink';
+import type { KenyaAfyaLinkCredentials } from './afyalink';
+import { getAfyaLinkToken } from './afyalink';
 
 export interface AfyaLinkTerminologyResponse<T> {
   readonly status?: string;
@@ -146,9 +147,28 @@ function normalizeParentCodes(val: unknown): readonly string[] {
     return val.filter((v): v is string => typeof v === 'string');
   }
   if (typeof val === 'string' && val.trim()) {
-    return val.split(',').map((s) => s.trim()).filter(Boolean);
+    return val
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   return [];
+}
+
+/**
+ * Returns the first of `keys` whose value in `payload` is a string.
+ * @param payload - The response object.
+ * @param keys - Field names to try, in order of preference.
+ * @returns The first string value, or null when none is a string.
+ */
+function firstString(payload: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === 'string') {
+      return value;
+    }
+  }
+  return null;
 }
 
 export async function lookupShaIntervention(
@@ -174,10 +194,8 @@ export async function lookupShaIntervention(
   const data: ShaInterventionData = {
     code: typeof payload.code === 'string' ? payload.code : null,
     description: typeof payload.description === 'string' ? payload.description : null,
-    packageCode: typeof payload.packageCode === 'string' ? payload.packageCode
-      : typeof payload.package_code === 'string' ? payload.package_code : null,
-    packageName: typeof payload.packageName === 'string' ? payload.packageName
-      : typeof payload.package_name === 'string' ? payload.package_name : null,
+    packageCode: firstString(payload, 'packageCode', 'package_code'),
+    packageName: firstString(payload, 'packageName', 'package_name'),
     tariffKes: normalizeTariff(payload.tariffKes ?? payload.tariff_kes ?? payload.tariff),
     requiresPreauth: normalizePreauthField(payload),
     combinationRule: normalizeCombinationRule(payload),
@@ -208,8 +226,7 @@ export async function lookupIcd11Code(
 
   const data: Icd11Data = {
     code: typeof payload.code === 'string' ? payload.code : null,
-    title: typeof payload.title === 'string' ? payload.title
-      : typeof payload.display === 'string' ? payload.display : null,
+    title: firstString(payload, 'title', 'display'),
     definition: typeof payload.definition === 'string' ? payload.definition : null,
     parentCodes: normalizeParentCodes(payload.parentCodes ?? payload.parent_codes),
     system: 'http://id.who.int/icd/release/11/mms',
@@ -239,24 +256,15 @@ export async function lookupLoincCode(
 
   // LOINC APIs may use ALL_CAPS field names (LOINC database column names) or camelCase
   const data: LoincData = {
-    code: typeof payload.code === 'string' ? payload.code
-      : typeof payload.LOINC_NUM === 'string' ? payload.LOINC_NUM : null,
-    display: typeof payload.display === 'string' ? payload.display
-      : typeof payload.LONG_COMMON_NAME === 'string' ? payload.LONG_COMMON_NAME : null,
-    component: typeof payload.component === 'string' ? payload.component
-      : typeof payload.COMPONENT === 'string' ? payload.COMPONENT : null,
-    property: typeof payload.property === 'string' ? payload.property
-      : typeof payload.PROPERTY === 'string' ? payload.PROPERTY : null,
-    timeAspect: typeof payload.timeAspect === 'string' ? payload.timeAspect
-      : typeof payload.TIME_ASPCT === 'string' ? payload.TIME_ASPCT : null,
-    system: typeof payload.system === 'string' ? payload.system
-      : typeof payload.SYSTEM === 'string' ? payload.SYSTEM : null,
-    scaleType: typeof payload.scaleType === 'string' ? payload.scaleType
-      : typeof payload.SCALE_TYP === 'string' ? payload.SCALE_TYP : null,
-    longCommonName: typeof payload.longCommonName === 'string' ? payload.longCommonName
-      : typeof payload.LONG_COMMON_NAME === 'string' ? payload.LONG_COMMON_NAME : null,
-    status: typeof payload.status === 'string' ? payload.status
-      : typeof payload.STATUS === 'string' ? payload.STATUS : null,
+    code: firstString(payload, 'code', 'LOINC_NUM'),
+    display: firstString(payload, 'display', 'LONG_COMMON_NAME'),
+    component: firstString(payload, 'component', 'COMPONENT'),
+    property: firstString(payload, 'property', 'PROPERTY'),
+    timeAspect: firstString(payload, 'timeAspect', 'TIME_ASPCT'),
+    system: firstString(payload, 'system', 'SYSTEM'),
+    scaleType: firstString(payload, 'scaleType', 'SCALE_TYP'),
+    longCommonName: firstString(payload, 'longCommonName', 'LONG_COMMON_NAME'),
+    status: firstString(payload, 'status', 'STATUS'),
   };
 
   return { status, message, data, raw };
@@ -285,8 +293,7 @@ export async function lookupIchiCode(
     code: typeof payload.code === 'string' ? payload.code : null,
     title: typeof payload.title === 'string' ? payload.title : null,
     definition: typeof payload.definition === 'string' ? payload.definition : null,
-    targetEntity: typeof payload.targetEntity === 'string' ? payload.targetEntity
-      : typeof payload.target_entity === 'string' ? payload.target_entity : null,
+    targetEntity: firstString(payload, 'targetEntity', 'target_entity'),
     system: 'https://mitel.dimi.uniud.it/ichi/#',
   };
 
@@ -314,12 +321,9 @@ export async function lookupProductCode(
 
   const data: ProductData = {
     code: typeof payload.code === 'string' ? payload.code : null,
-    productName: typeof payload.productName === 'string' ? payload.productName
-      : typeof payload.product_name === 'string' ? payload.product_name : null,
-    genericName: typeof payload.genericName === 'string' ? payload.genericName
-      : typeof payload.generic_name === 'string' ? payload.generic_name : null,
-    dosageForm: typeof payload.dosageForm === 'string' ? payload.dosageForm
-      : typeof payload.dosage_form === 'string' ? payload.dosage_form : null,
+    productName: firstString(payload, 'productName', 'product_name'),
+    genericName: firstString(payload, 'genericName', 'generic_name'),
+    dosageForm: firstString(payload, 'dosageForm', 'dosage_form'),
     strength: typeof payload.strength === 'string' ? payload.strength : null,
     manufacturer: typeof payload.manufacturer === 'string' ? payload.manufacturer : null,
     priceKes: normalizeTariff(payload.priceKes ?? payload.price_kes ?? payload.price),

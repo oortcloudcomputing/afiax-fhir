@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { KenyaHieCredentialMode, KenyaHieEnvironment } from '@medplum/core';
 import {
   getKenyaHieAgentId,
   getKenyaHieCredentialMode,
   getKenyaHieEnvironment,
   normalizeErrorString,
-  type KenyaHieCredentialMode,
-  type KenyaHieEnvironment,
 } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
@@ -167,8 +166,7 @@ function normalizeAfyaLinkFacilityMessage(
     facility_code:
       typeof payload.facility_code === 'string' && payload.facility_code.trim() ? payload.facility_code : facilityCode,
     found: inferredFound,
-    approved:
-      typeof payload.approved === 'boolean' || typeof payload.approved === 'string' ? payload.approved : null,
+    approved: typeof payload.approved === 'boolean' || typeof payload.approved === 'string' ? payload.approved : null,
     facility_level: typeof payload.facility_level === 'string' ? payload.facility_level : null,
     facility_category: typeof payload.facility_category === 'string' ? payload.facility_category : null,
     facility_owner: typeof payload.facility_owner === 'string' ? payload.facility_owner : null,
@@ -218,14 +216,18 @@ function normalizeAfyaLinkFacilitySearchResponse(
   throw new Error('AfyaLink facility search response did not include a recognizable facility payload');
 }
 
-function normalizeAfyaLinkPractitionerMessage(payload: Record<string, unknown>): AfyaLinkPractitionerMessage | undefined {
+function getRawEligibleValue(eligible: unknown): string | boolean | null {
+  return typeof eligible === 'string' || typeof eligible === 'boolean' ? eligible : null;
+}
+
+function normalizeAfyaLinkPractitionerMessage(
+  payload: Record<string, unknown>
+): AfyaLinkPractitionerMessage | undefined {
   const normalizedFound = normalizeFoundValue(payload.found);
-  const registrationNumber =
-    typeof payload.registration_number === 'number'
-      ? String(payload.registration_number)
-      : typeof payload.registration_number === 'string'
-        ? payload.registration_number
-        : null;
+  let registrationNumber: string | null = null;
+  if (typeof payload.registration_number === 'number' || typeof payload.registration_number === 'string') {
+    registrationNumber = String(payload.registration_number);
+  }
   const isActive =
     typeof payload.is_active === 'boolean' || typeof payload.is_active === 'string' ? payload.is_active : null;
 
@@ -267,16 +269,8 @@ function normalizeAfyaLinkEligibilityMessage(payload: Record<string, unknown>): 
   const clientPortalDetails = isRecord(payload.client_portal_details) ? payload.client_portal_details : null;
 
   const message: AfyaLinkEligibilityMessage = {
-    id:
-      typeof payload.id === 'string' || typeof payload.id === 'number'
-        ? (payload.id as string | number)
-        : null,
-    eligible:
-      normalizedEligible !== undefined
-        ? normalizedEligible
-        : typeof payload.eligible === 'string' || typeof payload.eligible === 'boolean'
-          ? (payload.eligible as string | boolean)
-          : null,
+    id: typeof payload.id === 'string' || typeof payload.id === 'number' ? payload.id : null,
+    eligible: normalizedEligible ?? getRawEligibleValue(payload.eligible),
     full_name: typeof payload.full_name === 'string' ? payload.full_name : null,
     reason: typeof payload.reason === 'string' ? payload.reason : null,
     possible_solution: typeof payload.possible_solution === 'string' ? payload.possible_solution : null,
@@ -287,16 +281,23 @@ function normalizeAfyaLinkEligibilityMessage(payload: Record<string, unknown>): 
     message: typeof payload.message === 'string' ? payload.message : null,
     status: typeof payload.status === 'string' ? payload.status : null,
     means_testing_details: meansTestingDetails
-      ? { means_testing_done: typeof meansTestingDetails.means_testing_done === 'boolean' ? meansTestingDetails.means_testing_done : null }
+      ? {
+          means_testing_done:
+            typeof meansTestingDetails.means_testing_done === 'boolean' ? meansTestingDetails.means_testing_done : null,
+        }
       : null,
     client_portal_details: clientPortalDetails
       ? {
-          employment_type: typeof clientPortalDetails.employment_type === 'string' ? clientPortalDetails.employment_type : null,
-          employer_name: typeof clientPortalDetails.employer_name === 'string' ? clientPortalDetails.employer_name : null,
+          employment_type:
+            typeof clientPortalDetails.employment_type === 'string' ? clientPortalDetails.employment_type : null,
+          employer_name:
+            typeof clientPortalDetails.employer_name === 'string' ? clientPortalDetails.employer_name : null,
         }
       : null,
     eligible_employee:
-      typeof payload.eligible_employee === 'boolean' || typeof payload.eligible_employee === 'string' || typeof payload.eligible_employee === 'number'
+      typeof payload.eligible_employee === 'boolean' ||
+      typeof payload.eligible_employee === 'string' ||
+      typeof payload.eligible_employee === 'number'
         ? payload.eligible_employee
         : null,
     policy_end_employer: typeof payload.policy_end_employer === 'string' ? payload.policy_end_employer : null,
@@ -356,11 +357,7 @@ function getManagedProjectSecret(
   return getProjectSecret(project, name) ?? getProjectSystemSecret(project, name);
 }
 
-function requireManagedProjectSecret(
-  project: Project,
-  name: string,
-  credentialMode: KenyaHieCredentialMode
-): string {
+function requireManagedProjectSecret(project: Project, name: string, credentialMode: KenyaHieCredentialMode): string {
   const value = getManagedProjectSecret(project, name, credentialMode);
   if (!value) {
     throw new Error(
@@ -406,13 +403,16 @@ export function getKenyaAfyaLinkCredentials(project: Project): KenyaAfyaLinkCred
 
 export async function getAfyaLinkToken(credentials: KenyaAfyaLinkCredentials): Promise<string> {
   const basicAuth = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
-  const response = await fetch(`${credentials.baseUrl}/v1/hie-auth?key=${encodeURIComponent(credentials.consumerKey)}`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(
+    `${credentials.baseUrl}/v1/hie-auth?key=${encodeURIComponent(credentials.consumerKey)}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -483,11 +483,7 @@ export async function searchAfyaLinkFacility(
   }
 }
 
-function buildPractitionerSearchUrl(
-  baseUrl: string,
-  identificationType: string,
-  identificationNumber: string
-): string {
+function buildPractitionerSearchUrl(baseUrl: string, identificationType: string, identificationNumber: string): string {
   const enc = encodeURIComponent;
   // Regulator-based registration number lookup (KMPDC doctors, COC clinical officers)
   if (identificationType === 'KMPDC') {
@@ -497,10 +493,9 @@ function buildPractitionerSearchUrl(
     return `${baseUrl}/v1/practitioner-search?regulator=coc&registration_number=${enc(identificationNumber)}`;
   }
   // National ID-based lookup (PPB pharmacists, NCK nurses, legacy ID/PASSPORT)
-  const regulator = identificationType === 'PPB' ? 'ppb' : identificationType === 'NCK' ? 'nck' : undefined;
-  const normalizedType = (identificationType === 'ID' || identificationType === 'PASSPORT')
-    ? identificationType === 'PASSPORT' ? 'Passport' : 'National ID'
-    : 'National ID';
+  const regulators: Record<string, string> = { PPB: 'ppb', NCK: 'nck' };
+  const regulator = regulators[identificationType];
+  const normalizedType = identificationType === 'PASSPORT' ? 'Passport' : 'National ID';
   const base = `${baseUrl}/v1/practitioner-search?identification_type=${enc(normalizedType)}&identification_number=${enc(identificationNumber)}`;
   return regulator ? `${base}&regulator=${regulator}` : base;
 }
@@ -593,7 +588,7 @@ function extractClientRegistryFromFhirPatient(
 ): AfyaLinkClientRegistryMessage {
   // v3 API returns a FHIR R4 Patient resource — extract name, DOB, gender, and identifiers
   const nameArr = Array.isArray(patient.name) ? patient.name : [];
-  const name = (isRecord(nameArr[0]) ? nameArr[0] : {}) as Record<string, unknown>;
+  const name = isRecord(nameArr[0]) ? nameArr[0] : {};
   const family = typeof name.family === 'string' ? name.family : null;
   const givenArr = Array.isArray(name.given) ? name.given : [];
   const given = typeof givenArr[0] === 'string' ? givenArr[0] : null;
@@ -603,7 +598,9 @@ function extractClientRegistryFromFhirPatient(
   // Look for client registry ID in extensions or identifiers
   let clientRegistryId: string | null = null;
   for (const id of identifierArr) {
-    if (!isRecord(id)) continue;
+    if (!isRecord(id)) {
+      continue;
+    }
     const sys = typeof id.system === 'string' ? id.system : '';
     if (sys.includes('client-registry') || sys.includes('hie')) {
       clientRegistryId = typeof id.value === 'string' ? id.value : null;
@@ -650,8 +647,10 @@ function normalizeAfyaLinkClientRegistryResponse(
         last_name: typeof data.last_name === 'string' ? data.last_name : null,
         date_of_birth: typeof data.date_of_birth === 'string' ? data.date_of_birth : null,
         gender: typeof data.gender === 'string' ? data.gender : null,
-        identification_type: typeof data.identification_type === 'string' ? data.identification_type : identificationType,
-        identification_number: typeof data.identification_number === 'string' ? data.identification_number : identificationNumber,
+        identification_type:
+          typeof data.identification_type === 'string' ? data.identification_type : identificationType,
+        identification_number:
+          typeof data.identification_number === 'string' ? data.identification_number : identificationNumber,
         account_status: typeof data.account_status === 'string' ? data.account_status : null,
       },
     };
@@ -662,10 +661,12 @@ function normalizeAfyaLinkClientRegistryResponse(
     const msg = raw.message;
     const resultArr = Array.isArray(msg.result) ? msg.result : [];
     if (resultArr.length > 0 && isRecord(resultArr[0])) {
-      return { message: extractClientRegistryFromFhirPatient(resultArr[0] as Record<string, unknown>, identificationType, identificationNumber) };
+      return { message: extractClientRegistryFromFhirPatient(resultArr[0], identificationType, identificationNumber) };
     }
     if (resultArr.length === 0 || normalizeFoundValue(msg.found) === 0) {
-      return { message: { found: 0, identification_type: identificationType, identification_number: identificationNumber } };
+      return {
+        message: { found: 0, identification_type: identificationType, identification_number: identificationNumber },
+      };
     }
     return {
       message: {
@@ -677,7 +678,8 @@ function normalizeAfyaLinkClientRegistryResponse(
         date_of_birth: typeof msg.date_of_birth === 'string' ? msg.date_of_birth : null,
         gender: typeof msg.gender === 'string' ? msg.gender : null,
         identification_type: typeof msg.identification_type === 'string' ? msg.identification_type : identificationType,
-        identification_number: typeof msg.identification_number === 'string' ? msg.identification_number : identificationNumber,
+        identification_number:
+          typeof msg.identification_number === 'string' ? msg.identification_number : identificationNumber,
       },
     };
   }
@@ -694,7 +696,8 @@ function normalizeAfyaLinkClientRegistryResponse(
       date_of_birth: typeof raw.date_of_birth === 'string' ? raw.date_of_birth : null,
       gender: typeof raw.gender === 'string' ? raw.gender : null,
       identification_type: typeof raw.identification_type === 'string' ? raw.identification_type : identificationType,
-      identification_number: typeof raw.identification_number === 'string' ? raw.identification_number : identificationNumber,
+      identification_number:
+        typeof raw.identification_number === 'string' ? raw.identification_number : identificationNumber,
     },
   };
 }
@@ -705,7 +708,9 @@ export async function searchAfyaLinkClientRegistry(
   identificationNumber: string
 ): Promise<AfyaLinkClientRegistryResponse> {
   if (!credentials.agentId) {
-    throw new Error('AfyaLink client registry requires an agent ID. Configure kenyaAfyaLinkAgentId as a project setting.');
+    throw new Error(
+      'AfyaLink client registry requires an agent ID. Configure kenyaAfyaLinkAgentId as a project setting.'
+    );
   }
   const token = await getAfyaLinkToken(credentials);
   const enc = encodeURIComponent;
@@ -720,7 +725,9 @@ export async function searchAfyaLinkClientRegistry(
   });
 
   if (response.status === 404) {
-    return { message: { found: 0, identification_type: identificationType, identification_number: identificationNumber } };
+    return {
+      message: { found: 0, identification_type: identificationType, identification_number: identificationNumber },
+    };
   }
 
   if (!response.ok) {

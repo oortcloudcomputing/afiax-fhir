@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { PatientIdentityStatus } from '@medplum/core';
 import {
   buildKenyaPatientIdentityExtension,
   createReference,
   KenyaClientRegistryIdSystem,
   KenyaPatientIdentityCorrelationIdSystem,
   normalizeErrorString,
-  type PatientIdentityStatus,
 } from '@medplum/core';
 import type { Patient, Project, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
@@ -17,7 +17,8 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
-import { getKenyaAfyaLinkCredentials, searchAfyaLinkClientRegistry, type KenyaAfyaLinkCredentials } from './afyalink';
+import type { KenyaAfyaLinkCredentials } from './afyalink';
+import { getKenyaAfyaLinkCredentials, searchAfyaLinkClientRegistry } from './afyalink';
 
 export interface PatientIdentityInput {
   readonly ctx: AuthenticatedRequestContext;
@@ -48,11 +49,18 @@ export async function handleResolvePatientIdentity(input: PatientIdentityInput):
 
   let credentials: KenyaAfyaLinkCredentials;
   try {
-    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id as string);
+    const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
     credentials = getKenyaAfyaLinkCredentials(project);
   } catch (err) {
     await writeAuditEvent(ctx, patient, correlationId, AuditEventOutcome.MajorFailure);
-    return errorResult(correlationId, patient.id, identificationType, identificationNumber, resolvedAt, normalizeErrorString(err));
+    return errorResult(
+      correlationId,
+      patient.id,
+      identificationType,
+      identificationNumber,
+      resolvedAt,
+      normalizeErrorString(err)
+    );
   }
 
   let clientRegistryId: string | null = null;
@@ -80,7 +88,14 @@ export async function handleResolvePatientIdentity(input: PatientIdentityInput):
     }
   } catch (err) {
     await writeAuditEvent(ctx, patient, correlationId, AuditEventOutcome.MajorFailure);
-    return errorResult(correlationId, patient.id, identificationType, identificationNumber, resolvedAt, normalizeErrorString(err));
+    return errorResult(
+      correlationId,
+      patient.id,
+      identificationType,
+      identificationNumber,
+      resolvedAt,
+      normalizeErrorString(err)
+    );
   }
 
   // Persist identity snapshot on the Patient
@@ -109,13 +124,20 @@ export async function handleResolvePatientIdentity(input: PatientIdentityInput):
     meta: { project: ctx.project.id },
     status: status === 'resolved' ? 'completed' : 'rejected',
     intent: 'order',
-    code: { coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-identity-resolution' }] },
+    code: {
+      coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-identity-resolution' }],
+    },
     for: createReference(patient),
     identifier: [{ system: KenyaPatientIdentityCorrelationIdSystem, value: correlationId }],
     note: [{ text: message }],
   });
 
-  await writeAuditEvent(ctx, patient, correlationId, status === 'resolved' ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure);
+  await writeAuditEvent(
+    ctx,
+    patient,
+    correlationId,
+    status === 'resolved' ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure
+  );
 
   return {
     status,
@@ -168,7 +190,7 @@ async function persistClientRegistryIdentifier(
   ctx: AuthenticatedRequestContext,
   patient: Patient & { id: string },
   clientRegistryId: string,
-  correlationId: string
+  _correlationId: string
 ): Promise<void> {
   const otherIdentifiers = (patient.identifier ?? []).filter((id) => id.system !== KenyaClientRegistryIdSystem);
   await ctx.systemRepo.updateResource<Patient>({

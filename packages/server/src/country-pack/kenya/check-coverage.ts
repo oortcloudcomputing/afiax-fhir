@@ -1,18 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  getKenyaCoverageEligibilityLookupIdentifier,
-  normalizeErrorString,
-} from '@medplum/core';
+import { getKenyaCoverageEligibilityLookupIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
-import { getKenyaAfyaLinkCredentials, searchAfyaLinkEligibility } from './afyalink';
 import type { CheckCoverageResult, CountryPackCheckCoverageInput } from '../types';
+import { getKenyaAfyaLinkCredentials, searchAfyaLinkEligibility } from './afyalink';
 
 function normalizeOptionalString(value: unknown): string | undefined {
   if (value === undefined || value === null || value === '') {
     return undefined;
   }
-  return String(value);
+  return typeof value === 'object'
+    ? JSON.stringify(value)
+    : String(value as string | number | boolean | bigint | symbol);
 }
 
 function normalizeEligibilityBoolean(value: unknown): boolean | undefined {
@@ -69,8 +68,7 @@ export async function checkKenyaCoverage(input: CountryPackCheckCoverageInput): 
     const transitionStatus = normalizeOptionalString(message?.transition_status ?? message?.status);
     const requestId = message?.id === undefined || message?.id === null ? undefined : String(message.id);
     const requestIdType = normalizeOptionalString(message?.request_id_type) ?? lookupIdentifier.identificationType;
-    const requestIdNumber =
-      normalizeOptionalString(message?.request_id_number) ?? lookupIdentifier.identifier.value;
+    const requestIdNumber = normalizeOptionalString(message?.request_id_number) ?? lookupIdentifier.identifier.value;
 
     // AfyaLink v3 extended fields
     const meansTestingDone =
@@ -135,10 +133,7 @@ export async function checkKenyaCoverage(input: CountryPackCheckCoverageInput): 
       requestIdNumber,
       ...extendedFields,
       rawResponse: JSON.stringify(response, null, 2),
-      message:
-        possibleSolution ??
-        reason ??
-        'Coverage is not currently eligible according to DHA.',
+      message: possibleSolution ?? reason ?? 'Coverage is not currently eligible according to DHA.',
       nextState: 'resolve-eligibility-before-billing',
     };
   } catch (err) {

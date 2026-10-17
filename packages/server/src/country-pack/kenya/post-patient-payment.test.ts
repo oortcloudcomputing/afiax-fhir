@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildKenyaErpNextSubmissionExtension, getKenyaPatientPaymentSnapshot, type KenyaErpNextSubmissionSnapshot } from '@medplum/core';
-import type { Claim, Patient, PaymentNotice, Project } from '@medplum/fhirtypes';
 import { jest } from '@jest/globals';
-import fetch, { type Response as NodeFetchResponse } from 'node-fetch';
+import type { KenyaErpNextSubmissionSnapshot } from '@medplum/core';
+import { buildKenyaErpNextSubmissionExtension, getKenyaPatientPaymentSnapshot } from '@medplum/core';
+import type { Claim, Patient, PaymentNotice, Project } from '@medplum/fhirtypes';
+import type { Response as NodeFetchResponse } from 'node-fetch';
+import fetch from 'node-fetch';
 import { handlePostPatientPayment } from './post-patient-payment';
 
 jest.mock('../../util/auditevent', () => ({
@@ -19,7 +21,8 @@ const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
 
 function mockOkResponse(data: unknown): void {
   mockFetch.mockResolvedValueOnce({
-    ok: true, status: 200,
+    ok: true,
+    status: 200,
     text: async () => JSON.stringify(data),
     json: async () => data,
   } as unknown as NodeFetchResponse);
@@ -27,7 +30,7 @@ function mockOkResponse(data: unknown): void {
 
 // ---------------------------------------------------------------------------
 
-function makeRepo(patientName = 'Jane Mwangi') {
+function makeRepo(): any {
   const created: Record<string, object[]> = {};
   const updated: object[] = [];
   let idSeq = 0;
@@ -54,7 +57,7 @@ function makeRepo(patientName = 'Jane Mwangi') {
   };
 }
 
-function makeCtx(repo: ReturnType<typeof makeRepo>) {
+function makeCtx(repo: any): any {
   return {
     project: { id: 'project-test' },
     profile: { reference: 'Practitioner/test' },
@@ -149,7 +152,11 @@ describe('handlePostPatientPayment — cash', () => {
   });
 
   test('still confirms when ERPNext fails (non-blocking)', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'ERPNext down' } as unknown as NodeFetchResponse);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'ERPNext down',
+    } as unknown as NodeFetchResponse);
 
     const repo = makeRepo();
     const result = await handlePostPatientPayment({

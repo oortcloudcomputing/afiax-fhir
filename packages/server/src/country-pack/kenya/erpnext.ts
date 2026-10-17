@@ -1,10 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  isKenyaErpNextEnabled,
-  KenyaErpNextSecretNames,
-  normalizeErrorString,
-} from '@medplum/core';
+import { isKenyaErpNextEnabled, KenyaErpNextSecretNames, normalizeErrorString } from '@medplum/core';
 import type { Claim, Patient, Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 
@@ -117,7 +113,7 @@ export async function ensureErpNextCustomer(
 ): Promise<ErpNextCustomerResult> {
   // Search by FHIR patient ID custom field first to maintain idempotency.
   const searchPath = `/api/resource/Customer?filters=[["custom_fhir_patient_id","=","Patient/${patient.id}"]]&fields=["name"]&limit=1`;
-  const searchResult = (await erpFetch(credentials, searchPath, { method: 'GET' })) as { data?: Array<{ name: string }> };
+  const searchResult = (await erpFetch(credentials, searchPath, { method: 'GET' })) as { data?: { name: string }[] };
 
   if (searchResult?.data?.length) {
     return { customerName: searchResult.data[0].name, created: false };
@@ -135,7 +131,9 @@ export async function ensureErpNextCustomer(
     body.custom_dha_client_registry_id = clientRegistryId;
   }
 
-  const created = (await erpFetch(credentials, '/api/resource/Customer', { method: 'POST', body })) as { data?: { name: string } };
+  const created = (await erpFetch(credentials, '/api/resource/Customer', { method: 'POST', body })) as {
+    data?: { name: string };
+  };
   const name = created?.data?.name ?? customerName;
   return { customerName: name, created: true };
 }
@@ -171,7 +169,7 @@ export async function createErpNextSalesInvoice(
   // Idempotency: search for an existing invoice for this claim.
   const searchPath = `/api/resource/Sales Invoice?filters=[["custom_fhir_claim_id","=","Claim/${claim.id}"]]&fields=["name","grand_total","currency"]&limit=1`;
   const existing = (await erpFetch(credentials, searchPath, { method: 'GET' })) as {
-    data?: Array<{ name: string; grand_total: number; currency: string }>;
+    data?: { name: string; grand_total: number; currency: string }[];
   };
   if (existing?.data?.length) {
     const row = existing.data[0];

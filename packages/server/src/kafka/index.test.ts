@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AuditEvent } from '@medplum/fhirtypes';
-import { _setProducerForTesting, publishAuditEvent, shutdownKafkaProducer, type KafkaProducer } from './index';
+import type { KafkaProducer } from './index';
+import { _setProducerForTesting, publishAuditEvent, shutdownKafkaProducer } from './index';
 
 function makeAuditEvent(overrides: Partial<AuditEvent> = {}): AuditEvent {
   return {
@@ -87,7 +88,9 @@ describe('Kafka audit publisher', () => {
     expect(() => publishAuditEvent(makeAuditEvent())).not.toThrow();
 
     // Allow the rejected promise to settle
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => {
+      setTimeout(r, 0);
+    });
     expect(send).toHaveBeenCalled();
   });
 

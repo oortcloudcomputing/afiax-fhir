@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Claim, Patient, Project } from '@medplum/fhirtypes';
 import { jest } from '@jest/globals';
-import fetch, { type Response as NodeFetchResponse } from 'node-fetch';
+import type { Claim, Patient, Project } from '@medplum/fhirtypes';
+import type { Response as NodeFetchResponse } from 'node-fetch';
+import fetch from 'node-fetch';
+import type { KenyaErpNextCredentials } from './erpnext';
 import {
   createErpNextPaymentEntry,
   createErpNextSalesInvoice,
   ensureErpNextCustomer,
   getKenyaErpNextCredentials,
   hasKenyaErpNextCredentials,
-  type KenyaErpNextCredentials,
 } from './erpnext';
 
 jest.mock('node-fetch');
@@ -64,7 +65,9 @@ describe('hasKenyaErpNextCredentials', () => {
   });
 
   it('returns false when erpnextEnabled is false', () => {
-    expect(hasKenyaErpNextCredentials(makeProject({ setting: [{ name: 'erpnextEnabled', valueBoolean: false }] }))).toBe(false);
+    expect(
+      hasKenyaErpNextCredentials(makeProject({ setting: [{ name: 'erpnextEnabled', valueBoolean: false }] }))
+    ).toBe(false);
   });
 
   it('returns false when a required secret is missing', () => {
@@ -239,7 +242,9 @@ describe('createErpNextSalesInvoice', () => {
   it('throws when ERPNext invoice creation fails', async () => {
     mockOkResponse({ data: [] });
     mockErrorResponse(422, 'Validation error');
-    await expect(createErpNextSalesInvoice(testCredentials, claim, 'Jane Wanjiku Mwangi')).rejects.toThrow('ERPNext POST');
+    await expect(createErpNextSalesInvoice(testCredentials, claim, 'Jane Wanjiku Mwangi')).rejects.toThrow(
+      'ERPNext POST'
+    );
   });
 });
 

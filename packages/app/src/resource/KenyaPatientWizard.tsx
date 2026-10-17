@@ -16,11 +16,8 @@ import {
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  KenyaPatientIdentificationTypes,
-  normalizeErrorString,
-  type KenyaPatientIdentificationType,
-} from '@medplum/core';
+import type { KenyaPatientIdentificationType } from '@medplum/core';
+import { KenyaPatientIdentificationTypes, normalizeErrorString } from '@medplum/core';
 import type { Bundle, HumanName, Patient } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -55,22 +52,36 @@ interface PatientLookupResponse {
 
 function extractDhaPatient(resp: PatientLookupResponse): DhaPatientMessage | undefined {
   const r = resp.result;
-  if (!r) return undefined;
-  if (r.message) return r.message;
-  if ('found' in r || 'client_registry_id' in r) return r as DhaPatientMessage;
+  if (!r) {
+    return undefined;
+  }
+  if (r.message) {
+    return r.message;
+  }
+  if ('found' in r || 'client_registry_id' in r) {
+    return r as DhaPatientMessage;
+  }
   return undefined;
 }
 
 function isDhaFound(msg: DhaPatientMessage | undefined): boolean {
-  if (!msg) return false;
+  if (!msg) {
+    return false;
+  }
   return msg.found === 1 || msg.found === true || msg.found === '1';
 }
 
 function normalizeGender(g: string | null | undefined): Gender {
-  if (!g) return 'unknown';
+  if (!g) {
+    return 'unknown';
+  }
   const lower = g.toLowerCase();
-  if (lower === 'male' || lower === 'm') return 'male';
-  if (lower === 'female' || lower === 'f') return 'female';
+  if (lower === 'male' || lower === 'm') {
+    return 'male';
+  }
+  if (lower === 'female' || lower === 'f') {
+    return 'female';
+  }
   return 'other';
 }
 
@@ -114,10 +125,10 @@ export function KenyaPatientWizard(): JSX.Element {
     setDhaPatient(undefined);
     setDhaSearched(false);
     try {
-      const resp = (await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/patient-lookup`, {
+      const resp = await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/patient-lookup`, {
         identificationType: idType,
         identificationNumber: number,
-      })) as PatientLookupResponse;
+      });
       const msg = extractDhaPatient(resp);
       setDhaPatient(msg);
       setDhaSearched(true);
@@ -158,7 +169,9 @@ export function KenyaPatientWizard(): JSX.Element {
   }
 
   async function handleCreate(): Promise<void> {
-    if (!dhaVerified) return; // should never reach here, but guard anyway
+    if (!dhaVerified) {
+      return;
+    } // should never reach here, but guard anyway
     const family = familyName.trim();
     if (!family) {
       setError('Family name is required.');
@@ -193,7 +206,7 @@ export function KenyaPatientWizard(): JSX.Element {
       };
       const created = await medplum.createResource(patient);
       showNotification({ color: 'green', message: `Patient created: ${family}` });
-      navigate(`/Patient/${created.id}`);
+      navigate(`/Patient/${created.id}`)?.catch(console.error);
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
@@ -213,8 +226,8 @@ export function KenyaPatientWizard(): JSX.Element {
           <Stepper.Step label="DHA Verification" description="Kenya National Client Registry">
             <Stack gap="md" mt="lg">
               <Alert color="blue" variant="light">
-                All patients must be verified in the DHA National Client Registry before registration.
-                Enter the patient's government-issued ID to look them up.
+                All patients must be verified in the DHA National Client Registry before registration. Enter the
+                patient's government-issued ID to look them up.
               </Alert>
 
               <NativeSelect
@@ -248,21 +261,33 @@ export function KenyaPatientWizard(): JSX.Element {
                 <Alert color="green" variant="light" title="Patient verified in DHA Registry">
                   <Stack gap={4}>
                     <Group gap="xs">
-                      <Badge size="xs" color="teal">AfyaLink HIE</Badge>
-                      <Badge size="xs" color="green">Verified</Badge>
+                      <Badge size="xs" color="teal">
+                        AfyaLink HIE
+                      </Badge>
+                      <Badge size="xs" color="green">
+                        Verified
+                      </Badge>
                     </Group>
                     <Divider my={4} />
                     {dhaPatient.full_name && (
-                      <Text size="sm"><b>Full Name:</b> {dhaPatient.full_name}</Text>
+                      <Text size="sm">
+                        <b>Full Name:</b> {dhaPatient.full_name}
+                      </Text>
                     )}
                     {dhaPatient.date_of_birth && (
-                      <Text size="sm"><b>Date of Birth:</b> {dhaPatient.date_of_birth}</Text>
+                      <Text size="sm">
+                        <b>Date of Birth:</b> {dhaPatient.date_of_birth}
+                      </Text>
                     )}
                     {dhaPatient.gender && (
-                      <Text size="sm"><b>Gender:</b> {dhaPatient.gender}</Text>
+                      <Text size="sm">
+                        <b>Gender:</b> {dhaPatient.gender}
+                      </Text>
                     )}
                     {dhaPatient.client_registry_id && (
-                      <Text size="sm"><b>Registry ID:</b> {dhaPatient.client_registry_id}</Text>
+                      <Text size="sm">
+                        <b>Registry ID:</b> {dhaPatient.client_registry_id}
+                      </Text>
                     )}
                   </Stack>
                 </Alert>
@@ -270,8 +295,8 @@ export function KenyaPatientWizard(): JSX.Element {
 
               {dhaSearched && !dhaVerified && (
                 <Alert color="red" variant="light" title="Patient not found in DHA Registry">
-                  No record found for {idType} {idNumber.trim()} in the Kenya National Client Registry.
-                  Registration cannot proceed without DHA verification. Please verify the ID number and try again.
+                  No record found for {idType} {idNumber.trim()} in the Kenya National Client Registry. Registration
+                  cannot proceed without DHA verification. Please verify the ID number and try again.
                 </Alert>
               )}
 
@@ -283,11 +308,7 @@ export function KenyaPatientWizard(): JSX.Element {
                 >
                   Search DHA Registry
                 </Button>
-                {dhaSearched && dhaVerified && (
-                  <Button onClick={() => setActive(1)}>
-                    Continue
-                  </Button>
-                )}
+                {dhaSearched && dhaVerified && <Button onClick={() => setActive(1)}>Continue</Button>}
               </Group>
             </Stack>
           </Stepper.Step>
@@ -298,7 +319,9 @@ export function KenyaPatientWizard(): JSX.Element {
               {dhaPatient && (
                 <Alert color="teal" variant="light">
                   <Group gap="xs">
-                    <Badge size="xs" color="teal">DHA Verified</Badge>
+                    <Badge size="xs" color="teal">
+                      DHA Verified
+                    </Badge>
                     <Text size="sm">{dhaPatient.full_name ?? `${idType} ${idNumber.trim()}`}</Text>
                   </Group>
                 </Alert>
@@ -322,7 +345,7 @@ export function KenyaPatientWizard(): JSX.Element {
                 </Alert>
               )}
 
-              {existingPatients && existingPatients.length === 0 && (
+              {existingPatients?.length === 0 && (
                 <Alert color="green" variant="light">
                   No existing record found — safe to register.
                 </Alert>
@@ -331,7 +354,9 @@ export function KenyaPatientWizard(): JSX.Element {
               {checking && (
                 <Group gap="xs">
                   <Loader size="sm" />
-                  <Text size="sm" c="dimmed">Checking system records...</Text>
+                  <Text size="sm" c="dimmed">
+                    Checking system records...
+                  </Text>
                 </Group>
               )}
 
@@ -349,10 +374,7 @@ export function KenyaPatientWizard(): JSX.Element {
                   Back
                 </Button>
                 {!existingPatients ? (
-                  <Button
-                    onClick={() => handleSystemCheck().catch(console.error)}
-                    loading={checking}
-                  >
+                  <Button onClick={() => handleSystemCheck().catch(console.error)} loading={checking}>
                     Check System Records
                   </Button>
                 ) : (
@@ -412,11 +434,7 @@ export function KenyaPatientWizard(): JSX.Element {
                   value={idType}
                   disabled
                 />
-                <TextInput
-                  label="ID Number"
-                  value={idNumber}
-                  disabled
-                />
+                <TextInput label="ID Number" value={idNumber} disabled />
               </Group>
 
               {error && <Alert color="red">{error}</Alert>}

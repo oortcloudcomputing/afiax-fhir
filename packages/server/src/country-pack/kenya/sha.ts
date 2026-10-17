@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { KenyaShaClaimsCredentialMode, KenyaShaClaimsEnvironment } from '@medplum/core';
 import {
   getKenyaShaClaimsCredentialMode,
   getKenyaShaClaimsEnvironment,
   KenyaShaClaimsSecretNames,
   normalizeErrorString,
-  type KenyaShaClaimsCredentialMode,
-  type KenyaShaClaimsEnvironment,
 } from '@medplum/core';
 import type { Bundle, ClaimResponse, Project } from '@medplum/fhirtypes';
 import { SignJWT } from 'jose';
@@ -123,7 +122,7 @@ export async function getKenyaShaClaimsToken(
     .sign(new TextEncoder().encode(credentials.secretKey));
 }
 
-function tryParseJson(rawResponse: string): unknown | undefined {
+function tryParseJson(rawResponse: string): unknown {
   if (!rawResponse.trim()) {
     return undefined;
   }
@@ -153,7 +152,7 @@ function getClaimStateFromExtension(extension: unknown): string | undefined {
   }
 
   const url = getStringValue(extension.url);
-  if (!url || !url.toLowerCase().includes('claim-state')) {
+  if (!url?.toLowerCase().includes('claim-state')) {
     return undefined;
   }
 
@@ -161,11 +160,9 @@ function getClaimStateFromExtension(extension: unknown): string | undefined {
     getStringValue(extension.valueCode) ??
     getStringValue(extension.valueString) ??
     (isRecord(extension.valueCoding)
-      ? getStringValue(extension.valueCoding.code) ?? getStringValue(extension.valueCoding.display)
+      ? (getStringValue(extension.valueCoding.code) ?? getStringValue(extension.valueCoding.display))
       : undefined) ??
-    (isRecord(extension.valueCodeableConcept)
-      ? getStringValue(extension.valueCodeableConcept.text)
-      : undefined)
+    (isRecord(extension.valueCodeableConcept) ? getStringValue(extension.valueCodeableConcept.text) : undefined)
   );
 }
 

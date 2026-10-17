@@ -21,30 +21,41 @@ import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from './i
  * If the Condition carries an IDSR-notifiable condition code (ICD-11 or ICD-10) and has not already
  * been notified, spawns an async notification (non-blocking — never delays the
  * HTTP response or fails the write).
+ * @param ctx - The authenticated request context of the write.
+ * @param method - The HTTP method of the write.
+ * @param result - The FHIR response returned by the write.
  */
-export function maybeAutoTriggerIdsr(
-  ctx: AuthenticatedRequestContext,
-  method: string,
-  result: FhirResponse
-): void {
+export function maybeAutoTriggerIdsr(ctx: AuthenticatedRequestContext, method: string, result: FhirResponse): void {
   // Only fire on write operations
-  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') return;
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+    return;
+  }
   // Result must carry a resource (2-tuple or 3-tuple)
-  if (result.length < 2) return;
+  if (result.length < 2) {
+    return;
+  }
   const resource = result[1];
-  if (!resource || resource.resourceType !== 'Condition' || !resource.id) return;
+  if (resource?.resourceType !== 'Condition' || !resource.id) {
+    return;
+  }
   // Kenya country pack only
-  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') return;
+  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') {
+    return;
+  }
   // Skip if already notified (any status — avoids re-triggering on every update)
-  if (getKenyaIdsrNotificationSnapshot(resource)) return;
+  if (getKenyaIdsrNotificationSnapshot(resource)) {
+    return;
+  }
   // Skip if not a notifiable condition code (ICD-11 or ICD-10)
-  if (!getKenyaIdsrConditionCode(resource)) return;
+  if (!getKenyaIdsrConditionCode(resource)) {
+    return;
+  }
 
   const condition = resource as Condition & { id: string };
   const correlationId = randomUUID();
 
   // Fire-and-forget: IDSR notification must not block the clinical write
-  void handleKenyaIdsrNotification({ ctx, condition, correlationId })
+  handleKenyaIdsrNotification({ ctx, condition, correlationId })
     .then(async (idsrResult) => {
       // Stamp the extension on the Condition so subsequent updates don't re-trigger.
       // Use systemRepo so this succeeds even when the caller's repo has limited scope.

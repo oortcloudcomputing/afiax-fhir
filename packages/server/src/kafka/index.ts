@@ -13,6 +13,7 @@
  */
 
 import type { AuditEvent } from '@medplum/fhirtypes';
+import type { Kafka as KafkaClient, SASLOptions } from 'kafkajs';
 import type { MedplumKafkaConfig } from '../config/types';
 
 interface KafkaState {
@@ -24,7 +25,10 @@ interface KafkaState {
 export interface KafkaProducer {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  send(record: { topic: string; messages: { key?: string; value: string; headers?: Record<string, string> }[] }): Promise<unknown>;
+  send(record: {
+    topic: string;
+    messages: { key?: string; value: string; headers?: Record<string, string> }[];
+  }): Promise<unknown>;
 }
 
 const state: KafkaState = {
@@ -36,18 +40,19 @@ const state: KafkaState = {
  * Initialises the Kafka producer.  Called once during server startup when `config.kafka` is set.
  * Connection errors are caught and logged; the producer is set to undefined so that subsequent
  * calls to `publishAuditEvent` are silent no-ops rather than crashes.
+ * @param config - Kafka broker, topic and authentication settings.
  */
 export function initKafkaProducer(config: MedplumKafkaConfig): void {
   // Dynamic require keeps kafkajs out of the module graph when Kafka is not configured,
   // which avoids import-time errors in environments where the package is optional.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Kafka } = require('kafkajs') as typeof import('kafkajs');
+  const { Kafka } = require('kafkajs') as { Kafka: typeof KafkaClient };
 
   const kafka = new Kafka({
     clientId: config.clientId ?? 'afiax-fhir-server',
     brokers: config.brokers,
     ssl: config.ssl,
-    sasl: config.sasl as import('kafkajs').SASLOptions | undefined,
+    sasl: config.sasl as SASLOptions | undefined,
   });
 
   state.topic = config.auditTopic ?? 'audit.events';
@@ -75,6 +80,7 @@ export async function shutdownKafkaProducer(): Promise<void> {
  * Publishes an AuditEvent to the Kafka audit topic.
  * Fire-and-forget: never throws, never awaited by the caller.
  * No-op when the producer is not initialised (Kafka not configured or connect failed).
+ * @param auditEvent - The AuditEvent to publish.
  */
 export function publishAuditEvent(auditEvent: AuditEvent): void {
   if (!state.producer) {
@@ -101,7 +107,11 @@ export function publishAuditEvent(auditEvent: AuditEvent): void {
     });
 }
 
-/** Exposed for testing: overrides the internal producer with a mock. */
+/**
+ * Exposed for testing: overrides the internal producer with a mock.
+ * @param producer - The producer to use, or undefined to disable publishing.
+ * @param topic - The topic to publish to.
+ */
 export function _setProducerForTesting(producer: KafkaProducer | undefined, topic = 'audit.events'): void {
   state.producer = producer;
   state.topic = topic;

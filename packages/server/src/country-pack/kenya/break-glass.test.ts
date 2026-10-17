@@ -31,18 +31,21 @@ const mockProject: Project = {
   setting: [{ name: 'countryPack', valueString: 'kenya' }],
 };
 
-function buildCtx(overrides?: Partial<{
-  createResource: jest.Mock;
-  updateResource: jest.Mock;
-  readResource: jest.Mock;
-}>): any {
+function buildCtx(
+  overrides?: Partial<{
+    createResource: jest.Mock;
+    updateResource: jest.Mock;
+    readResource: jest.Mock;
+  }>
+): any {
   return {
     project: mockProject,
     profile: { reference: 'Practitioner/prac-1' },
     logger: { warn: jest.fn() },
     repo: {},
     systemRepo: {
-      createResource: overrides?.createResource ?? jest.fn(async (r: any) => ({ ...r, id: `${r.resourceType}-1`.toLowerCase() })),
+      createResource:
+        overrides?.createResource ?? jest.fn(async (r: any) => ({ ...r, id: `${r.resourceType}-1`.toLowerCase() })),
       updateResource: overrides?.updateResource ?? jest.fn(async (r: any) => r),
       readResource: overrides?.readResource ?? jest.fn(async () => mockProject),
     },
@@ -74,7 +77,7 @@ describe('handleBreakGlassAccess', () => {
     // Flag created
     const flagCall = createResource.mock.calls.find((c) => c[0].resourceType === 'Flag');
     expect(flagCall).toBeDefined();
-    const flag = flagCall![0] as Flag;
+    const flag = flagCall?.[0] as Flag;
     expect(flag.status).toBe('active');
     expect(flag.code?.coding?.[0]?.code).toBe('break-glass-access');
     expect(flag.period?.start).toBeDefined();
@@ -83,7 +86,7 @@ describe('handleBreakGlassAccess', () => {
     // Patient updated with break-glass extension
     const patientUpdate = updateResource.mock.calls.find((c) => c[0].resourceType === 'Patient');
     expect(patientUpdate).toBeDefined();
-    const updatedPatient = patientUpdate![0] as Patient;
+    const updatedPatient = patientUpdate?.[0] as Patient;
     const bgExt = updatedPatient.extension?.find(
       (e) => e.url === 'https://afiax.africa/fhir/StructureDefinition/kenya-break-glass'
     );
@@ -128,7 +131,8 @@ describe('handleBreakGlassAccess', () => {
   });
 
   test('returns error and does not send alert when Flag creation fails', async () => {
-    const createResource = jest.fn()
+    const createResource = jest
+      .fn()
       .mockRejectedValueOnce(new Error('DB write failed'))
       .mockResolvedValue({ resourceType: 'AuditEvent', id: 'ae-1' });
     const ctx = buildCtx({ createResource });

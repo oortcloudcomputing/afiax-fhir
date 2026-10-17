@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle } from '@medplum/fhirtypes';
+import type { Bundle, Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import {
   checkKenyaShaClaimStatus,
@@ -9,7 +9,6 @@ import {
   KenyaShaBundleIdIdentifierSystem,
   submitKenyaShaClaimBundle,
 } from './sha';
-import type { Project } from '@medplum/fhirtypes';
 
 jest.mock('node-fetch');
 

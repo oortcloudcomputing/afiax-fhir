@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Condition, Project, Task } from '@medplum/fhirtypes';
-import { handleKenyaIdsrNotification, applyIdsrNotificationExtension } from './idsr';
+import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from './idsr';
 
 jest.mock('../../util/auditevent', () => ({
   ...jest.requireActual('../../util/auditevent'),
@@ -26,14 +26,12 @@ describe('handleKenyaIdsrNotification', () => {
       project: mockProject,
       profile: mockProfile,
       systemRepo: {
-        createResource:
-          createResource ??
-          jest.fn(async (resource: any) => ({ ...resource, id: 'task-1' })),
+        createResource: createResource ?? jest.fn(async (resource: any) => ({ ...resource, id: 'task-1' })),
       },
     };
   }
 
-  function buildCondition(codes: Array<{ system?: string; code: string }>): Condition & { id: string } {
+  function buildCondition(codes: { system?: string; code: string }[]): Condition & { id: string } {
     return {
       resourceType: 'Condition',
       id: 'cond-1',
@@ -95,7 +93,7 @@ describe('handleKenyaIdsrNotification', () => {
   test('picks the first matching IDSR code when condition has multiple codings', async () => {
     const ctx = buildCtx();
     const condition = buildCondition([
-      { code: 'CA23' },   // Asthma (ICD-11) — not notifiable
+      { code: 'CA23' }, // Asthma (ICD-11) — not notifiable
       { code: '1C1E.0' }, // Meningococcal disease (ICD-11) — notifiable
     ]);
 

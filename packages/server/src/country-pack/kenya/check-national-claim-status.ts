@@ -7,14 +7,18 @@ import {
   Operator,
 } from '@medplum/core';
 import type { ClaimResponse, Identifier, Project } from '@medplum/fhirtypes';
+import { globalLogger } from '../../logger';
+import type { CheckNationalClaimStatusResult, CountryPackCheckNationalClaimStatusInput } from '../types';
 import { checkKenyaShaClaimStatus, getKenyaShaClaimsCredentials } from './sha';
 import { syncErpNextShaPayment } from './sync-to-erpnext';
 import { triggerKenyaClaimStatusWorkflowBot } from './workflow-bot';
-import type { CheckNationalClaimStatusResult, CountryPackCheckNationalClaimStatusInput } from '../types';
 
 const KenyaShaClaimResponseIdentifierSystem = 'https://afiax.africa/kenya/identifier/sha-claim-id';
 
-function normalizeClaimStatus(claimState: string | undefined, outcome: ClaimResponse['outcome'] | undefined): {
+function normalizeClaimStatus(
+  claimState: string | undefined,
+  outcome: ClaimResponse['outcome'] | undefined
+): {
   readonly status: CheckNationalClaimStatusResult['status'];
   readonly nextState: string;
 } {
@@ -81,8 +85,8 @@ async function upsertKenyaClaimResponse(
     ],
   });
 
-  const outcome: ClaimResponse['outcome'] =
-    status === 'adjudicated' ? 'complete' : status === 'rejected' ? 'error' : 'queued';
+  const outcomes: Record<string, ClaimResponse['outcome']> = { adjudicated: 'complete', rejected: 'error' };
+  const outcome = outcomes[status] ?? 'queued';
 
   const next: ClaimResponse = {
     ...(remoteClaimResponse ?? {}),
@@ -133,23 +137,33 @@ export async function checkKenyaNationalClaimStatus(
     const response = await checkKenyaShaClaimStatus(credentials, claimId);
     const claimState = response.claimState ?? response.claimResponse?.outcome ?? 'queued';
     const normalized = normalizeClaimStatus(response.claimState, response.claimResponse?.outcome);
+    const defaultMessages: Record<string, string> = {
+      adjudicated: 'Kenya SHA claim status is complete.',
+      rejected: 'Kenya SHA claim status indicates rejection or declined payment.',
+    };
     const message =
-      response.message ??
-      (normalized.status === 'adjudicated'
-        ? 'Kenya SHA claim status is complete.'
-        : normalized.status === 'rejected'
-          ? 'Kenya SHA claim status indicates rejection or declined payment.'
-          : 'Kenya SHA claim is still queued or under review.');
+      response.message ?? defaultMessages[normalized.status] ?? 'Kenya SHA claim is still queued or under review.';
 
-    const claimResponse = await upsertKenyaClaimResponse(input, claimId, response.claimResponse, normalized.status, message);
+    const claimResponse = await upsertKenyaClaimResponse(
+      input,
+      claimId,
+      response.claimResponse,
+      normalized.status,
+      message
+    );
 
     if (normalized.status === 'adjudicated') {
-      void syncErpNextShaPayment(
+      syncErpNextShaPayment(
         input.ctx.systemRepo,
         input.claim,
         claimResponse ?? undefined,
         project as Project & { id: string }
-      );
+      ).catch((err) => {
+        globalLogger.warn('Kenya SHA claim status: ERPNext payment sync failed', {
+          claimId,
+          error: normalizeErrorString(err),
+        });
+      });
     }
 
     const workflowBotResult = await triggerKenyaClaimStatusWorkflowBot(input.ctx, input.claim, {

@@ -7,6 +7,7 @@ export interface MedplumAppConfig {
   recaptchaSiteKey?: string;
   registerEnabled?: boolean | string;
   awsTextractEnabled?: boolean | string;
+  idleTimeoutMinutes?: number | string;
 }
 
 const config: MedplumAppConfig = {
@@ -16,6 +17,7 @@ const config: MedplumAppConfig = {
   recaptchaSiteKey: import.meta.env?.RECAPTCHA_SITE_KEY,
   registerEnabled: import.meta.env?.MEDPLUM_REGISTER_ENABLED,
   awsTextractEnabled: import.meta.env?.MEDPLUM_AWS_TEXTRACT_ENABLED,
+  idleTimeoutMinutes: import.meta.env?.MEDPLUM_IDLE_TIMEOUT_MINUTES,
 };
 
 export function getConfig(): MedplumAppConfig {

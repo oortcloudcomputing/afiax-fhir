@@ -10,11 +10,13 @@ import {
   Operator,
 } from '@medplum/core';
 import type { Bundle, Claim, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo, SystemRepository } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
 import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
 import { MpesaCheckoutRequestSystem } from './post-patient-payment';
-import { parseMpesaCallback } from './mpesa';
+import { getKenyaMpesaCredentials, hasKenyaMpesaCredentials, parseMpesaCallback, queryMpesaStkPushStatus } from './mpesa';
+import type { MpesaStkQueryResult } from './mpesa';
 
 export interface MpesaCallbackResult {
   readonly ok: boolean;
@@ -24,6 +26,16 @@ export interface MpesaCallbackResult {
   readonly message: string;
 }
 
+/**
+ * Handles a Daraja STK push callback.
+ *
+ * Daraja callbacks are unsigned and the endpoint is public, so the callback body is treated only as a
+ * notification: the result is confirmed with Daraja's STK Push Query API before any state changes, the
+ * amount comes from the original payment request, and callbacks for already-settled payments are ignored.
+ * @param projectId - The project the callback URL was issued for.
+ * @param body - The raw callback body.
+ * @returns The outcome of processing the callback.
+ */
 export async function handleKenyaMpesaCallback(projectId: string, body: unknown): Promise<MpesaCallbackResult> {
   const globalSystemRepo = getGlobalSystemRepo();
 
@@ -68,10 +80,64 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
       };
     }
 
-    const paymentSuccess = resultCode === 0;
-    const confirmedAt = new Date().toISOString();
     const paymentSnap = getKenyaPatientPaymentSnapshot(notice);
-    const paidAmount = amount ?? paymentSnap?.amount ?? notice.amount?.value ?? 0;
+    if (paymentSnap?.paymentStatus === 'confirmed' || paymentSnap?.paymentStatus === 'failed') {
+      return {
+        ok: true,
+        projectId,
+        checkoutRequestId,
+        status: 'ignored',
+        message: `Payment already ${paymentSnap.paymentStatus} — ignoring duplicate callback`,
+      };
+    }
+
+    if (!hasKenyaMpesaCredentials(project)) {
+      return { ok: false, projectId, checkoutRequestId, status: 'error', message: 'M-Pesa credentials not configured — cannot verify callback' };
+    }
+
+    let verified: MpesaStkQueryResult;
+    try {
+      const credentials = getKenyaMpesaCredentials(project, getConfig().baseUrl.replace(/\/+$/, ''), projectId);
+      verified = await queryMpesaStkPushStatus(credentials, checkoutRequestId);
+    } catch (err) {
+      globalLogger.warn('M-Pesa callback: could not verify payment with Daraja', {
+        projectId,
+        checkoutRequestId,
+        error: normalizeErrorString(err),
+      });
+      return {
+        ok: false,
+        projectId,
+        checkoutRequestId,
+        status: 'error',
+        message: `Could not verify M-Pesa payment with Daraja: ${normalizeErrorString(err)}`,
+      };
+    }
+
+    if (verified.resultCode !== resultCode) {
+      globalLogger.warn('M-Pesa callback result disagrees with Daraja query — using Daraja result', {
+        projectId,
+        checkoutRequestId,
+        callbackResultCode: resultCode,
+        verifiedResultCode: verified.resultCode,
+      });
+    }
+
+    // The STK push amount is fixed when the request is created, so the expected amount is authoritative.
+    const expectedAmount = paymentSnap?.amount ?? notice.amount?.value ?? 0;
+    if (amount !== undefined && amount !== expectedAmount) {
+      globalLogger.warn('M-Pesa callback amount differs from requested amount — using requested amount', {
+        projectId,
+        checkoutRequestId,
+        callbackAmount: amount,
+        expectedAmount,
+      });
+    }
+
+    const paymentSuccess = verified.resultCode === 0;
+    const failureDesc = verified.resultDesc || resultDesc;
+    const confirmedAt = new Date().toISOString();
+    const paidAmount = expectedAmount;
     const paidCurrency = paymentSnap?.currency ?? 'KES';
 
     // Update PaymentNotice extension to reflect confirmation or failure.
@@ -84,7 +150,7 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
       gatewayReference: checkoutRequestId,
       transactionRef: mpesaReceiptNumber,
       confirmedAt: paymentSuccess ? confirmedAt : undefined,
-      failureReason: paymentSuccess ? undefined : resultDesc,
+      failureReason: paymentSuccess ? undefined : failureDesc,
     });
     const otherExts = (notice.extension ?? []).filter((e) => e.url !== updatedExt.url);
     await systemRepo.updateResource<PaymentNotice>({
@@ -94,8 +160,13 @@ export async function handleKenyaMpesaCallback(projectId: string, body: unknown)
     });
 
     if (!paymentSuccess) {
-      globalLogger.info('M-Pesa STK push payment failed', { projectId, checkoutRequestId, resultCode, resultDesc });
-      return { ok: true, projectId, checkoutRequestId, status: 'failed', message: resultDesc };
+      globalLogger.info('M-Pesa STK push payment failed', {
+        projectId,
+        checkoutRequestId,
+        resultCode: verified.resultCode,
+        resultDesc: failureDesc,
+      });
+      return { ok: true, projectId, checkoutRequestId, status: 'failed', message: failureDesc };
     }
 
     // Payment confirmed — create ERPNext Payment Entry and update Claim snapshot.

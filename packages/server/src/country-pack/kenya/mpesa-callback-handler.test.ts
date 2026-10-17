@@ -21,6 +21,10 @@ jest.mock('../../fhir/repo', () => ({
   SystemRepository: class {},
 }));
 
+jest.mock('../../config/loader', () => ({
+  getConfig: () => ({ baseUrl: 'https://api.afiax.africa/' }),
+}));
+
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../../fhir/repo';
 const mockGetGlobalRepo = getGlobalSystemRepo as jest.MockedFunction<typeof getGlobalSystemRepo>;
 const mockGetProjectRepo = getProjectSystemRepo as jest.MockedFunction<typeof getProjectSystemRepo>;
@@ -32,21 +36,51 @@ function makeProject(erpEnabled = true): Project {
     resourceType: 'Project',
     id: 'project-test',
     setting: [{ name: 'erpnextEnabled', valueBoolean: erpEnabled }],
-    systemSecret: erpEnabled
-      ? [
-          { name: 'erpnextBaseUrl', valueString: 'https://erp.afiax.africa' },
-          { name: 'erpnextApiKey', valueString: 'key' },
-          { name: 'erpnextApiSecret', valueString: 'secret' },
-          { name: 'erpnextCompany', valueString: 'Afiax Healthcare Ltd' },
-        ]
-      : [],
+    systemSecret: [
+      { name: 'mpesaConsumerKey', valueString: 'consumer-key' },
+      { name: 'mpesaConsumerSecret', valueString: 'consumer-secret' },
+      { name: 'mpesaShortCode', valueString: '174379' },
+      { name: 'mpesaPasskey', valueString: 'passkey' },
+      ...(erpEnabled
+        ? [
+            { name: 'erpnextBaseUrl', valueString: 'https://erp.afiax.africa' },
+            { name: 'erpnextApiKey', valueString: 'key' },
+            { name: 'erpnextApiSecret', valueString: 'secret' },
+            { name: 'erpnextCompany', valueString: 'Afiax Healthcare Ltd' },
+          ]
+        : []),
+    ],
   };
 }
 
-function makeNotice(checkoutRequestId: string, claimRef = 'Claim/claim-001'): PaymentNotice {
+/**
+ * Queues the Daraja OAuth + STK Push Query responses the handler uses to verify a callback.
+ * @param checkoutRequestId - The CheckoutRequestID Daraja reports.
+ * @param resultCode - The ResultCode Daraja reports.
+ * @param resultDesc - The ResultDesc Daraja reports.
+ */
+function mockDarajaQuery(checkoutRequestId: string, resultCode: number, resultDesc: string): void {
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => ({ access_token: 'daraja-token' }),
+  } as unknown as NodeFetchResponse);
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    text: async () =>
+      JSON.stringify({ ResponseCode: '0', CheckoutRequestID: checkoutRequestId, ResultCode: String(resultCode), ResultDesc: resultDesc }),
+  } as unknown as NodeFetchResponse);
+}
+
+function makeNotice(
+  checkoutRequestId: string,
+  claimRef = 'Claim/claim-001',
+  paymentStatus: 'pending' | 'confirmed' | 'failed' = 'pending'
+): PaymentNotice {
   const ext = buildKenyaPatientPaymentExtension({
     method: 'mpesa-stk',
-    paymentStatus: 'pending',
+    paymentStatus,
     amount: 2000,
     currency: 'KES',
     gatewayReference: checkoutRequestId,
@@ -174,6 +208,7 @@ describe('handleKenyaMpesaCallback', () => {
     mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
     mockGetProjectRepo.mockReturnValue(projectRepo);
 
+    mockDarajaQuery('ws_CO_001', 0, 'The service request is processed successfully.');
     // ERPNext payment entry
     mockFetch.mockResolvedValueOnce({
       ok: true, status: 200,
@@ -208,11 +243,14 @@ describe('handleKenyaMpesaCallback', () => {
     mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
     mockGetProjectRepo.mockReturnValue(projectRepo);
 
+    mockDarajaQuery('ws_CO_002', 1032, 'Request cancelled by user');
+
     const result = await handleKenyaMpesaCallback('project-test', makeMpesaFailureCallback('ws_CO_002'));
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe('failed');
-    expect(mockFetch).not.toHaveBeenCalled();
+    // Only the Daraja OAuth + query calls — no ERPNext calls
+    expect(mockFetch).toHaveBeenCalledTimes(2);
 
     const updateCalls = projectRepo.updateResource.mock.calls;
     const noticeUpdate = updateCalls.find((args: unknown[]) => {
@@ -222,6 +260,82 @@ describe('handleKenyaMpesaCallback', () => {
     const snap = getKenyaPatientPaymentSnapshot(updatedNotice);
     expect(snap?.paymentStatus).toBe('failed');
     expect(snap?.failureReason).toContain('cancelled');
+  });
+
+  test('rejects a forged success callback when Daraja reports the payment failed', async () => {
+    const project = makeProject();
+    const notice = makeNotice('ws_CO_FORGED');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockDarajaQuery('ws_CO_FORGED', 1032, 'Request cancelled by user');
+
+    const result = await handleKenyaMpesaCallback('project-test', makeMpesaSuccessCallback('ws_CO_FORGED', 'FAKE123'));
+
+    expect(result.status).toBe('failed');
+    // No ERPNext payment entry is created
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const noticeUpdate = projectRepo.updateResource.mock.calls.find(
+      (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
+    );
+    expect(getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice)?.paymentStatus).toBe('failed');
+  });
+
+  test('makes no changes when Daraja verification fails', async () => {
+    const project = makeProject();
+    const notice = makeNotice('ws_CO_UNVERIFIED');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    } as unknown as NodeFetchResponse);
+
+    const result = await handleKenyaMpesaCallback('project-test', makeMpesaSuccessCallback('ws_CO_UNVERIFIED'));
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('error');
+    expect(projectRepo.updateResource).not.toHaveBeenCalled();
+  });
+
+  test('ignores replayed callbacks for an already-confirmed payment', async () => {
+    const project = makeProject();
+    const notice = makeNotice('ws_CO_DONE', 'Claim/claim-001', 'confirmed');
+    const projectRepo = makeProjectRepo(project, notice, makeClaimWithInvoice());
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+
+    const result = await handleKenyaMpesaCallback('project-test', makeMpesaSuccessCallback('ws_CO_DONE'));
+
+    expect(result.status).toBe('ignored');
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(projectRepo.updateResource).not.toHaveBeenCalled();
+  });
+
+  test('records the requested amount, not the amount in the callback body', async () => {
+    const project = makeProject(false);
+    const notice = makeNotice('ws_CO_AMOUNT');
+    const projectRepo = makeProjectRepo(project, notice, null);
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+    mockDarajaQuery('ws_CO_AMOUNT', 0, 'The service request is processed successfully.');
+
+    const callback = makeMpesaSuccessCallback('ws_CO_AMOUNT');
+    callback.Body.stkCallback.CallbackMetadata.Item[0].Value = 999999;
+
+    const result = await handleKenyaMpesaCallback('project-test', callback);
+
+    expect(result.status).toBe('confirmed');
+    const noticeUpdate = projectRepo.updateResource.mock.calls.find(
+      (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
+    );
+    expect(getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice)?.amount).toBe(2000);
   });
 
   test('returns ignored when no PaymentNotice matches the checkoutRequestId', async () => {

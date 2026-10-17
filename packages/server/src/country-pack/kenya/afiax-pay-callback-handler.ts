@@ -10,11 +10,18 @@ import {
   Operator,
 } from '@medplum/core';
 import type { Bundle, Claim, PaymentNotice, Project, Task } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo, SystemRepository } from '../../fhir/repo';
 import { globalLogger } from '../../logger';
 import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
 import { AfiaxPayRequestSystem } from './post-patient-payment';
-import { parseAfiaxPayCallback } from './afiax-pay';
+import {
+  getAfiaxPayPaymentRequest,
+  getKenyaAfiaxPayCredentials,
+  hasKenyaAfiaxPayCredentials,
+  parseAfiaxPayCallback,
+} from './afiax-pay';
+import type { AfiaxPayPaymentRequestState } from './afiax-pay';
 
 export interface AfiaxPayCallbackResult {
   readonly ok: boolean;
@@ -24,6 +31,16 @@ export interface AfiaxPayCallbackResult {
   readonly message: string;
 }
 
+/**
+ * Handles an Afiax Pay payment callback.
+ *
+ * The endpoint is public, so the callback body is treated only as a notification: the payment request
+ * is read back from the Afiax Pay API and that state is used for every update. Callbacks for
+ * already-settled payments are ignored.
+ * @param projectId - The project the callback URL was issued for.
+ * @param body - The raw callback body.
+ * @returns The outcome of processing the callback.
+ */
 export async function handleKenyaAfiaxPayCallback(projectId: string, body: unknown): Promise<AfiaxPayCallbackResult> {
   const globalSystemRepo = getGlobalSystemRepo();
 
@@ -39,7 +56,7 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     return { ok: true, projectId, status: 'ignored', message: 'Could not parse Afiax Pay callback body — ignoring' };
   }
 
-  const { paymentRequestId, status: payStatus, transactionRef, amount, currency: payCurrency, paidAt, failureReason } = payload;
+  const { paymentRequestId } = payload;
 
   if (!paymentRequestId) {
     return { ok: true, projectId, status: 'ignored', message: 'No payment_request_id in callback — ignoring' };
@@ -68,11 +85,66 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
       };
     }
 
+    const paymentSnap = getKenyaPatientPaymentSnapshot(notice);
+    if (paymentSnap?.paymentStatus === 'confirmed' || paymentSnap?.paymentStatus === 'failed') {
+      return {
+        ok: true,
+        projectId,
+        paymentRequestId,
+        status: 'ignored',
+        message: `Payment already ${paymentSnap.paymentStatus} — ignoring duplicate callback`,
+      };
+    }
+
+    if (!hasKenyaAfiaxPayCredentials(project)) {
+      return { ok: false, projectId, paymentRequestId, status: 'error', message: 'Afiax Pay credentials not configured — cannot verify callback' };
+    }
+
+    let verified: AfiaxPayPaymentRequestState;
+    try {
+      const credentials = getKenyaAfiaxPayCredentials(project, getConfig().baseUrl.replace(/\/+$/, ''), projectId);
+      verified = await getAfiaxPayPaymentRequest(credentials, paymentRequestId);
+    } catch (err) {
+      globalLogger.warn('Afiax Pay callback: could not verify payment request', {
+        projectId,
+        paymentRequestId,
+        error: normalizeErrorString(err),
+      });
+      return {
+        ok: false,
+        projectId,
+        paymentRequestId,
+        status: 'error',
+        message: `Could not verify Afiax Pay payment: ${normalizeErrorString(err)}`,
+      };
+    }
+
+    if (verified.status === 'pending') {
+      return { ok: true, projectId, paymentRequestId, status: 'ignored', message: 'Afiax Pay reports payment still pending — ignoring callback' };
+    }
+    if (verified.status !== payload.status) {
+      globalLogger.warn('Afiax Pay callback status disagrees with API — using API status', {
+        projectId,
+        paymentRequestId,
+        callbackStatus: payload.status,
+        verifiedStatus: verified.status,
+      });
+    }
+
+    const { status: payStatus, transactionRef, amount, currency: payCurrency, paidAt, failureReason } = verified;
     const paymentSuccess = payStatus === 'success';
     const paymentCancelled = payStatus === 'cancelled';
     const confirmedAt = paidAt ?? new Date().toISOString();
-    const paymentSnap = getKenyaPatientPaymentSnapshot(notice);
-    const paidAmount = amount ?? paymentSnap?.amount ?? notice.amount?.value ?? 0;
+    const expectedAmount = paymentSnap?.amount ?? notice.amount?.value ?? 0;
+    const paidAmount = amount ?? expectedAmount;
+    if (paymentSuccess && paidAmount !== expectedAmount) {
+      globalLogger.warn('Afiax Pay paid amount differs from requested amount', {
+        projectId,
+        paymentRequestId,
+        paidAmount,
+        expectedAmount,
+      });
+    }
     const paidCurrency = payCurrency ?? paymentSnap?.currency ?? 'KES';
 
     // Update PaymentNotice extension.

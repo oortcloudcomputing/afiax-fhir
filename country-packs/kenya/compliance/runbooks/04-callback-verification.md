@@ -112,9 +112,19 @@ or mismatched bundleId), replay it manually:
 The callback handler verifies the `Authorization: Bearer <jwt>` header using HS256 with
 `kenyaShaClaimsSecretKey`.
 
-If SHA is not sending a JWT (plain JSON only), the handler falls back to permissive mode
-and processes the callback without verification. This is by design for integration scenarios
-where SHA sends plain JSON.
+If SHA is not sending a JWT (plain JSON only), the callback body is **not trusted**. The handler
+uses it only as a trigger: it looks up the Claim by `bundleId`, calls the SHA claim-status API
+(`$check-national-claim-status` path) and applies that response instead of the callback body.
+If the SHA API call fails, nothing is changed and the endpoint returns 400 — recover with
+`$check-national-claim-status` once SHA is reachable.
+
+A callback that presents a JWT is rejected if the JWT does not verify, or if no
+`kenyaShaClaimsSecretKey` is configured.
+
+M-Pesa (`/kenya/mpesa-callback/:projectId`) and Afiax Pay (`/kenya/afiax-pay-callback/:projectId`)
+callbacks are handled the same way: the result is confirmed with the Daraja STK Push Query API or
+the Afiax Pay payment-request API before any update, the amount is never taken from the callback
+body, and callbacks for payments already confirmed or failed are ignored.
 
 If SHA is sending a JWT but verification is failing:
 1. Confirm `kenyaShaClaimsSecretKey` matches the secret SHA signed the JWT with.

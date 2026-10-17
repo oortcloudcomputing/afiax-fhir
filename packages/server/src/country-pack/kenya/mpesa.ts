@@ -153,6 +153,59 @@ export async function sendMpesaStkPush(
   };
 }
 
+export interface MpesaStkQueryResult {
+  readonly checkoutRequestId: string;
+  readonly resultCode: number;
+  readonly resultDesc: string;
+}
+
+/**
+ * Asks Daraja for the authoritative result of an STK push.
+ *
+ * Daraja callbacks are unsigned, so callback bodies must never be trusted on their own.
+ * Throws when Daraja cannot give a final result (including "transaction is being processed").
+ * @param credentials - M-Pesa credentials for the project.
+ * @param checkoutRequestId - The CheckoutRequestID returned by the original STK push.
+ * @returns The final STK push result according to Daraja.
+ */
+export async function queryMpesaStkPushStatus(
+  credentials: KenyaMpesaCredentials,
+  checkoutRequestId: string
+): Promise<MpesaStkQueryResult> {
+  const token = await getMpesaAccessToken(credentials);
+  const timestamp = buildTimestamp();
+
+  const response = await fetch(`${MpesaDarajaBaseUrl}/mpesa/stkpushquery/v1/query`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      BusinessShortCode: credentials.shortCode,
+      Password: buildStkPassword(credentials.shortCode, credentials.passkey, timestamp),
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    }),
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`M-Pesa STK query failed (${response.status}): ${text}`);
+  }
+
+  const data = JSON.parse(text) as { CheckoutRequestID?: string; ResultCode?: string | number; ResultDesc?: string };
+  const resultCode = Number(data.ResultCode);
+  if (data.ResultCode === undefined || data.ResultCode === '' || Number.isNaN(resultCode)) {
+    throw new Error(`M-Pesa STK query returned no ResultCode: ${text}`);
+  }
+  if (data.CheckoutRequestID && data.CheckoutRequestID !== checkoutRequestId) {
+    throw new Error(`M-Pesa STK query returned a different CheckoutRequestID: ${data.CheckoutRequestID}`);
+  }
+
+  return { checkoutRequestId, resultCode, resultDesc: data.ResultDesc ?? '' };
+}
+
 export function parseMpesaCallback(body: unknown): MpesaCallbackPayload | null {
   try {
     const b = body as Record<string, unknown>;

@@ -17,7 +17,7 @@ import 'aws-sdk-client-mock-jest';
 import type { Request } from 'express';
 import type internal from 'stream';
 import { Readable } from 'stream';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
 describe('Storage', () => {
@@ -38,6 +38,21 @@ describe('Storage', () => {
   test('Undefined binary storage', () => {
     initBinaryStorage('binary');
     expect(() => getBinaryStorage()).toThrow();
+  });
+
+  test('Custom S3 endpoint uses path-style addressing', async () => {
+    const config = getConfig();
+    config.s3Endpoint = 'http://minio.minio.svc.cluster.local:9000';
+    try {
+      initBinaryStorage('s3:afiax-binary');
+      const client = (getBinaryStorage() as unknown as { client: S3Client }).client;
+      expect(await client.config.forcePathStyle).toBe(true);
+      const endpoint = await client.config.endpoint?.();
+      expect(endpoint?.hostname).toBe('minio.minio.svc.cluster.local');
+      expect(endpoint?.port).toBe(9000);
+    } finally {
+      config.s3Endpoint = undefined;
+    }
   });
 
   test('Multipart upload with Express Request stream succeeds', async () => {

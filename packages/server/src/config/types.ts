@@ -64,6 +64,8 @@ export interface MedplumServerConfig {
   maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
+  /** Custom S3 endpoint for S3-compatible binary storage (e.g. MinIO); enables path-style addressing */
+  s3Endpoint?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;

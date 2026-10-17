@@ -17,6 +17,9 @@ const KenyaShaClaimsBaseUrl = {
   production: 'https://fhir.sha.go.ke',
 } as const;
 
+// Indexed on the Medplum Claim after submission so SHA callbacks can find it via identifier search.
+export const KenyaShaBundleIdIdentifierSystem = 'https://afiax.africa/kenya/identifier/sha-bundle-id';
+
 export interface KenyaShaClaimsCredentials {
   readonly baseUrl: string;
   readonly accessKey: string;
@@ -251,13 +254,19 @@ export async function submitKenyaShaClaimBundle(
   const statusTrackingEndpoint = `${credentials.baseUrl}/v1/shr-med/claim-status?claim_id=${encodeURIComponent(bundleId)}`;
   const token = await getKenyaShaClaimsToken(credentials);
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json, application/fhir+json',
+    'Content-Type': 'application/fhir+json',
+  };
+  // TODO(dha-verify): confirm SHA's preferred callback URL delivery mechanism (header vs. query param).
+  if (credentials.callbackUrl) {
+    headers['X-Callback-Url'] = credentials.callbackUrl;
+  }
+
   const response = await fetch(submissionEndpoint, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json, application/fhir+json',
-      'Content-Type': 'application/fhir+json',
-    },
+    headers,
     body: JSON.stringify(bundle),
   });
 

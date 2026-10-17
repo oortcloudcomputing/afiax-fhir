@@ -41,7 +41,7 @@ function notifiableCondition(id = 'cond-1'): Condition & { id: string } {
     id,
     subject: { reference: 'Patient/p-1' },
     code: {
-      coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'A00' }],
+      coding: [{ system: 'http://id.who.int/icd/release/11/mms', code: '1A00' }],
     },
   };
 }
@@ -52,7 +52,7 @@ function nonNotifiableCondition(): Condition & { id: string } {
     id: 'cond-2',
     subject: { reference: 'Patient/p-1' },
     code: {
-      coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'J00' }],
+      coding: [{ system: 'http://id.who.int/icd/release/11/mms', code: 'CA04' }],
     },
   };
 }

@@ -6,6 +6,7 @@ import { handleKenyaIdsrNotification, applyIdsrNotificationExtension } from './i
 jest.mock('../../util/auditevent', () => ({
   ...jest.requireActual('../../util/auditevent'),
   createAuditEvent: jest.fn(() => ({ resourceType: 'AuditEvent', entity: [] })),
+  logAuditEvent: jest.fn(),
   AuditEventOutcome: { Success: '0', MajorFailure: '12' },
   RestfulOperationType: { code: 'rest', system: 'http://terminology.hl7.org/CodeSystem/audit-event-type' },
   OperationInteraction: { code: 'operation', system: 'http://hl7.org/fhir/restful-interaction' },
@@ -38,7 +39,7 @@ describe('handleKenyaIdsrNotification', () => {
       id: 'cond-1',
       subject: { reference: 'Patient/test-patient' },
       code: {
-        coding: codes.map((c) => ({ system: c.system ?? 'http://hl7.org/fhir/sid/icd-10', code: c.code })),
+        coding: codes.map((c) => ({ system: c.system ?? 'http://id.who.int/icd/release/11/mms', code: c.code })),
       },
     };
   }
@@ -46,12 +47,12 @@ describe('handleKenyaIdsrNotification', () => {
   test('creates a pending Task for an immediately notifiable condition', async () => {
     const createResource = jest.fn(async (resource: any) => ({ ...resource, id: 'task-1' }));
     const ctx = buildCtx(createResource);
-    const condition = buildCondition([{ code: 'A00' }]); // Cholera
+    const condition = buildCondition([{ code: '1A00' }]); // Cholera (ICD-11)
 
     const result = await handleKenyaIdsrNotification({ ctx, condition, correlationId: 'corr-1' });
 
     expect(result.status).toBe('pending');
-    expect(result.conditionCode).toBe('A00');
+    expect(result.conditionCode).toBe('1A00');
     expect(result.conditionDisplay).toBe('Cholera');
     expect(result.task?.reference).toMatch(/^Task\//);
     expect(createResource).toHaveBeenCalledTimes(2); // Task + AuditEvent
@@ -82,7 +83,7 @@ describe('handleKenyaIdsrNotification', () => {
       .mockRejectedValueOnce(new Error('DB write failed'))
       .mockResolvedValueOnce({ resourceType: 'AuditEvent', id: 'ae-1' }); // AuditEvent succeeds
     const ctx = buildCtx(createResource);
-    const condition = buildCondition([{ code: 'B05' }]); // Measles
+    const condition = buildCondition([{ code: '1F03' }]); // Measles (ICD-11)
 
     const result = await handleKenyaIdsrNotification({ ctx, condition, correlationId: 'corr-3' });
 
@@ -94,11 +95,23 @@ describe('handleKenyaIdsrNotification', () => {
   test('picks the first matching IDSR code when condition has multiple codings', async () => {
     const ctx = buildCtx();
     const condition = buildCondition([
-      { code: 'J45' },    // Asthma — not notifiable
-      { code: 'A39' },   // Meningococcal disease — notifiable
+      { code: 'CA23' },   // Asthma (ICD-11) — not notifiable
+      { code: '1C1E.0' }, // Meningococcal disease (ICD-11) — notifiable
     ]);
 
     const result = await handleKenyaIdsrNotification({ ctx, condition, correlationId: 'corr-4' });
+
+    expect(result.status).toBe('pending');
+    expect(result.conditionCode).toBe('1C1E.0');
+    expect(result.conditionDisplay).toBe('Meningococcal disease');
+  });
+
+  test('accepts a legacy ICD-10 coded condition during the transition period', async () => {
+    const ctx = buildCtx();
+    // Legacy record coded with ICD-10 system + ICD-10 code
+    const condition = buildCondition([{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'A39' }]);
+
+    const result = await handleKenyaIdsrNotification({ ctx, condition, correlationId: 'corr-5' });
 
     expect(result.status).toBe('pending');
     expect(result.conditionCode).toBe('A39');

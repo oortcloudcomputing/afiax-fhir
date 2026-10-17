@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { forbidden, getProjectSettingString, KenyaBreakGlassFlagCode, KenyaBreakGlassFlagSystem, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, Flag, Resource } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Flag, Patient, Resource } from '@medplum/fhirtypes';
 import type { FhirResponse } from '@medplum/fhir-router';
 import type { AuthenticatedRequestContext } from '../../context';
 
@@ -14,12 +14,61 @@ function hasRestrictedLabel(resource: Resource): boolean {
   );
 }
 
+async function hasBreakGlassForPatient(
+  ctx: AuthenticatedRequestContext,
+  patientId: string
+): Promise<boolean> {
+  const authorRef = ctx.profile?.reference;
+  if (!authorRef) return false;
+
+  const flags = (await ctx.systemRepo.search<Flag>({
+    resourceType: 'Flag',
+    filters: [
+      { code: 'status', operator: 'eq', value: 'active' },
+      { code: 'subject', operator: 'eq', value: `Patient/${patientId}` },
+    ],
+    count: 20,
+  })) as Bundle<Flag>;
+
+  const now = new Date();
+  return (flags.entry ?? []).some((entry) => {
+    const flag = entry.resource;
+    if (!flag) return false;
+    if (!flag.code?.coding?.some((c) => c.system === KenyaBreakGlassFlagSystem && c.code === KenyaBreakGlassFlagCode)) {
+      return false;
+    }
+    if (flag.author?.reference !== authorRef) return false;
+    if (flag.period?.end && new Date(flag.period.end) < now) return false;
+    return true;
+  });
+}
+
+function getPatientIdFromResource(resource: Resource): string | undefined {
+  if (resource.resourceType === 'Patient') return resource.id;
+  // Resources with a subject or patient reference to a Patient
+  const rec = resource as unknown as Record<string, unknown>;
+  const subject = rec.subject as { reference?: string } | undefined;
+  const patient = rec.patient as { reference?: string } | undefined;
+  const ref = subject?.reference ?? patient?.reference;
+  if (ref?.startsWith('Patient/')) return ref.slice('Patient/'.length);
+  return undefined;
+}
+
+async function canAccessRestrictedResource(
+  ctx: AuthenticatedRequestContext,
+  resource: Resource
+): Promise<boolean> {
+  const patientId = getPatientIdFromResource(resource);
+  if (!patientId) return false; // no patient linkage → deny
+  return hasBreakGlassForPatient(ctx, patientId);
+}
+
 /**
- * Called from the FHIR route handler after every successful resource read.
+ * Called from the FHIR route handler after every successful resource read/search.
  *
- * If the returned resource carries a Confidentiality label of R (Restricted) or
- * V (Very Restricted), access is denied unless the requesting author holds an
- * active break-glass Flag for that patient.
+ * Enforces Confidentiality R/V labels:
+ * - Single resource: denied unless break-glass Flag exists for the linked patient.
+ * - Bundle (search result): restricted entries are stripped from the result set.
  *
  * DPA 2019 s.25 / Digital Health Act 2023 s.19 compliance hook.
  */
@@ -33,51 +82,52 @@ export async function enforceKenyaSecurityLabels(
   // Super-admins bypass (system repo, background jobs, seeding)
   if (ctx.repo.isSuperAdmin()) return result;
 
-  // Only check single-resource reads — skip Bundles and OperationOutcomes
   const resource = result[1] as Resource | undefined;
-  if (!resource || resource.resourceType === 'Bundle' || resource.resourceType === 'OperationOutcome') {
-    return result;
+  if (!resource) return result;
+
+  // OperationOutcome — pass through
+  if (resource.resourceType === 'OperationOutcome') return result;
+
+  // Bundle (search result) — filter out restricted entries the requester cannot see
+  if (resource.resourceType === 'Bundle') {
+    const bundle = resource as Bundle;
+    if (!bundle.entry?.length) return result;
+
+    const filteredEntries: BundleEntry[] = [];
+    for (const entry of bundle.entry) {
+      const entryResource = entry.resource as Resource | undefined;
+      if (!entryResource || !hasRestrictedLabel(entryResource)) {
+        filteredEntries.push(entry);
+        continue;
+      }
+      const allowed = await canAccessRestrictedResource(ctx, entryResource);
+      if (allowed) filteredEntries.push(entry);
+      // else silently drop — don't reveal that a restricted record exists
+    }
+
+    if (filteredEntries.length === bundle.entry.length) return result;
+
+    return [
+      result[0],
+      {
+        ...bundle,
+        entry: filteredEntries,
+        total: filteredEntries.filter((e) => e.resource).length,
+      } as Bundle,
+    ];
   }
 
+  // Single resource — deny if restricted and no break-glass
   if (!hasRestrictedLabel(resource)) return result;
 
-  // Only Patient resources currently carry break-glass clearance
-  if (resource.resourceType !== 'Patient' || !resource.id) {
-    throw new OperationOutcomeError(forbidden);
-  }
-
-  const authorRef = ctx.profile?.reference;
-  if (!authorRef) throw new OperationOutcomeError(forbidden);
-
-  // Check for an active break-glass Flag authored by this user for this patient.
-  // Using systemRepo avoids polluting the access-policy-scoped repo with a
-  // diagnostic search, and ensures the Flag is always readable regardless of
-  // the requesting AccessPolicy.
-  const flags = (await ctx.systemRepo.search<Flag>({
-    resourceType: 'Flag',
-    filters: [
-      { code: 'status', operator: 'eq', value: 'active' },
-      { code: 'subject', operator: 'eq', value: `Patient/${resource.id}` },
-    ],
-    count: 20,
-  })) as Bundle<Flag>;
-
-  const now = new Date();
-  const hasValidBreakGlass = (flags.entry ?? []).some((entry) => {
-    const flag = entry.resource;
-    if (!flag) return false;
-    // Must be a break-glass flag
-    if (!flag.code?.coding?.some((c) => c.system === KenyaBreakGlassFlagSystem && c.code === KenyaBreakGlassFlagCode)) {
-      return false;
-    }
-    // Must be authored by the current user
-    if (flag.author?.reference !== authorRef) return false;
-    // Must not be expired (period.end in the past means expired)
-    if (flag.period?.end && new Date(flag.period.end) < now) return false;
-    return true;
-  });
-
-  if (hasValidBreakGlass) return result;
+  const allowed = await canAccessRestrictedResource(ctx, resource);
+  if (allowed) return result;
 
   throw new OperationOutcomeError(forbidden);
 }
+
+// Re-export for use in break-glass operation and tests
+export { hasBreakGlassForPatient };
+
+// Type assertion helper consumed by tests
+export type { Patient };

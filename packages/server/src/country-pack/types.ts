@@ -138,6 +138,12 @@ export interface CheckCoverageResult {
   readonly requestIdNumber?: string;
   readonly requestIdType?: string;
   readonly rawResponse?: string;
+  // AfyaLink v3 extended eligibility fields
+  readonly meansTestingDone?: boolean;
+  readonly employmentType?: string;
+  readonly employerName?: string;
+  readonly eligibleEmployee?: boolean;
+  readonly policyEndEmployer?: string;
   readonly coverageEligibilityRequest?: Reference<CoverageEligibilityRequest>;
   readonly coverageEligibilityResponse?: Reference<CoverageEligibilityResponse>;
   readonly task?: Reference<Task>;

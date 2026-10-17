@@ -72,6 +72,27 @@ export async function checkKenyaCoverage(input: CountryPackCheckCoverageInput): 
     const requestIdNumber =
       normalizeOptionalString(message?.request_id_number) ?? lookupIdentifier.identifier.value;
 
+    // AfyaLink v3 extended fields
+    const meansTestingDone =
+      typeof message?.means_testing_details?.means_testing_done === 'boolean'
+        ? message.means_testing_details.means_testing_done
+        : undefined;
+    const employmentType = normalizeOptionalString(message?.client_portal_details?.employment_type);
+    const employerName = normalizeOptionalString(message?.client_portal_details?.employer_name);
+    const eligibleEmployee =
+      message?.eligible_employee !== null && message?.eligible_employee !== undefined
+        ? normalizeEligibilityBoolean(message.eligible_employee)
+        : undefined;
+    const policyEndEmployer = normalizeOptionalString(message?.policy_end_employer);
+
+    const extendedFields = {
+      meansTestingDone,
+      employmentType,
+      employerName,
+      eligibleEmployee,
+      policyEndEmployer,
+    };
+
     if (eligible === true) {
       return {
         status: 'eligible',
@@ -88,6 +109,7 @@ export async function checkKenyaCoverage(input: CountryPackCheckCoverageInput): 
         requestId,
         requestIdType,
         requestIdNumber,
+        ...extendedFields,
         rawResponse: JSON.stringify(response, null, 2),
         message: fullName
           ? `${fullName} is eligible for coverage checks in DHA.`
@@ -111,6 +133,7 @@ export async function checkKenyaCoverage(input: CountryPackCheckCoverageInput): 
       requestId,
       requestIdType,
       requestIdNumber,
+      ...extendedFields,
       rawResponse: JSON.stringify(response, null, 2),
       message:
         possibleSolution ??

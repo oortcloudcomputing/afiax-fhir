@@ -14,6 +14,7 @@ import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
   createAuditEvent,
+  logAuditEvent,
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
@@ -45,7 +46,7 @@ export async function handleKenyaIdsrNotification(input: IdsrNotificationInput):
       conditionCode: '',
       conditionDisplay: '',
       notifiedAt: new Date().toISOString(),
-      message: 'Condition does not carry a Kenya IDSR immediately notifiable ICD-10 code.',
+      message: 'Condition does not carry a Kenya IDSR immediately notifiable condition code (ICD-11 or ICD-10 accepted).',
     };
   }
 
@@ -134,7 +135,8 @@ async function createIdsrAuditEvent(
     ...(task ? [{ what: createReference(task) }] : []),
   ];
 
-  await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  const saved = await ctx.systemRepo.createResource<AuditEvent>(auditEvent);
+  logAuditEvent(saved);
 }
 
 export function applyIdsrNotificationExtension(

@@ -18,6 +18,7 @@ import type {
   Patient,
   Practitioner,
   PractitionerRole,
+  Project,
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
@@ -27,10 +28,12 @@ import {
   getKenyaShaClaimsBaseUrl,
   getKenyaShaClaimsCredentials,
   hasKenyaShaClaimsCredentials,
+  KenyaShaBundleIdIdentifierSystem,
   normalizeKenyaShaClaimsError,
   submitKenyaShaClaimBundle,
 } from './sha';
 import { triggerKenyaClaimWorkflowBot } from './workflow-bot';
+import { syncErpNextInvoice } from './sync-to-erpnext';
 
 function buildResourceFullUrl(baseUrl: string, resource: WithId<Resource>): string {
   return `${baseUrl}/fhir/${resource.resourceType}/${resource.id}`;
@@ -304,6 +307,10 @@ export async function submitKenyaNationalClaim(
   const { bundle, bundleId, bundleEntryCount, shaClaimsEnvironment, submissionEndpoint, statusTrackingEndpoint } =
     await buildKenyaNationalClaimBundle(input);
 
+  // Sync to ERPNext regardless of SHA credential state — invoice creation is independent.
+  const project = await input.ctx.systemRepo.readResource<Project>('Project', input.ctx.project.id);
+  void syncErpNextInvoice(input.ctx.systemRepo, input.claim, project as Project & { id: string });
+
   if (!hasKenyaShaClaimsCredentials(input.ctx.project)) {
     return {
       status: 'prepared',
@@ -323,6 +330,20 @@ export async function submitKenyaNationalClaim(
   try {
     const credentials = getKenyaShaClaimsCredentials(input.ctx.project);
     const submission = await submitKenyaShaClaimBundle(credentials, bundle, bundleId);
+
+    // Stamp the SHA bundle ID as an indexed identifier on the Medplum Claim so the callback
+    // handler can find it via identifier search rather than scanning all project claims.
+    try {
+      const latestClaim = await input.ctx.systemRepo.readResource<Claim>('Claim', input.claim.id);
+      const others = (latestClaim.identifier ?? []).filter((id) => id.system !== KenyaShaBundleIdIdentifierSystem);
+      await input.ctx.systemRepo.updateResource<Claim>({
+        ...latestClaim,
+        identifier: [...others, { system: KenyaShaBundleIdIdentifierSystem, value: bundleId }],
+      });
+    } catch {
+      // Non-fatal: callback handler will fall back to extension-based scan
+    }
+
     const workflowBotResult = await triggerKenyaClaimWorkflowBot(input.ctx, input.claim, {
       status: 'submitted',
       correlationId: input.correlationId,

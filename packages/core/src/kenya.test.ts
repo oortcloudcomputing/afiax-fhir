@@ -38,6 +38,12 @@ import {
   setKenyaFacilityAuthorityIdentifier,
   setKenyaPractitionerAuthorityIdentifier,
   setKenyaPractitionerLookupIdentifier,
+  getKenyaIdsrConditionCode,
+  isKenyaIdsrImmediateNotificationCode,
+  isKenyaKhisWeeklyNotificationCode,
+  KenyaIdsrCodeSystemIcd11,
+  KenyaIdsrCodeSystemIcd10,
+  KenyaIdsrConditionDisplay,
 } from './kenya';
 
 describe('Kenya facility verification helpers', () => {
@@ -587,5 +593,60 @@ describe('Kenya facility verification helpers', () => {
     expect(clearKenyaNationalClaimStatusSnapshot(claim).extension).toEqual([
       { url: 'https://example.com/other', valueString: 'keep-me' },
     ]);
+  });
+});
+
+describe('Kenya IDSR/KHIS dual ICD-11/ICD-10 coding', () => {
+  test('recognises ICD-11 MMS notifiable codes (preferred standard)', () => {
+    expect(isKenyaIdsrImmediateNotificationCode('1A00')).toBe(true); // Cholera
+    expect(isKenyaIdsrImmediateNotificationCode('1E71')).toBe(true); // Mpox
+    expect(isKenyaIdsrImmediateNotificationCode('RA01.0')).toBe(true); // COVID-19
+  });
+
+  test('still recognises legacy ICD-10 notifiable codes (transition support)', () => {
+    expect(isKenyaIdsrImmediateNotificationCode('A00')).toBe(true); // Cholera
+    expect(isKenyaIdsrImmediateNotificationCode('B04')).toBe(true); // Mpox
+    expect(isKenyaIdsrImmediateNotificationCode('U07.1')).toBe(true); // COVID-19
+  });
+
+  test('rejects non-notifiable codes in either system', () => {
+    expect(isKenyaIdsrImmediateNotificationCode('CA23')).toBe(false); // Asthma (ICD-11)
+    expect(isKenyaIdsrImmediateNotificationCode('J45')).toBe(false); // Asthma (ICD-10)
+  });
+
+  test('matches Condition coded with ICD-11 system + ICD-11 code', () => {
+    expect(getKenyaIdsrConditionCode({ code: { coding: [{ system: KenyaIdsrCodeSystemIcd11, code: '1A00' }] } })).toBe(
+      '1A00'
+    );
+  });
+
+  test('matches Condition coded with ICD-10 system + ICD-10 code', () => {
+    expect(getKenyaIdsrConditionCode({ code: { coding: [{ system: KenyaIdsrCodeSystemIcd10, code: 'A00' }] } })).toBe(
+      'A00'
+    );
+  });
+
+  test('does not match ICD-10 code falsely tagged with the ICD-11 system', () => {
+    // A00 is not a valid ICD-11 MMS code, so a coding that claims ICD-11 but
+    // carries the ICD-10 value must NOT match.
+    expect(
+      getKenyaIdsrConditionCode({ code: { coding: [{ system: KenyaIdsrCodeSystemIcd11, code: 'A00' }] } })
+    ).toBeUndefined();
+  });
+
+  test('matches codings with no system against both code sets (legacy data)', () => {
+    expect(getKenyaIdsrConditionCode({ code: { coding: [{ code: '1A00' }] } })).toBe('1A00');
+    expect(getKenyaIdsrConditionCode({ code: { coding: [{ code: 'A00' }] } })).toBe('A00');
+  });
+
+  test('display map resolves both ICD-11 and ICD-10 keys to the same label', () => {
+    expect(KenyaIdsrConditionDisplay['1A00']).toBe('Cholera');
+    expect(KenyaIdsrConditionDisplay['A00']).toBe('Cholera');
+  });
+
+  test('KHIS weekly recognises ICD-11 and ICD-10 codes including weekly-only entries', () => {
+    expect(isKenyaKhisWeeklyNotificationCode('1F40.0')).toBe(true); // Malaria P. falciparum (ICD-11)
+    expect(isKenyaKhisWeeklyNotificationCode('B50')).toBe(true); // Malaria P. falciparum (ICD-10)
+    expect(isKenyaKhisWeeklyNotificationCode('1A00')).toBe(true); // Cholera (immediate superset, ICD-11)
   });
 });

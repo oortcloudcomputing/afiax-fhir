@@ -53,6 +53,9 @@ import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
+import { handleKenyaShaCallback } from './country-pack/kenya/sha-callback-handler';
+import { handleKenyaMpesaCallback } from './country-pack/kenya/mpesa-callback-handler';
+import { handleKenyaAfiaxPayCallback } from './country-pack/kenya/afiax-pay-callback-handler';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
@@ -218,6 +221,40 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
+
+  // Public SHA callback endpoint — no auth required; signature verified inside the handler
+  apiRouter.post('/kenya/sha-callback/:projectId', async (req, res) => {
+    try {
+      const result = await handleKenyaShaCallback(
+        req.params.projectId,
+        req.body,
+        req.headers.authorization
+      );
+      res.status(result.ok ? 200 : 400).json(result);
+    } catch (err) {
+      res.status(500).json({ ok: false, message: String(err) });
+    }
+  });
+
+  // M-Pesa Daraja STK push callback — no auth required; payment validated inside the handler
+  apiRouter.post('/kenya/mpesa-callback/:projectId', async (req, res) => {
+    try {
+      const result = await handleKenyaMpesaCallback(req.params.projectId, req.body);
+      res.status(result.ok ? 200 : 400).json(result);
+    } catch (err) {
+      res.status(500).json({ ok: false, message: String(err) });
+    }
+  });
+
+  // Afiax Pay callback — no auth required; payment validated inside the handler
+  apiRouter.post('/kenya/afiax-pay-callback/:projectId', async (req, res) => {
+    try {
+      const result = await handleKenyaAfiaxPayCallback(req.params.projectId, req.body);
+      res.status(result.ok ? 200 : 400).json(result);
+    } catch (err) {
+      res.status(500).json({ ok: false, message: String(err) });
+    }
+  });
 
   if (config.mcpEnabled) {
     apiRouter.use('/mcp', mcpRouter);

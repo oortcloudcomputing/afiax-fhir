@@ -48,6 +48,7 @@ import type {
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
+import { parseStoredResource } from './encryption';
 import { clamp } from './operations/utils/parameters';
 import type { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -209,7 +210,7 @@ export async function searchByReferenceImpl<T extends Resource>(
     results[ref] = [];
   }
   for (const row of rows) {
-    const resource = JSON.parse(row.content) as WithId<T>;
+    const resource = await parseStoredResource<WithId<T>>(row.content);
     removeResourceFields(resource, repo, searchRequest);
     results[row.ref].push(resource);
   }
@@ -344,7 +345,7 @@ async function getSearchEntries<T extends Resource>(
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
     if (row.content) {
-      resources.push(JSON.parse(row.content));
+      resources.push(await parseStoredResource<WithId<T>>(row.content));
     } else {
       // Handle missing content
       // In the original implementation of deleted resources, the content was not stored in the database.

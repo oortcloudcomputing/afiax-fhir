@@ -24,17 +24,23 @@ import { getConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
-import { closeDatabase, initDatabase } from './database';
+import { handleKenyaAfiaxPayCallback } from './country-pack/kenya/afiax-pay-callback-handler';
+import { handleKenyaMpesaCallback } from './country-pack/kenya/mpesa-callback-handler';
+import { handleKenyaShaCallback } from './country-pack/kenya/sha-callback-handler';
+import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
+import { initFieldEncryption, shutdownFieldEncryption } from './fhir/encryption';
 import { sendOutcome } from './fhir/outcomes';
+import { initRowLevelSecurity, resetRowLevelSecurity } from './fhir/rls';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
+import { initKafkaProducer, shutdownKafkaProducer } from './kafka';
 import { keyValueRouter } from './keyvalue/routes';
 import { getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
@@ -45,7 +51,6 @@ import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
-import { initKafkaProducer, shutdownKafkaProducer } from './kafka';
 import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
@@ -53,9 +58,6 @@ import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
-import { handleKenyaShaCallback } from './country-pack/kenya/sha-callback-handler';
-import { handleKenyaMpesaCallback } from './country-pack/kenya/mpesa-callback-handler';
-import { handleKenyaAfiaxPayCallback } from './country-pack/kenya/afiax-pay-callback-handler';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
@@ -225,11 +227,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   // Public SHA callback endpoint — no auth required; signature verified inside the handler
   apiRouter.post('/kenya/sha-callback/:projectId', async (req, res) => {
     try {
-      const result = await handleKenyaShaCallback(
-        req.params.projectId,
-        req.body,
-        req.headers.authorization
-      );
+      const result = await handleKenyaShaCallback(req.params.projectId, req.body, req.headers.authorization);
       res.status(result.ok ? 200 : 400).json(result);
     } catch (err) {
       res.status(500).json({ ok: false, message: String(err) });
@@ -271,9 +269,15 @@ export async function initAppServices(config: MedplumServerConfig): Promise<void
   if (config.kafka) {
     initKafkaProducer(config.kafka);
   }
+  if (config.fieldEncryption?.enabled) {
+    await initFieldEncryption(config.fieldEncryption);
+  }
   initRedis(config);
   await initDatabase(config);
   await seedDatabase(config);
+  if (config.rowLevelSecurity) {
+    await initRowLevelSecurity(getDatabasePool(DatabaseMode.WRITER));
+  }
   await initKeys(config);
   initBinaryStorage(config.binaryStorage);
   initWorkers(config);
@@ -299,6 +303,8 @@ export async function shutdownApp(): Promise<void> {
   await closeDatabase();
   await closeRedis();
   await shutdownKafkaProducer();
+  await shutdownFieldEncryption();
+  resetRowLevelSecurity();
   closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it

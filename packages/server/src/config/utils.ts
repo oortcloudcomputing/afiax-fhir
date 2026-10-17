@@ -167,6 +167,7 @@ const booleanKeys = new Set([
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
+  'rowLevelSecurity',
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
@@ -190,6 +191,8 @@ const objectKeys = new Set([
   'workers',
   'workers.enabled',
   'workers.bullmq',
+  'kafka',
+  'fieldEncryption',
 ]);
 
 export function isObjectConfig(key: string): boolean {

@@ -24,6 +24,7 @@ import type { FunctionComponent, JSX } from 'react';
 import { Suspense } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
+import { useIdleSignOut } from './useIdleSignOut';
 
 import './App.css';
 
@@ -32,6 +33,7 @@ export function App(): JSX.Element {
   const config = medplum.getUserConfiguration();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  useIdleSignOut();
 
   if (medplum.isLoading()) {
     return <Loading />;

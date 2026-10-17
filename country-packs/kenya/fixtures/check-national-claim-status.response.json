@@ -1,0 +1,18 @@
+{
+  "status": "adjudicated",
+  "correlationId": "00000000-0000-0000-0000-000000000004",
+  "countryPack": "kenya",
+  "message": "Kenya SHA claim status refreshed. SHA claim state: approved.",
+  "nextState": "ready-for-financial-reconciliation",
+  "shaClaimsEnvironment": "production",
+  "statusEndpoint": "https://fhir.sha.go.ke/v1/shr-med/claim-status?claim_id=aaaabbbb-0000-0000-0000-000000000099",
+  "responseStatusCode": 200,
+  "claimId": "aaaabbbb-0000-0000-0000-000000000099",
+  "claimState": "approved",
+  "task": {
+    "reference": "Task/example-claim-status-task"
+  },
+  "claimResponse": {
+    "reference": "ClaimResponse/example-claim-response"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "status": "submitted",
+  "correlationId": "00000000-0000-0000-0000-000000000007",
+  "countryPack": "kenya",
+  "message": "Kenya SHA pre-authorization bundle submitted successfully.",
+  "nextState": "awaiting-sha-preauth-decision",
+  "shaClaimsEnvironment": "production",
+  "submissionEndpoint": "https://fhir.sha.go.ke/v1/shr-med/bundle",
+  "statusTrackingEndpoint": "https://fhir.sha.go.ke/v1/shr-med/claim-status?claim_id=ccccdddd-0000-0000-0000-000000000099",
+  "responseStatusCode": 200,
+  "bundleId": "ccccdddd-0000-0000-0000-000000000099",
+  "bundleEntryCount": 5,
+  "task": {
+    "reference": "Task/example-preauth-task"
+  }
+}

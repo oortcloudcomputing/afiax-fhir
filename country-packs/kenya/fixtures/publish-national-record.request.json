@@ -1,0 +1,7 @@
+{
+  "patient": {
+    "reference": "Patient/example-patient"
+  },
+  "includeActiveConditions": true,
+  "includeRecentEncounters": true
+}

@@ -1,0 +1,15 @@
+{
+  "status": "active",
+  "correlationId": "00000000-0000-0000-0000-000000000008",
+  "patientId": "example-patient",
+  "reason": "Emergency admission — patient unconscious, no next of kin present",
+  "declaredAt": "2026-06-16T08:30:00.000Z",
+  "expiresAt": "2026-06-16T20:30:00.000Z",
+  "message": "Break-glass emergency access declared. Access is logged and will expire in 12 hours.",
+  "flag": {
+    "reference": "Flag/example-break-glass-flag"
+  },
+  "task": {
+    "reference": "Task/example-break-glass-task"
+  }
+}

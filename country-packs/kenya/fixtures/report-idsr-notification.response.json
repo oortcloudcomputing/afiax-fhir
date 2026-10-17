@@ -1,0 +1,11 @@
+{
+  "status": "pending",
+  "correlationId": "00000000-0000-0000-0000-000000000006",
+  "conditionCode": "A90",
+  "conditionDisplay": "Dengue fever",
+  "message": "IDSR immediate notification task created for Dengue fever (A90). Notification must reach the County Director of Health within 24 hours (Kenya Health Act 2017 s.57).",
+  "notifiedAt": "2026-06-16T08:30:00.000Z",
+  "task": {
+    "reference": "Task/example-idsr-task"
+  }
+}

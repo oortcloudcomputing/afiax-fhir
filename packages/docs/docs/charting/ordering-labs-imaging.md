@@ -49,4 +49,4 @@ ONC (a)(2),(a)(3) certification is under development.
 
 :::
 
-Certification for (a)(2),(a)(3) is in progress, follow [Github issue](https://github.com/medplum/medplum/issues/3003) for updates.
+Certification for (a)(2),(a)(3) is in progress, follow [Github issue](https://github.com/oortcloudcomputing/afiax-fhir/issues/3003) for updates.

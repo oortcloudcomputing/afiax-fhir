@@ -45,7 +45,7 @@ When you write or change a page:
 
 - **Write for a beginner.** Say what the reader will end up with, list the prerequisites, number the steps, give commands they can copy, show what success looks like, and add a short troubleshooting section.
 - **Use Afiax in prose.** Keep `@medplum/*`, `MedplumClient`, `MEDPLUM_*` and other code identifiers exactly as they are. See [Platform foundation](/docs/architecture/platform-foundation) for the full naming rule.
-- **Never copy Medplum Inc.'s company claims** (certifications, customers, usage figures) into Afiax pages.
+- **Never copy Afiax Inc.'s company claims** (certifications, customers, usage figures) into Afiax pages.
 
 ## Fixing a bug or building a feature
 

@@ -6,11 +6,11 @@ sidebar_position: 10
 
 Afiax provides a suite of digital healthcare services such as authentication, access controls, user management, FHIR server, automation, and more.
 
-Afiax's hosted offering runs on AWS, so naturally the AWS configuration is most full-featured and most battle-tested. This document describes which features are only available on AWS, and possible alternatives.
+The upstream open-source project's own hosted service runs on AWS, so its AWS configuration is the most complete. This page lists the features that are only available on AWS, and the alternatives. Afiax production does not run on AWS: it runs on bare metal in two Kenyan data centres (see [Self-hosting](/docs/self-hosting)), where these features are provided by in-country services such as MinIO for object storage.
 
 :::info
 
-Are you interested in a non-AWS environment? Please [contact us](mailto:info@afiax.africa) to learn about partnership or sponsorship opportunities. As the Medplum project grows, we intend to target as many hosting options as possible.
+Questions about running Afiax outside AWS? Please [contact us](mailto:info@afiax.africa).
 
 :::
 

@@ -62,4 +62,4 @@ Track bot performance and troubleshoot issues in production environments.
 ## Reference
 
 - [Demo Bots Repository](https://github.com/medplum/medplum-demo-bots) on Github
-- [Bot Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Abots) on Github
+- [Bot Features and Fixes](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Abots) on Github

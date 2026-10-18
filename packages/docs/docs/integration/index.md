@@ -315,10 +315,10 @@ Complex integrations are built by composing [bots](/docs/bots/), [subscriptions]
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers
-- [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
-- [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
+- [Integration Features and Fixes](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
+- [Audit and Logging Features](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
 - [Bot Pull Requests](https://github.com/oortcloudcomputing/afiax-fhir/issues?q=label%3Abots) can be good reference material for how integrations work.
-- [Auth Pull Requests](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.
+- [Auth Pull Requests](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.
 
 ## Related
 

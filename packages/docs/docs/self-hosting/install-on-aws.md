@@ -265,7 +265,7 @@ This is due to cross-region circular dependencies:
 2. A CloudFront distribution in `us-east-1`, because CloudFront distributions must always be in `us-east-1`
 3. Updated S3 bucket policy that references the CloudFront distribution
 
-See this [Github issue](https://github.com/medplum/medplum/issues/2901) for more details.
+See this [Github issue](https://github.com/oortcloudcomputing/afiax-fhir/issues/2901) for more details.
 
 :::
 

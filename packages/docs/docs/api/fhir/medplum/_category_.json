@@ -1,10 +1,10 @@
 {
-  "label": "Medplum",
+  "label": "Afiax",
   "position": 3,
   "link": {
     "type": "generated-index",
-    "title": "Medplum Resources",
-    "description": "Medplum Resource Reference",
+    "title": "Afiax Resources",
+    "description": "Afiax platform resource reference (Project, User, Bot and others)",
     "slug": "/api/fhir/medplum"
   }
 }

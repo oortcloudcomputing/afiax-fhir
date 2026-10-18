@@ -119,7 +119,7 @@ When migrating data to FHIR, it's crucial to maintain relationships between reso
 
 During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Afiax will assign to a resource once it's created. You may have noticed the reference to `Patient/????` in the previous example.
 
-Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Medplum-generated IDs.
+Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Afiax-generated IDs.
 
 #### Example
 Let's amend the previous example to use a conditional reference to link our [`Condition`][condition] to the [`Patient`][patient].

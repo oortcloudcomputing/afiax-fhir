@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Clinic Favorite Medications
 
-The Medplum-DoseSpot integration allows you to configure **clinic favorite medications** which can significantly **reduce the number of clicks required for clinicians to prescribe common medications**. This allows your organization to:
+The Afiax-DoseSpot integration allows you to configure **clinic favorite medications** which can significantly **reduce the number of clicks required for clinicians to prescribe common medications**. This allows your organization to:
 
 - Standardize prescribing practices across your clinic to avoid mistakes and excessive clicks
 - Reduce prescription time for clinicians to prescribe frequently prescribed medications

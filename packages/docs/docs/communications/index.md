@@ -23,4 +23,4 @@ Check out our [Contact Center Demo](https://github.com/medplum/medplum-chat-demo
 
 - [Contact Center Demo](https://github.com/medplum/medplum-chat-demo)
 - [Contact Center Video](https://youtu.be/ZrMKhl6-Co0) on Youtube
-- [Communications Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acommunications) on Github includes sample data.
+- [Communications Features and Fixes](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Acommunications) on Github includes sample data.

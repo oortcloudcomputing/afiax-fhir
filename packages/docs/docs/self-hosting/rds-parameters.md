@@ -13,9 +13,9 @@ the special procedures below to avoid any downtime.
 
 This is a complex, multi-step process, and requires high proficiency with AWS, Postgres, and command line tools.
 
-Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
+Afiax strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
+If you have any questions, please [contact us](mailto:info@afiax.africa).
 
 :::
 
@@ -57,7 +57,7 @@ to control its behavior:
 
 ## Prerequisites
 
-This document assumes that you have already created an RDS database instance. If not, see the [Install on AWS](/docs/self-hosting/install-on-aws) documentation. The Medplum server defaults to the following basic configuration:
+This document assumes that you have already created an RDS database instance. If not, see the [Install on AWS](/docs/self-hosting/install-on-aws) documentation. The Afiax server defaults to the following basic configuration:
 
 ```js
 {
@@ -71,7 +71,7 @@ This document assumes that you have already created an RDS database instance. If
 ## Step 1: Confirm multiple database instances
 
 To perform a zero-downtime update, your cluster must have more than one database instance. Check the `rdsInstances`
-value in your Medplum CDK config file: if the value is missing or `1`, then you first need to increase the value to `2`
+value in your Afiax CDK config file: if the value is missing or `1`, then you first need to increase the value to `2`
 or more.
 
 Then run CDK `diff` and `deploy` to apply the change.
@@ -80,7 +80,7 @@ See [Upgrade AWS Infrastructure](/docs/self-hosting/install-on-aws#upgrade-aws-i
 
 ## Step 2: Enable RDS Proxy
 
-[RDS Proxy][rds-proxy] is a service that sits between the Medplum server and database cluster, providing additional
+[RDS Proxy][rds-proxy] is a service that sits between the Afiax server and database cluster, providing additional
 resilience and reliability when transient connection errors occur. This is critical to ensure zero downtime when
 database instances are restarting, since even in the best case there may be a few seconds of intermittent connectivity
 while the database instances fail over and restart.

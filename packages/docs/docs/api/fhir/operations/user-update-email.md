@@ -25,7 +25,7 @@ This operation requires **Project Admin** privileges
 
 :::caution User vs Profile Email
 
-In Medplum, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
+In Afiax, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
 
 :::
 
@@ -66,7 +66,7 @@ await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
 ```
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/User/example-user-id/$update-email' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/User/example-user-id/$update-email' \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/fhir+json" \
   -d '{

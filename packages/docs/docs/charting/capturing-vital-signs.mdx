@@ -189,10 +189,10 @@ Use `valueSampledData` when you have:
 
 :::warning Large-Scale Wearables Data
 
-**Medplum is not designed for large-scale wearables data ingestion.** While `valueSampledData` is suitable for moderate-frequency timeseries data (e.g., hourly or daily summaries), applications that need to store high-frequency data from many devices simultaneously (e.g., second-by-second readings from thousands of wearables) should consider using a dedicated data warehouse solution.
+**Afiax is not designed for large-scale wearables data ingestion.** While `valueSampledData` is suitable for moderate-frequency timeseries data (e.g., hourly or daily summaries), applications that need to store high-frequency data from many devices simultaneously (e.g., second-by-second readings from thousands of wearables) should consider using a dedicated data warehouse solution.
 
 For large-scale wearables data:
-- Use Medplum for clinical summaries and aggregated observations
+- Use Afiax for clinical summaries and aggregated observations
 - Stream raw high-frequency data to a time-series database or data warehouse
 
 :::
@@ -249,7 +249,7 @@ The `SampledData` datatype includes:
 
 ### Helper Functions
 
-Medplum provides helper functions in `@medplum/core` for working with `valueSampledData`:
+Afiax provides helper functions in `@medplum/core` for working with `valueSampledData`:
 
 #### `expandSampledData()`
 

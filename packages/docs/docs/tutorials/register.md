@@ -4,19 +4,19 @@ sidebar_position: 2
 
 # Register an Account
 
-This guide explains how to register for a new Medplum account and create your first Medplum project.
+This guide explains how to register for a new Afiax account and create your first Afiax project.
 
-## Register for a Medplum account
+## Register for an Afiax account
 
-- Open the Medplum register page in your browser: https://app.medplum.com/register
+- Open the Afiax register page in your browser: https://app.afiax.africa/register
 - Fill in your account details and click "Create account"
-- Fill in the name of your new Medplum Project and click "Create Project"
+- Fill in the name of your new Afiax Project and click "Create Project"
 
-Congrats, you now have a Medplum account!
+Congrats, you now have an Afiax account!
 
-## Medplum projects
+## Afiax projects
 
-When you signed up for an account, you created a new [Medplum Project](/docs/api/fhir/medplum/project).
+When you signed up for an account, you created a new [Afiax Project](/docs/api/fhir/medplum/project).
 
 A project is a collection of [FHIR resources](/docs/fhir-basics#storing-data-resources) that is logically separated from other resources on the server.
 
@@ -24,13 +24,13 @@ Each resource can only contain [references](/docs/fhir-basics#linking-data-refer
 
 Each project is administered separately, and can have its own set of users, permissions, client applications, and bots. A common usage pattern is to set up separate staging and production projects for an application. See the [Bots in Production](/docs/bots/bots-in-production#deploying-to-staging-vs-production) guide for more details.
 
-You can create a new project for your account by visiting [https://app.medplum.com/register](https://app.medplum.com/register)
+You can create a new project for your account by visiting [https://app.afiax.africa/register](https://app.afiax.africa/register)
 
 ## Explore your new project
 
 Let's explore your new project.
 
-First, you can find your [Practitioner](/docs/api/fhir/resources/practitioner) resource by clicking on the top-right icon, and choosing "Account Settings". This takes you to the [Practitioner resource page](https://app.medplum.com/Practitioner), where you can fill in more details such as contact info, qualifications, communication preferences, and profile picture.
+First, you can find your [Practitioner](/docs/api/fhir/resources/practitioner) resource by clicking on the top-right icon, and choosing "Account Settings". This takes you to the [Practitioner resource page](https://app.afiax.africa/Practitioner), where you can fill in more details such as contact info, qualifications, communication preferences, and profile picture.
 
 Second, you can find your project details by clicking on the top-left icon, and choosing "Project". This takes you to the project administration page, where you can manage users and invite new users to your project.
 
@@ -47,7 +47,7 @@ You can invite additional team members to your project.
 
 The user will then receive an email inviting them to sign up for this project.
 
-If the user is new to Medplum, a new user account will be created. Otherwise, the user's existing account will be added as a member of the current project.
+If the user is new to Afiax, a new user account will be created. Otherwise, the user's existing account will be added as a member of the current project.
 
 :::tip User Profiles
 

@@ -27,7 +27,7 @@ Authorization: Bearer <ACCESS_TOKEN>
 #### Sample request
 
 ```
-GET https://api.medplum.com/oauth2/userinfo
+GET https://fhir.afiax.africa/oauth2/userinfo
     Authorization: Bearer <access_token>
 ```
 

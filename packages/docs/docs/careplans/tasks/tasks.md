@@ -20,7 +20,7 @@ Workflow management is an essential part of healthcare, and healthcare operation
 - **Compliant Fifty-State Workflow:** Make sure we can serve patients across a wide geographic area robustly and efficiently
 - **Automation:** Eliminate routine tasks to avoid clinician burnout. See our [Bots documentation](/docs/bots) for more on automating workflows.
 
-The Medplum [Clinical Task Management Demo](https://github.com/medplum/medplum-task-demo) provides an in-depth reference implementation of a task management system that addresses these concerns.
+The Afiax [Clinical Task Management Demo](https://github.com/medplum/medplum-task-demo) provides an in-depth reference implementation of a task management system that addresses these concerns.
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/xQH27B8sP9o?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen/>
@@ -32,7 +32,7 @@ While the majority of FHIR resources represent clinical data that is _operated o
 
 For example, a [`Task`](/docs/api/fhir/resources/task) might represent the task of having a practitioner complete a [PHQ-9 questionnaire](https://www.apa.org/depression-guideline/patient-health-questionnaire.pdf) for a patient as part of their onboarding.
 
-A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status. For real-time task updates, consider using [Subscriptions](/docs/subscriptions).
+A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Afiax Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status. For real-time task updates, consider using [Subscriptions](/docs/subscriptions).
 
 ## Task type
 
@@ -85,7 +85,7 @@ Designing status codes for tasks varies from implementation to implementation, a
 | [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than `urgent`.          |
 | [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority (i.e., an emergency). |
 
-While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
+While these terms might feel awkward in a digital health setting, Afiax recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
 ## Task assignment
 
@@ -122,7 +122,7 @@ A common pattern in telehealth practices is the assignment of tasks to all pract
 
 It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
 
-In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
+In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Afiax recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
 
 The table below contains SNOMED codes for common roles used in digital healthcare. Use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full&conceptId1=223366009&edition=MAIN/2023-06-30&release=&languages=en) to search for additional codes.
 
@@ -196,7 +196,7 @@ The most common use for this field is to record comments from the task assignee 
 
 :::caution
 
-While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
+While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Afiax recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
 
 :::
 
@@ -212,7 +212,7 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 ## See Also
 
 - The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
-- [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
-- [Medplum Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
-- [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
+- [Afiax Task Demo](https://github.com/medplum/medplum-task-demo)
+- [Afiax Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
+- [Blog Post: Task Management Apps](https://www.medplum.com/blog/task-management-apps#dashboards)
 - [Charting Data Model](/docs/charting#encounter-charting)

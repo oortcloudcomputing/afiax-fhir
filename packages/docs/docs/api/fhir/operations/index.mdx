@@ -145,7 +145,7 @@ match the `OperationDefinition`.
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$validate-code' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -173,13 +173,13 @@ In some cases, it may be simpler to invoke an operation with a GET request and e
 string of the request URL. For example, the following operation requests are equivalent:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$validate-code' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d '{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"http://hl7.org/fhir/ValueSet/condition-severity"},{"name":"system","valueUri":"http://snomed.info/sct"},{"name":"code","valueCode":"255604002"}]}'
 
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$validate-code' \
   --get \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d 'url=http://hl7.org/fhir/ValueSet/condition-severity' \
@@ -230,7 +230,7 @@ For example, if the specified `ValueSet` could not be found by URL:
 
 ## Operation Documentation
 
-Details about the FHIR Operations supported by Medplum server are organized below by category. For information about other available
+Details about the FHIR Operations supported by Afiax server are organized below by category. For information about other available
 operations, see the [complete list](https://www.hl7.org/fhir/R4/operationslist.html) from the FHIR specification.
 
 ### Terminology Operations
@@ -256,7 +256,7 @@ Operations specific to Patient resources.
 - [Patient/$summary](/docs/api/fhir/operations/patient-summary) - Generate International Patient Summary (IPS)
 
 ### Bot Operations
-Deploy, execute, and extend Medplum Bots.
+Deploy, execute, and extend Afiax Bots.
 - [Bot/$deploy](/docs/api/fhir/operations/bot-deploy) - Deploy bot code
 - [Bot/$execute](/docs/api/fhir/operations/bot-execute) - Execute a bot
 - [Custom Bot Operations](/docs/api/fhir/operations/custom-operations) - Create custom FHIR operations with Bots
@@ -286,7 +286,7 @@ Operations for measures, clinical plans, charges, and AI assistance.
 ### Project & System Administration
 Project management and system operations.
 - [AsyncJob/$cancel](/docs/api/fhir/operations/asyncjob-cancel) - Cancel an asynchronous job
-- [Project/$clone](/docs/api/fhir/operations/project-clone) - Clone a Medplum project
+- [Project/$clone](/docs/api/fhir/operations/project-clone) - Clone an Afiax project
 - [Project/$init](/docs/api/fhir/operations/project-init) - Initialize a new project
 - [$expunge](/docs/api/fhir/operations/expunge) - Permanently delete resources
 - [$resend](/docs/api/fhir/operations/resend) - Resend a subscription notification

@@ -39,7 +39,7 @@ The Client ID. Must be a client that you already registered.
 
 #### `scope` (Optional)
 
-Can be a combination of any custom scopes associated with an app client. Any scope that you request must be activated for the app client, or Medplum will ignore it. If the client doesn't request any scopes, the authentication server uses all custom scopes associated with the client.
+Can be a combination of any custom scopes associated with an app client. Any scope that you request must be activated for the app client, or Afiax will ignore it. If the client doesn't request any scopes, the authentication server uses all custom scopes associated with the client.
 Only used if the `grant_type` is `client_credentials`.
 
 #### `redirect_uri` (Conditional)
@@ -68,7 +68,7 @@ Required if `grant_type` is `authorization_code` and the authorization code was 
 #### Sample Request
 
 ```
-POST https://api.medplum.com/oauth2/token&
+POST https://fhir.afiax.africa/oauth2/token&
     Content-Type='application/x-www-form-urlencoded'&
     Authorization=Basic aSdxd892iujendek328uedj
 
@@ -101,7 +101,7 @@ The token endpoint returns `refresh_token` only when the `grant_type` is `author
 #### Sample Request
 
 ```
-POST https://api.medplum.com/oauth2/token
+POST https://fhir.afiax.africa/oauth2/token
     Content-Type='application/x-www-form-urlencoded'&
     Authorization=Basic aSdxd892iujendek328uedj
 
@@ -127,7 +127,7 @@ Content-Type: application/json
 #### Sample Request
 
 ```
-POST https://api.medplum.com/oauth2/token
+POST https://fhir.afiax.africa/oauth2/token
     Content-Type='application/x-www-form-urlencoded'&
     Authorization=Basic aSdxd892iujendek328uedj
 
@@ -161,7 +161,7 @@ The token endpoint returns `refresh_token` only when the `grant_type` is `author
 #### Sample Request
 
 ```
-POST https://api.medplum.com/oauth2/token >
+POST https://fhir.afiax.africa/oauth2/token >
     Content-Type='application/x-www-form-urlencoded'&
     Authorization=Basic aSdxd892iujendek328uedj
 

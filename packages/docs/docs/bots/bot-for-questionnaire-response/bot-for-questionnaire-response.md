@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Bot for QuestionnaireResponse
 
-Bots are an advanced Medplum feature that enable complex workflows.
+Bots are an advanced Afiax feature that enable complex workflows.
 
 One of the most powerful uses is to combine Bots with [Questionnaires](/docs/api/fhir/resources/questionnaire)
 
@@ -22,7 +22,7 @@ Consider some of these Bot and Questionnaire use cases:
 
 These capabilities would normally require writing custom code, HTTP servers, webhooks, and managing credentials for a separate service.
 
-By using Bots, the entire logic is self contained and managed in one place. Like all FHIR resources in Medplum, the Bot resource is versioned with full history tracking, so you can see exactly what changed over time.
+By using Bots, the entire logic is self contained and managed in one place. Like all FHIR resources in Afiax, the Bot resource is versioned with full history tracking, so you can see exactly what changed over time.
 
 ## Patient registration example
 
@@ -32,10 +32,10 @@ Let's create a simple example Patient Registration form to see how this works. W
 
 import questionnaireSidebarURL from './questionnaire-sidebar.png'
 
-Our first step will be to create the questionnaire in the Medplum App
+Our first step will be to create the questionnaire in the Afiax App
 
-1. Log into the [Medplum App](https://app.medplum.com)
-2. <span>Click "Questionnaire" on the left sidebar or navigate to <a href="https://app.medplum.com/Questionnaire">app.medplum.com/Questionnaire</a> <img alt="Questionnaire Sidebar" src={questionnaireSidebarURL} style={{maxHeight:'250px', width:'auto'}} alt="Questionnaire sidebar screenshot" /></span>
+1. Log into the [Afiax App](https://app.afiax.africa)
+2. <span>Click "Questionnaire" on the left sidebar or navigate to <a href="https://app.afiax.africa/Questionnaire">app.afiax.africa/Questionnaire</a> <img alt="Questionnaire Sidebar" src={questionnaireSidebarURL} style={{maxHeight:'250px', width:'auto'}} alt="Questionnaire sidebar screenshot" /></span>
 3. Click "new"
 4. This brings you to the default Resource editor. However, we are going to use an alternate method to author the Questionnaire. For now:
    1. Enter a "Title" for your new Questionnaire
@@ -52,7 +52,7 @@ Click the "Add Item" link at the bottom of the page to add each question. For ea
 
 - **Type**: Select the question type from the dropdown
 - **Text:** The displayed text for the question
-- **Link Id**: The machine-readable identifier for the question. While Medplum supplies a default `linkId`, **_we highly recommend that users supply their own ids_** that are semantically relevant in their particular context.
+- **Link Id**: The machine-readable identifier for the question. While Afiax supplies a default `linkId`, **_we highly recommend that users supply their own ids_** that are semantically relevant in their particular context.
 
 For this sample patient registration form, we will create five questions:
 
@@ -174,7 +174,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The last step is to have your Bot listen to your Questionnaire responses.
 
-1. Go to you the your Questionnaire's page in the [Medplum App](https://app.medplum.com/Questionnaire)
+1. Go to you the your Questionnaire's page in the [Afiax App](https://app.afiax.africa/Questionnaire)
 2. Click on the the "Bots" tab
 3. Start typing the name of your Bot.
 4. When your Bot appears in the type ahead, select it and click "Connect"
@@ -185,7 +185,7 @@ import connectBotUrl from './connect-bot.png';
 
 :::caution Ordering of Subscription Events
 
-Because of the variable timing and routes of http traffic, the Medplum server cannot guarantee the order in which [`Subscription`](/docs/api/fhir/resources/subscription) webhooks are received by the client.
+Because of the variable timing and routes of http traffic, the Afiax server cannot guarantee the order in which [`Subscription`](/docs/api/fhir/resources/subscription) webhooks are received by the client.
 
 :::
 
@@ -199,4 +199,4 @@ Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new
 
 ## Conclusion
 
-The Bots + Questionnaire patten is a powerful way to use Medplum to automate your medical workflows. While this was a very simple example, you can check out the [Medplum Demo Bots repo](https://github.com/medplum/medplum-demo-bots/) for more examples on how to use Bots.
+The Bots + Questionnaire patten is a powerful way to use Afiax to automate your medical workflows. While this was a very simple example, you can check out the [Afiax Demo Bots repo](https://github.com/medplum/medplum-demo-bots/) for more examples on how to use Bots.

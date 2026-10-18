@@ -4,9 +4,9 @@ sidebar_position: 50
 
 # Server Config
 
-When running Medplum server on a local developer machine, Medplum server typically loads config settings from a JSON config file. By default, it loads config settings from `medplum.config.json`.
+When running Afiax server on a local developer machine, Afiax server typically loads config settings from a JSON config file. By default, it loads config settings from `medplum.config.json`.
 
-When running in AWS, Medplum server loads config settings from AWS Parameter Store, a feature of AWS Systems Manager (SSM).
+When running in AWS, Afiax server loads config settings from AWS Parameter Store, a feature of AWS Systems Manager (SSM).
 
 Some configuration settings are created automatically by the CDK deployment (for example, database and redis connection details). Other settings must be created manually before the first deploy.
 
@@ -18,7 +18,7 @@ When creating a parameter in AWS Parameter Store, you will be prompted for the p
 
 For example, if your environment name is "prod", then the "baseUrl" parameter name is `/medplum/prod/baseUrl`.
 
-You will also be prompted for a parameter "Type". The default option is "String". Medplum supports both "String" and "SecureString". "SecureString" is recommended for security and compliance purposes.
+You will also be prompted for a parameter "Type". The default option is "String". Afiax supports both "String" and "SecureString". "SecureString" is recommended for security and compliance purposes.
 
 Optionally override the trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla.
 
@@ -105,31 +105,31 @@ Optional comma separated list of allowed origins for [Cross-Origin Resource Shar
 
 ### issuer
 
-The JWK issuer. By default, Medplum server uses built in OAuth, so `issuer` should be the same as `baseUrl`.
+The JWK issuer. By default, Afiax server uses built in OAuth, so `issuer` should be the same as `baseUrl`.
 
 **Default:** `baseUrl`
 
 ### jwksUrl
 
-The JWKS URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `.well-known/jwks.json`.
+The JWKS URL. By default, Afiax server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `.well-known/jwks.json`.
 
 **Default:** `baseUrl` + `.well-known/jwks.json`
 
 ### authorizeUrl
 
-The OAuth authorize URL. By default, Medplum server uses built in OAuth, so `authorizeUrl` should be `baseUrl` + `oauth2/authorize`.
+The OAuth authorize URL. By default, Afiax server uses built in OAuth, so `authorizeUrl` should be `baseUrl` + `oauth2/authorize`.
 
 **Default:** `baseUrl` + `oauth2/authorize`
 
 ### tokenUrl
 
-The OAuth token URL. By default, Medplum server uses built in OAuth, so `tokenUrl` should be `baseUrl` + `oauth2/token`.
+The OAuth token URL. By default, Afiax server uses built in OAuth, so `tokenUrl` should be `baseUrl` + `oauth2/token`.
 
 **Default:** `baseUrl` + `oauth2/token`
 
 ### userInfoUrl
 
-The OAuth userinfo URL. By default, Medplum server uses built in OAuth, so `userInfoUrl` should be `baseUrl` + `oauth2/userinfo`.
+The OAuth userinfo URL. By default, Afiax server uses built in OAuth, so `userInfoUrl` should be `baseUrl` + `oauth2/userinfo`.
 
 **Default:** `baseUrl` + `oauth2/userinfo`
 
@@ -159,14 +159,14 @@ If using reCAPTCHA, this is the reCAPTCHA secret key.
 
 ### botLambdaRoleArn
 
-If using Medplum Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html). See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
+If using Afiax Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html). See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
 
 **Created by:** `cdk`
 **Default:** None
 
 ### botLambdaLayerName
 
-If using Medplum Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`. See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
+If using Afiax Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`. See [Bot Lambda Layer](/docs/bots/bot-lambda-layer) for more details.
 
 **Default:** `medplum-bot-layer`
 
@@ -416,7 +416,7 @@ Limit for the total number of FHIR request that can be sent to to processed by t
 :::tip Local Config
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
-To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
+To make changes to settings that affect your deployed Afiax App, you must _also_ make these changes to your local configuration json file.
 
 Once you have made these changes, you will need to restart your server for them to take effect. The easiest way to do this in a zero-downtime manner is by using the `medplum aws update-server` command. For more details on this command see the [Upgrade the Server docs](/docs/self-hosting/install-on-aws#upgrade-the-server).
 :::
@@ -441,13 +441,13 @@ for storage, while retaining the opaque, machine-readable identifiers.
 
 ### introspectUrl
 
-The OAuth introspection URL. By default, Medplum server uses built in OAuth, so `introspectUrl` should be `baseUrl` + `oauth2/introspect`.
+The OAuth introspection URL. By default, Afiax server uses built in OAuth, so `introspectUrl` should be `baseUrl` + `oauth2/introspect`.
 
 **Default:** `baseUrl` + `oauth2/introspect`
 
 ### registerUrl
 
-The OAuth registration URL. By default, Medplum server uses built in OAuth, so `registerUrl` should be `baseUrl` + `oauth2/register`.
+The OAuth registration URL. By default, Afiax server uses built in OAuth, so `registerUrl` should be `baseUrl` + `oauth2/register`.
 
 **Default:** `baseUrl` + `oauth2/register`
 
@@ -549,7 +549,7 @@ Flag to enable pre-commit subscriptions for the interceptor pattern.
 
 ### externalAuthProviders
 
-Optional list of external authentication providers for [Direct External Authentication](/docs/auth/direct-external-auth). Each entry allows users with JWTs from the specified issuer to authenticate directly against the Medplum API without a token exchange.
+Optional list of external authentication providers for [Direct External Authentication](/docs/auth/direct-external-auth). Each entry allows users with JWTs from the specified issuer to authenticate directly against the Afiax API without a token exchange.
 
 Each provider object has the following properties:
 
@@ -674,7 +674,7 @@ Example `RedisSecrets` value:
 ### External Secrets
 
 Some users may want to load their config parameters from an external provider, such as the `AWS Parameter Store`.
-Medplum allows all CDK config settings (minus `region`) to be configured as `external secrets` by replacing the value with a JSON object with the following schema:
+Afiax allows all CDK config settings (minus `region`) to be configured as `external secrets` by replacing the value with a JSON object with the following schema:
 
 ```js
 {
@@ -697,11 +697,11 @@ Example config with `external secrets`:
 }
 ```
 
-Any parameter specified in the `external secrets` format will automatically be fetched at deployment time, right before the `CloudFormation` stack is created. This both keeps your secrets safe and also reduces the amount of manual maintenance you must perform on your Medplum configuration over the lifetime of your application.
+Any parameter specified in the `external secrets` format will automatically be fetched at deployment time, right before the `CloudFormation` stack is created. This both keeps your secrets safe and also reduces the amount of manual maintenance you must perform on your Afiax configuration over the lifetime of your application.
 
 ### Database SSL Configuration
 
-Medplum server can be configured to require an SSL connection to the database. There are three notable configuration settings for this:
+Afiax server can be configured to require an SSL connection to the database. There are three notable configuration settings for this:
 
 1.  `database.ssl.require` - Optional boolean flag to require SSL when connecting to the database.
 2.  `database.ssl.ca` - Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla.

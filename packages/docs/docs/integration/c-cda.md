@@ -1,13 +1,13 @@
 # C-CDA
 
-Medplum provides support for C-CDA (Consolidated Clinical Document Architecture) handling in accordance with the [ONC Certification](/docs/compliance/onc) criteria (g)(7), (g)(9) and (b)(1) as well as developer utilities for working with C-CDA documents in the context of FHIR.
+Afiax provides support for C-CDA (Consolidated Clinical Document Architecture) handling in accordance with the ONC Certification criteria (g)(7), (g)(9) and (b)(1) as well as developer utilities for working with C-CDA documents in the context of FHIR.
 
 ## Overview
 
-Medplum provides the following functionality for C-CDA handling.
+Afiax provides the following functionality for C-CDA handling.
 
-* A C-CDA viewer that allows uploaded documents to be viewed in the Medplum App or in a react component.
-* The ability to Export C-CDA in the Medplum app or via API
+* A C-CDA viewer that allows uploaded documents to be viewed in the Afiax App or in a react component.
+* The ability to Export C-CDA in the Afiax app or via API
 * An SDK for FHIR to C-CDA conversion.
 
 ## C-CDA Viewer 
@@ -20,11 +20,11 @@ To access the C-CDA viewer, upload a C-CDA file as a FHIR Binary.  The viewer wi
 
 ## Export C-CDA
 
-To export patient data as C-CDA, navigate to `https://app.medplum.com/Patient/<PATIENT_ID>/export` in the Medplum App.  There are several options for export, and exporting as C-CDA will create and download the XML file to the desktop.
+To export patient data as C-CDA, navigate to `https://app.afiax.africa/Patient/<PATIENT_ID>/export` in the Afiax App.  There are several options for export, and exporting as C-CDA will create and download the XML file to the desktop.
 
 ## Transitions of Care
 
-Medplum enables sending C-CDA to other systems via Direct Message to support transitions of care.  To utilize the feature, implementors need to create a communication resource with the C-CDA attached as shown in the video.
+Afiax enables sending C-CDA to other systems via Direct Message to support transitions of care.  To utilize the feature, implementors need to create a communication resource with the C-CDA attached as shown in the video.
 
 <div className="responsive-iframe-wrapper">
   <iframe src="https://www.youtube.com/embed/Ijjtf0ClZDA?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -32,11 +32,11 @@ Medplum enables sending C-CDA to other systems via Direct Message to support tra
 
 ## FHIR Server Integration
 
-In addition to the core conversion functions, Medplum provides FHIR server operations for seamless C-CDA export:
+In addition to the core conversion functions, Afiax provides FHIR server operations for seamless C-CDA export:
 
 * **`Patient/{id}/$ccda-export`:** Exports a patient's data as a C-CDA document.
 
-This operation is documented in the [Medplum FHIR operations](/docs/api/fhir/operations) documentation.
+This operation is documented in the [Afiax FHIR operations](/docs/api/fhir/operations) documentation.
 
 ## Developer Utilities
 
@@ -91,8 +91,8 @@ By aligning with these standards, this library ensures that C-CDA documents can 
 
 ## Related Reading
 
-* [Medplum C-CDA Library](https://github.com/medplum/medplum/tree/main/packages/ccda)
-* [Medplum FHIR Server Documentation](/docs/api/fhir)
+* [Afiax C-CDA Library](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/ccda)
+* [Afiax FHIR Server Documentation](/docs/api/fhir)
 * [FHIR R4 Specification](https://hl7.org/fhir/R4/)
 * [US Core Implementation Guide](https://www.hl7.org/fhir/us/core/)
 * [USCDI Website](https://www.healthit.gov/isp/united-states-core-data-interoperability-uscdi)

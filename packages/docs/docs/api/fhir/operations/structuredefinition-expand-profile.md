@@ -53,7 +53,7 @@ GET /fhir/R4/StructureDefinition/$expand-profile?url=http://example.org/fhir/Str
   "type": "searchset",
   "entry": [
     {
-      "fullUrl": "https://api.medplum.com/fhir/R4/StructureDefinition/custom-patient-id",
+      "fullUrl": "https://fhir.afiax.africa/fhir/R4/StructureDefinition/custom-patient-id",
       "resource": {
         "resourceType": "StructureDefinition",
         "id": "custom-patient-id",
@@ -81,7 +81,7 @@ GET /fhir/R4/StructureDefinition/$expand-profile?url=http://example.org/fhir/Str
       }
     },
     {
-      "fullUrl": "https://api.medplum.com/fhir/R4/StructureDefinition/custom-identifier-id",
+      "fullUrl": "https://fhir.afiax.africa/fhir/R4/StructureDefinition/custom-identifier-id",
       "resource": {
         "resourceType": "StructureDefinition",
         "id": "custom-identifier-id",

@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Install from scratch
 
-This guide provides comprehensive instructions for installing and configuring Medplum from scratch on Ubuntu 24.04. It covers all essential components including PostgreSQL database setup, Redis installation, Node.js configuration, and the core Medplum server and app deployment.
+This guide provides comprehensive instructions for installing and configuring Afiax from scratch on Ubuntu 24.04. It covers all essential components including PostgreSQL database setup, Redis installation, Node.js configuration, and the core Afiax server and app deployment.
 
 The guide also includes optional but recommended steps for setting up Nginx as a reverse proxy with SSL/TLS support, enabling secure access through custom domains. While primarily written for Ubuntu 24.04, these instructions are compatible with most recent Ubuntu versions.
 
@@ -14,7 +14,7 @@ This installation method is particularly useful for development and testing envi
 
 :::note
 
-These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
+These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Afiax server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
 
 :::
 
@@ -111,12 +111,12 @@ Install Node.js
 sudo apt-get install nodejs
 ```
 
-## Build Medplum
+## Build Afiax
 
-Clone the Medplum repository
+Clone the Afiax repository
 
 ```bash
-git clone https://github.com/medplum/medplum.git
+git clone https://github.com/oortcloudcomputing/afiax-fhir.git
 cd medplum
 ```
 
@@ -132,7 +132,7 @@ Build the server, app, and necessary dependencies
 npm run build:fast
 ```
 
-## Start Medplum server
+## Start Afiax server
 
 :::info
 
@@ -147,18 +147,18 @@ cd packages/server
 npm run dev
 ```
 
-You should now be able to access the Medplum server at [http://localhost:8103/healthcheck](http://localhost:8103/healthcheck).
+You should now be able to access the Afiax server at [http://localhost:8103/healthcheck](http://localhost:8103/healthcheck).
 
-## Start Medplum app
+## Start Afiax app
 
 :::warning[Important: Development Server vs Production Setup]
 
-This command runs Medplum app using the Vite Dev server. While this is convenient for development and testing, it has two significant limitations:
+This command runs Afiax app using the Vite Dev server. While this is convenient for development and testing, it has two significant limitations:
 
 1. The Vite dev server is designed for development, not production use. It serves files inefficiently and will provide an inferior experience for end users.
-2. The Medplum app requires several modern browser features that are only available in a 'secure context' (HTTPS), including essential cryptography features. These features will not be available when accessing the app via plain HTTP.
+2. The Afiax app requires several modern browser features that are only available in a 'secure context' (HTTPS), including essential cryptography features. These features will not be available when accessing the app via plain HTTP.
 
-If you plan to access the app and API from other devices on your network, we recommend proceeding to the optional SSL/nginx setup instructions below. This will provide the secure context required for all Medplum features to function correctly.
+If you plan to access the app and API from other devices on your network, we recommend proceeding to the optional SSL/nginx setup instructions below. This will provide the secure context required for all Afiax features to function correctly.
 
 :::
 
@@ -169,13 +169,13 @@ cd packages/app
 npm run dev
 ```
 
-You should now be able to access the Medplum app at [http://localhost:3000](http://localhost:3000).
+You should now be able to access the Afiax app at [http://localhost:3000](http://localhost:3000).
 
 ## Optional: Nginx
 
 :::info
 
-This "Install from Scratch" guide is designed to help you understand how the different pieces of Medplum work. It's not our recommended approach for production deployments.
+This "Install from Scratch" guide is designed to help you understand how the different pieces of Afiax work. It's not our recommended approach for production deployments.
 
 For production, we now have much better options that you should consider:
 
@@ -186,7 +186,7 @@ For production, we now have much better options that you should consider:
 
 ### Overview
 
-To run Medplum securely, you should use SSL/TLS via reverse proxy such as nginx.
+To run Afiax securely, you should use SSL/TLS via reverse proxy such as nginx.
 
 To do this, you will need to:
 
@@ -197,7 +197,7 @@ To do this, you will need to:
 
 Before you begin, please identify the domain names you will use for the app and api. For this example, we will use `app.example.com` and `api.example.com`.
 
-### Update Medplum server settings
+### Update Afiax server settings
 
 Navigate to your `server` directory:
 
@@ -220,7 +220,7 @@ Restart the server. If you intend to run the server continuously and survive SSH
 nohup npm run dev > server.log 2>&1 &
 ```
 
-### Update Medplum app settings
+### Update Afiax app settings
 
 In the terminal that is running `app`, you now must update the `.env` file with your new domain:
 

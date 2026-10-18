@@ -4,7 +4,7 @@ sidebar_label: Defining Availability (Alpha)
 
 # Defining Availability (Alpha)
 
-This guide explains how to define and find availability information at both the service level and actor level in Medplum using FHIR resources and Medplum's custom [extensions](/docs/api/fhir/datatypes/extension). You'll learn how to configure when services can be performed in time, how different scheduling constraints interact, and how to model complex multi-resource scheduling scenarios.
+This guide explains how to define and find availability information at both the service level and actor level in Afiax using FHIR resources and Afiax's custom [extensions](/docs/api/fhir/datatypes/extension). You'll learn how to configure when services can be performed in time, how different scheduling constraints interact, and how to model complex multi-resource scheduling scenarios.
 
 ## Core Scheduling Concepts
 
@@ -42,7 +42,7 @@ The diagram below illustrates how these resources work together. The key takeawa
 
 :::note One-to-One Actor-Schedule Relationship
 
-This model expects a **one-to-one relationship** between actors and Schedules. While FHIR's `Schedule.actor` field allows multiple actor references (min: 1, max: \*), Medplum's scheduling system is designed around the pattern where each Schedule has a single actor reference. This simplifies availability management and aligns with common scheduling workflows where each Practitioner, Location, or Device maintains its own independent schedule.
+This model expects a **one-to-one relationship** between actors and Schedules. While FHIR's `Schedule.actor` field allows multiple actor references (min: 1, max: \*), Afiax's scheduling system is designed around the pattern where each Schedule has a single actor reference. This simplifies availability management and aligns with common scheduling workflows where each Practitioner, Location, or Device maintains its own independent schedule.
 
 :::
 
@@ -207,7 +207,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 ### The Concept of Implicit Availability
 
-Medplum's scheduling model uses **implicit availability**: time is assumed to be free by default. You define availability rules using extensions that specify when resources are available based on recurring patterns. [`Slot`](/docs/api/fhir/resources/slot) resources are only used for explicit overrides—either to mark time as busy (when an appointment is booked) or to block out unavailable time.
+Afiax's scheduling model uses **implicit availability**: time is assumed to be free by default. You define availability rules using extensions that specify when resources are available based on recurring patterns. [`Slot`](/docs/api/fhir/resources/slot) resources are only used for explicit overrides—either to mark time as busy (when an appointment is booked) or to block out unavailable time.
 
 This approach avoids the need to pre-generate thousands of Slot resources for every possible time slot. Instead, the system calculates available windows dynamically based on the availability rules you define.
 

@@ -4,7 +4,7 @@ sidebar_position: 900
 
 # OpenTelemetry
 
-This page describes Medplum's optional OpenTelemetry support, and how to integrate with AWS CloudWatch.
+This page describes Afiax's optional OpenTelemetry support, and how to integrate with AWS CloudWatch.
 
 ## Introduction to OpenTelemetry
 
@@ -59,17 +59,17 @@ export OTLP_TRACES_ENDPOINT="http://localhost:4318/v1/traces"
 export OTLP_METRICS_ENDPOINT="http://localhost:4318/v1/metrics"
 ```
 
-#### 3. Restart the Medplum server
+#### 3. Restart the Afiax server
 
 Ctrl+C to stop the server, then `npm run dev` to restart.
 
 ### OpenTelemetry on AWS
 
-First, make sure you go through all steps in [Install on AWS](/docs/self-hosting/install-on-aws). You should have a Medplum CDK JSON config file and a running cluster.
+First, make sure you go through all steps in [Install on AWS](/docs/self-hosting/install-on-aws). You should have an Afiax CDK JSON config file and a running cluster.
 
-Use the Medplum "additional containers" feature to add the AWS CloudWatch Agent as an OpenTelemetry collector.
+Use the Afiax "additional containers" feature to add the AWS CloudWatch Agent as an OpenTelemetry collector.
 
-Next, add the following to your Medplum CDK JSON config file:
+Next, add the following to your Afiax CDK JSON config file:
 
 1. Environment variables as described above
 2. "Additional containers" for the AWS OpenTelemetry collector ("ADOT Collector")
@@ -95,7 +95,7 @@ Next, add the following to your Medplum CDK JSON config file:
 }
 ```
 
-After you modify your Medplum CDK JSON config file, apply the changes using the CDK command line tools.
+After you modify your Afiax CDK JSON config file, apply the changes using the CDK command line tools.
 
 Run `diff` to see changes:
 

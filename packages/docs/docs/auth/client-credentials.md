@@ -8,13 +8,13 @@ import TabItem from '@theme/TabItem';
 
 # Client Credentials
 
-The Medplum API uses standard OAuth2/OpenID authentication. The "Client Credentials Flow" is recommended for machine-to-machine access.
+The Afiax API uses standard OAuth2/OpenID authentication. The "Client Credentials Flow" is recommended for machine-to-machine access.
 
 ## Obtaining Credentials
 
-This tutorial assumes you already have a Medplum account. (If not, please [register](https://app.medplum.com/register).)
+This tutorial assumes you already have an Afiax account. (If not, please [register](https://app.afiax.africa/register).)
 
-Create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApplication on the [Project Admin page](https://app.medplum.com/admin/clients).
+Create a [ClientApplication](https://app.afiax.africa/ClientApplication) if one does not already exist. You can create a new ClientApplication on the [Project Admin page](https://app.afiax.africa/admin/clients).
 
 For this example you will need the `ID` and `Secret`.
 
@@ -26,7 +26,7 @@ Execute an HTTP POST request to the OAuth2 Token endpoint:
   <TabItem value="curl" label="cURL">
 
 ```curl
-curl -X POST https://api.medplum.com/oauth2/token \
+curl -X POST https://fhir.afiax.africa/oauth2/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=client_credentials&client_id=$MY_CLIENT_ID&client_secret=$MY_CLIENT_SECRET"
 ```
@@ -69,7 +69,7 @@ On success, the response will be a JSON object with the following properties:
 
 The value of "access_token" can then be used in future requests for authentication.
 
-Alternatively, you can initiate the process in the Medplum Client by using the [`startClientLogin`](/docs/sdk/core.medplumclient.startclientlogin) convenience method.
+Alternatively, you can initiate the process in the Afiax Client by using the [`startClientLogin`](/docs/sdk/core.medplumclient.startclientlogin) convenience method.
 
 For more details about OAuth2 Client Credentials Flow:
 

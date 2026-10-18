@@ -38,7 +38,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/docs/',
+          editUrl: 'https://github.com/oortcloudcomputing/afiax-fhir/blob/kenya/packages/docs/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             let items = await defaultSidebarItemsGenerator(args);
             items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
@@ -46,11 +46,8 @@ const config: Config = {
           },
           showLastUpdateTime: true,
         },
-        blog: {
-          showReadingTime: true,
-          blogSidebarCount: 15,
-          blogSidebarTitle: 'Recent posts',
-        },
+        // The blog/ folder holds upstream Medplum company posts; it is not published on the Afiax site.
+        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },

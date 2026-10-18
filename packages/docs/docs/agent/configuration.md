@@ -4,15 +4,15 @@ sidebar_position: 3
 
 # Agent-Side Configuration
 
-This guide covers all local configuration options for the Medplum Agent, including how to configure the agent via command line arguments and the `agent.properties` file.
+This guide covers all local configuration options for the Afiax Agent, including how to configure the agent via command line arguments and the `agent.properties` file.
 
 ## Configuration Parameters
 
-The Medplum Agent requires four essential parameters to connect to your Medplum server:
+The Afiax Agent requires four essential parameters to connect to your Afiax server:
 
 | Parameter      | Description                                                   | Required |
 | -------------- | ------------------------------------------------------------- | -------- |
-| `baseUrl`      | The Medplum server base URL (e.g., `https://api.medplum.com`) | Yes      |
+| `baseUrl`      | The Afiax server base URL (e.g., `https://fhir.afiax.africa`) | Yes      |
 | `clientId`     | The OAuth client ID from your ClientApplication               | Yes      |
 | `clientSecret` | The OAuth client secret from your ClientApplication           | Yes      |
 | `agentId`      | The UUID of your Agent resource                               | Yes      |
@@ -27,7 +27,7 @@ The Medplum Agent requires four essential parameters to connect to your Medplum 
 
 ## Configuration Methods
 
-There are two ways to configure the Medplum Agent: via command line arguments or using an `agent.properties` file.
+There are two ways to configure the Afiax Agent: via command line arguments or using an `agent.properties` file.
 
 ### Command Line Arguments
 
@@ -40,13 +40,13 @@ npm run agent <baseUrl> <clientId> <clientSecret> <agentId> [logLevel]
 **Example:**
 
 ```bash
-npm run agent https://api.medplum.com my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000
+npm run agent https://fhir.afiax.africa my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000
 ```
 
 **Example with log level:**
 
 ```bash
-npm run agent https://api.medplum.com my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000 DEBUG
+npm run agent https://fhir.afiax.africa my-client-id my-client-secret 123e4567-e89b-12d3-a456-426614174000 DEBUG
 ```
 
 **Limitations:**
@@ -61,7 +61,7 @@ When running the agent in Docker or other containerized environments, you can us
 
 ```bash
 docker run -e MEDPLUM_LOG_LEVEL="DEBUG" \
-  -e MEDPLUM_BASE_URL="https://api.medplum.com" \
+  -e MEDPLUM_BASE_URL="https://fhir.afiax.africa" \
   -e MEDPLUM_CLIENT_ID="my-client-id" \
   -e MEDPLUM_CLIENT_SECRET="my-client-secret" \
   -e MEDPLUM_AGENT_ID="123e4567-e89b-12d3-a456-426614174000" \
@@ -84,7 +84,7 @@ The `agent.properties` file provides full access to all configuration options, i
 The properties file uses a simple `key=value` format with one setting per line:
 
 ```properties
-baseUrl=https://api.medplum.com
+baseUrl=https://fhir.afiax.africa
 clientId=my-client-id
 clientSecret=my-client-secret
 agentId=123e4567-e89b-12d3-a456-426614174000
@@ -111,12 +111,12 @@ If you need different log levels for the main and channel loggers, or want to co
 
 After modifying `agent.properties`, restart the agent service for changes to take effect:
 
-- **Windows**: Restart the "Medplum Agent" service from the Services Manager
+- **Windows**: Restart the "Afiax Agent" service from the Services Manager
 - **CLI/Source**: Stop and restart the agent process
 
 ## Logger Configuration
 
-The Medplum Agent uses two separate, independently configurable loggers to provide fine-grained control over logging and to protect patient privacy.
+The Afiax Agent uses two separate, independently configurable loggers to provide fine-grained control over logging and to protect patient privacy.
 
 ### Main Logger vs. Channel Logger
 
@@ -125,7 +125,7 @@ The Medplum Agent uses two separate, independently configurable loggers to provi
 The **main logger** records general agent activity, including:
 
 - Agent startup and shutdown events
-- Connection status to the Medplum server
+- Connection status to the Afiax server
 - Configuration warnings and errors
 - General system exceptions
 - Agent lifecycle events
@@ -222,7 +222,7 @@ logger.channel.filesToKeep=30
 A production configuration that separates PHI-containing logs to a separate directory:
 
 ```properties
-baseUrl=https://api.medplum.com
+baseUrl=https://fhir.afiax.africa
 clientId=production-client-id
 clientSecret=production-client-secret
 agentId=production-agent-id

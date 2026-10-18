@@ -92,7 +92,7 @@ flowchart TB
 _User 1 can access Patient A and Patient B. User 2 can access all four Patients. User 3 can only access Patient C and Patient D._
 
 
-This guide walks you through implementing multi-tenant access control in a single Medplum project. You will learn which questions you need to answer to build your tenancy model and how to implement it. Here is an overview of the steps you will take:
+This guide walks you through implementing multi-tenant access control in a single Afiax project. You will learn which questions you need to answer to build your tenancy model and how to implement it. Here is an overview of the steps you will take:
 
 1. **Data Modeling**: How to represent tenants in FHIR using different resource types.
 2. **Assigning data to tenants**: How to label your FHIR resources with the tenant(s) they belong to.
@@ -686,7 +686,7 @@ To do this, do not include the `_compartment` check in resource type criteria fo
 
 ## Conclusion
 
-Multi-tenant access control in Medplum enables you to securely partition healthcare data within a single project by leveraging FHIR compartments and parameterized access policies. The implementation follows three key steps:
+Multi-tenant access control in Afiax enables you to securely partition healthcare data within a single project by leveraging FHIR compartments and parameterized access policies. The implementation follows three key steps:
 
 1. **Model your tenants** using appropriate FHIR resource types (Organization, HealthcareService, CareTeam, or others) that accurately represent your organizational structure.
 
@@ -694,5 +694,5 @@ Multi-tenant access control in Medplum enables you to securely partition healthc
 
 3. **Grant user access** through ProjectMembership configuration, using parameterized AccessPolicies that reference tenant compartments to restrict access appropriately.
 
-By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/blog/multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
+By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Afiax](https://www.medplum.com/blog/multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
 

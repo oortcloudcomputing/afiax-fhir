@@ -35,7 +35,7 @@ The operation returns an HTTP redirect (302) to the ClientApplication's `launchU
 
 | Parameter | Description |
 |-----------|-------------|
-| `iss` | The FHIR server base URL (e.g., `https://api.medplum.com/fhir/R4/`) |
+| `iss` | The FHIR server base URL (e.g., `https://fhir.afiax.africa/fhir/R4/`) |
 | `launch` | The ID of the created `SmartAppLaunch` resource |
 
 ## Prerequisites
@@ -54,7 +54,7 @@ GET /fhir/R4/ClientApplication/my-smart-app/$smart-launch?patient=patient123
 
 ```http
 HTTP/1.1 302 Found
-Location: https://my-smart-app.example.com/launch?iss=https://api.medplum.com/fhir/R4/&launch=launch456
+Location: https://my-smart-app.example.com/launch?iss=https://fhir.afiax.africa/fhir/R4/&launch=launch456
 ```
 
 ### Created SmartAppLaunch Resource

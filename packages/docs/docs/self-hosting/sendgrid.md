@@ -4,13 +4,13 @@ sidebar_position: 1100
 
 # Send SMTP Emails with SendGrid
 
-This page describes how to use [SendGrid](https://app.sendgrid.com/) as an [SMTP Relay](https://sendgrid.com/blog/smtp-relay-service-basics/) to send emails from Medplum.
+This page describes how to use [SendGrid](https://app.sendgrid.com/) as an [SMTP Relay](https://sendgrid.com/blog/smtp-relay-service-basics/) to send emails from Afiax.
 
 :::note
 
-SMTP email is only available when self-hosting Medplum.
+SMTP email is only available when self-hosting Afiax.
 
-Medplum's hosted environment uses [Amazon Simple Email Service (SES)](https://aws.amazon.com/ses/). Amazon SES is the default Medplum email provider.
+Afiax's hosted environment uses [Amazon Simple Email Service (SES)](https://aws.amazon.com/ses/). Amazon SES is the default Afiax email provider.
 
 :::
 
@@ -24,9 +24,9 @@ Be sure to perform the following prerequisites to complete this tutorial.
 
 See the SendGrid [How to Send an SMTP Email](https://docs.sendgrid.com/for-developers/sending-email/getting-started-smtp) guide for step by step instructions.
 
-## Configuring Medplum Server for SMTP
+## Configuring Afiax Server for SMTP
 
-Open your Medplum server config file. When developing on localhost, the default config file location is `packages/server/medplum.config.json`.
+Open your Afiax server config file. When developing on localhost, the default config file location is `packages/server/medplum.config.json`.
 
 Change the `supportEmail` to your Sender Identity email address:
 
@@ -47,7 +47,7 @@ Add a new `smtp` section for the SendGrid SMTP settings. Use your API key as the
 
 ## Testing
 
-Once your configuration settings are saved, restart the Medplum server. All subsequent emails will be sent via SendGrid SMTP Relay. For example, you can [invite a new user](/docs/app/invite) or reset your password to send a new email.
+Once your configuration settings are saved, restart the Afiax server. All subsequent emails will be sent via SendGrid SMTP Relay. For example, you can [invite a new user](/docs/app/invite) or reset your password to send a new email.
 
 :::tip
 

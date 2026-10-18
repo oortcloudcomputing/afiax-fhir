@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Self-Hosting Best Practices
 
-You've decided to self-host Medplum — great. This guide covers operational practices that will help you run a stable, maintainable deployment and set yourself up for long-term success.
+You've decided to self-host Afiax — great. This guide covers operational practices that will help you run a stable, maintainable deployment and set yourself up for long-term success.
 
 These recommendations come from patterns we've seen across self-hosted deployments, both what works well and what causes pain down the road.
 
@@ -12,12 +12,12 @@ These recommendations come from patterns we've seen across self-hosted deploymen
 
 ### Use a Dedicated Cloud Account
 
-Deploy your Medplum infrastructure in a dedicated cloud account (e.g., an AWS child account under your organization). This provides several benefits:
+Deploy your Afiax infrastructure in a dedicated cloud account (e.g., an AWS child account under your organization). This provides several benefits:
 
-- **Smaller blast radius**: Medplum resources are isolated from your other workloads
+- **Smaller blast radius**: Afiax resources are isolated from your other workloads
 - **Simplified access control**: Easier to grant scoped permissions for audits, compliance reviews, or vendor support
 - **Cost visibility**: Clear attribution of Medplum-related infrastructure costs
-- **Support readiness**: If you ever need hands-on assistance from the Medplum team, granting temporary access to a dedicated account is straightforward and doesn't expose your broader infrastructure
+- **Support readiness**: If you ever need hands-on assistance from the Afiax team, granting temporary access to a dedicated account is straightforward and doesn't expose your broader infrastructure
 
 ### Infrastructure as Code
 
@@ -28,19 +28,19 @@ Manage all infrastructure through code (Terraform, CDK, CloudFormation, etc.) ra
 - Easier onboarding for new team members
 - The ability to roll back problematic changes
 
-Medplum provides [CDK templates](/docs/self-hosting/install-on-aws) as a starting point. If you diverge from these templates, document your changes and the reasoning behind them.
+Afiax provides [CDK templates](/docs/self-hosting/install-on-aws) as a starting point. If you diverge from these templates, document your changes and the reasoning behind them.
 
 ## Database Management
 
 ### Treat the Database as Sacred
 
-The Medplum database schema is managed by the application. Manual changes to PostgreSQL — adding tables, columns, indexes, or modifying data directly — can cause upgrade failures, unexpected behavior, and makes troubleshooting significantly harder.
+The Afiax database schema is managed by the application. Manual changes to PostgreSQL — adding tables, columns, indexes, or modifying data directly — can cause upgrade failures, unexpected behavior, and makes troubleshooting significantly harder.
 
 If you need to make direct database changes:
 
 1. **Document everything**: Keep a log of what was changed, when, why, and by whom
-2. **Understand the risks**: Schema modifications may conflict with future Medplum upgrades
-3. **Inform support**: If you later engage Medplum for assistance, disclose any manual changes upfront — this information is critical for diagnosis
+2. **Understand the risks**: Schema modifications may conflict with future Afiax upgrades
+3. **Inform support**: If you later engage Afiax for assistance, disclose any manual changes upfront — this information is critical for diagnosis
 
 We strongly recommend treating direct database manipulation as a last resort, not a routine operational tool.
 
@@ -54,7 +54,7 @@ PostgreSQL major version upgrades (e.g., 14 → 15 → 16) require manual interv
 
 ## Observability and Monitoring
 
-Medplum's infrastructure-as-code templates provide the core application components but are intentionally unopinionated about observability. Every organization has different tooling preferences and compliance requirements, so we leave this configuration to you.
+Afiax's infrastructure-as-code templates provide the core application components but are intentionally unopinionated about observability. Every organization has different tooling preferences and compliance requirements, so we leave this configuration to you.
 
 That said, **having observability is non-negotiable for production deployments**.
 
@@ -152,7 +152,7 @@ Establish a regular schedule for:
 
 ### Stay Reasonably Current
 
-Drifting too far behind Medplum releases creates compounding problems:
+Drifting too far behind Afiax releases creates compounding problems:
 
 - Security patches don't reach you
 - Bug fixes you might need aren't available
@@ -162,7 +162,7 @@ We recommend staying within **2-3 minor versions** of the latest release.
 
 ### Maintain a Staging Environment
 
-Before applying any Medplum upgrade to production:
+Before applying any Afiax upgrade to production:
 
 1. Apply the upgrade to a staging environment that mirrors production
 2. Run your test suite and smoke tests
@@ -171,11 +171,11 @@ Before applying any Medplum upgrade to production:
 
 ### Subscribe to Release Notifications
 
-Watch the [Medplum GitHub releases](https://github.com/medplum/medplum/releases) or join the [Discord](https://discord.gg/medplum) to stay informed about new versions, security patches, and breaking changes.
+Watch the [Afiax GitHub releases](https://github.com/oortcloudcomputing/afiax-fhir/releases) to stay informed about new versions, security patches, and breaking changes.
 
 ## Document Your Customizations
 
-If you've made modifications beyond the standard Medplum deployment — custom bot dependencies, forked components, unusual configurations, additional services — document them thoroughly.
+If you've made modifications beyond the standard Afiax deployment — custom bot dependencies, forked components, unusual configurations, additional services — document them thoroughly.
 
 Future you, your teammates, and anyone providing support will need to understand:
 
@@ -191,4 +191,4 @@ Even well-run self-hosted deployments occasionally need assistance. To make supp
 - **Keep logs accessible**: When something goes wrong, having recent logs available accelerates diagnosis
 - **Disclose customizations**: Any manual database changes, forked code, or unusual configurations are relevant
 
-**Questions?** Reach out to the Medplum team at [support@medplum.com](mailto:support@medplum.com) or on [Discord](https://discord.gg/medplum).
+**Questions?** Reach out to the Afiax team at [support@afiax.africa](mailto:support@afiax.africa).

@@ -62,7 +62,7 @@ medplum post '<resourceType>/<id>/$resend' {"verbose":"true","interaction":"upda
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/$resend' \
+curl 'https://fhir.afiax.africa/fhir/R4/<resourceType>/<resourceId>/$resend' \
 -X 'POST' \
 -H 'authorization: Bearer MY_ACCESS_TOKEN' \
 -H 'content-type: application/fhir+json' \
@@ -94,7 +94,7 @@ If successful, you will receive the following OperationOutcome
 
 ## Related
 
-- [Subscriptions Guide](/docs/subscriptions) - Complete guide to FHIR Subscriptions in Medplum
+- [Subscriptions Guide](/docs/subscriptions) - Complete guide to FHIR Subscriptions in Afiax
 - [Bot $execute](/docs/api/fhir/operations/bot-execute) - Execute bots triggered by subscriptions
 - [Subscription Resource](/docs/api/fhir/resources/subscription) - FHIR Subscription resource reference
 - [Admin Access](/docs/access/admin) - Admin credentials required for this operation

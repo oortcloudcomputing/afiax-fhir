@@ -12,7 +12,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/bina
 
 # Binary Data
 
-Managing, storing, and retrieving binary files is a fundamental requirement in modern healthcare applications. Medplum, an open-source, API-first healthcare technology platform, provides a structured approach to this. This article dives into how to upload binary files to Medplum using the FHIR `Binary` resource type, detailing the process and Medplum's specific optimizations.
+Managing, storing, and retrieving binary files is a fundamental requirement in modern healthcare applications. Afiax, an open-source, API-first healthcare technology platform, provides a structured approach to this. This article dives into how to upload binary files to Afiax using the FHIR `Binary` resource type, detailing the process and Afiax's specific optimizations.
 
 ## Introduction to FHIR `Binary`
 
@@ -20,7 +20,7 @@ The FHIR (Fast Healthcare Interoperability Resources) standard introduces the `B
 
 ## Creating a FHIR `Binary`
 
-To upload binary files to Medplum, you'll first need to create a `Binary` resource.
+To upload binary files to Afiax, you'll first need to create a `Binary` resource.
 
 ### Using raw HTTP via `curl`
 
@@ -31,7 +31,7 @@ curl -X POST \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -H "Content-Type: image/jpeg" \
      --data-binary "@./yourfile.jpg" \
-     https://api.medplum.com/fhir/R4/Binary
+     https://fhir.afiax.africa/fhir/R4/Binary
 ```
 
 This is a short snippet, but each line has significant meaning.
@@ -42,9 +42,9 @@ Next, the `Content-Type` header is required to specify the MIME type of the file
 
 To upload a file, use the `--data-binary` flag. The `--data-binary` flag is used to upload the raw binary data to avoid any encoding issues. Also note `curl`'s special syntax for referencing a file by file name using the "@" character.
 
-### Using the Medplum SDK `MedplumClient`
+### Using the Afiax SDK `MedplumClient`
 
-Medplum provides a JavaScript/TypeScript SDK that makes it easy to upload binary files.
+Afiax provides a JavaScript/TypeScript SDK that makes it easy to upload binary files.
 
 <MedplumCodeBlock language="ts" selectBlocks="createBinary">
   {ExampleCode}
@@ -62,11 +62,11 @@ A `Uint8Array` object often comes from a `FileReader` or `ArrayBuffer`.
 
 Beware passing in a `string`! This will cause the string to be encoded as UTF-8, which may not be what you want. If you have base-64 encoded content, you must first decode it to one of the binary types first before passing it to `createBinary()`.
 
-In addition to `medplum.createBinary()`, the Medplum SDK also provides `medplum.createAttachment()` which is similar but also creates an `Attachment` object. Note that `Attachment` is not a resource type, it is merely an in memory object to make it easier to work with binary data.
+In addition to `medplum.createBinary()`, the Afiax SDK also provides `medplum.createAttachment()` which is similar but also creates an `Attachment` object. Note that `Attachment` is not a resource type, it is merely an in memory object to make it easier to work with binary data.
 
 ### Create `Binary` via external URL
 
-For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
+For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Afiax. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
 
 <BrowserOnlyTabs groupId="language">
   <TabItem value="typescript" label="TypeScript">
@@ -78,7 +78,7 @@ For large files such as videos and images, it can be inconvenient to download co
 
 ```py
 
-API_URL = 'https://api.medplum.com/fhir/R4'
+API_URL = 'https://fhir.afiax.africa/fhir/R4'
 MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883'
 media = {
   'resourceType': 'Media',
@@ -149,9 +149,9 @@ Unfortunately, this poses of challenges:
 1. Accessing content in a browser can be tricky. Elements like `<img>` or `<video>` can't easily set the `Authorization` header.
 2. When dealing with massive files, especially videos, downloading the whole file isn't optimal. Instead, HTTP range requests, which fetch specific byte ranges, are preferred.
 
-**Medplum's Solution: Presigned URLs:**
+**Afiax's Solution: Presigned URLs:**
 
-Medplum sidesteps these limitations by automatically rewriting FHIR Attachment URLs referencing `Binary` resources to short-lived presigned URLs.
+Afiax sidesteps these limitations by automatically rewriting FHIR Attachment URLs referencing `Binary` resources to short-lived presigned URLs.
 
 Instead of a normal `Binary/{id}` URL, the Attachment URL will look like this:
 
@@ -176,7 +176,7 @@ This powerful feature grants several benefits:
 
 Using this feature in the browser can potentially cause CORS issues. If you are displaying the [`Binary`](/docs/api/fhir/resources/binary) in `<a>` or `<object>` tags, you can use the URL as is.
 
-However, if you want to allow users to download the [`Binary`](/docs/api/fhir/resources/binary) you will need to use the Medplum provided `download` helper function. This function takes a URL in the `Binary/{id}` format. This string is included in the presigned URL, so you will need to parse it to use the function.
+However, if you want to allow users to download the [`Binary`](/docs/api/fhir/resources/binary) you will need to use the Afiax provided `download` helper function. This function takes a URL in the `Binary/{id}` format. This string is included in the presigned URL, so you will need to parse it to use the function.
 
 <details>
   <summary>Example: Download a Binary</summary>
@@ -185,64 +185,64 @@ However, if you want to allow users to download the [`Binary`](/docs/api/fhir/re
   </MedplumCodeBlock>
 </details>
 
-In essence, Medplum elevates the utility of the FHIR `Binary` resource type. By streamlining the upload and retrieval processes, Medplum provides developers with a straightforward, optimized, and user-friendly means to manage binary files in healthcare applications.
+In essence, Afiax elevates the utility of the FHIR `Binary` resource type. By streamlining the upload and retrieval processes, Afiax provides developers with a straightforward, optimized, and user-friendly means to manage binary files in healthcare applications.
 
 ## Deep Dive on Storage URLs
 
-Medplum's special treatment of `Attachment.url` and `Binary` references is powerful, but it can be confusing to understand how it works.
+Afiax's special treatment of `Attachment.url` and `Binary` references is powerful, but it can be confusing to understand how it works.
 
 Here are some additional implementation details that may be helpful.
 
 ### Write Time
 
-When you create or update a FHIR resource with an `Attachment` that references a `Binary`, Medplum will "normalize" the URL to `Binary/{id}` form.
+When you create or update a FHIR resource with an `Attachment` that references a `Binary`, Afiax will "normalize" the URL to `Binary/{id}` form.
 
-Medplum server can detect and rewrite URLs in the following cases:
+Afiax server can detect and rewrite URLs in the following cases:
 
 1. `Attachment.url` is a relative URL, e.g., `Binary/12345`
-2. `Attachment.url` is a full URL, e.g., `https://api.medplum.com/fhir/R4/Binary/12345`
+2. `Attachment.url` is a full URL, e.g., `https://fhir.afiax.africa/fhir/R4/Binary/12345`
 3. `Attachment.url` is a full URL, e.g., `https://storage.medplum.com/12345`
 
-In all cases, Medplum will rewrite the URL to `Binary/{id}` form.
+In all cases, Afiax will rewrite the URL to `Binary/{id}` form.
 
 ### Read Time
 
-When you read a FHIR resource (read by ID, read history, or search) that references a `Binary`, Medplum will generate a unique presigned URL.
+When you read a FHIR resource (read by ID, read history, or search) that references a `Binary`, Afiax will generate a unique presigned URL.
 
-When using the Medplum cloud service, this feature is enabled by default.
+When using the Afiax cloud service, this feature is enabled by default.
 
-When self-hosting, this feature requires configuring a signing key. The Medplum CDK construct includes this automatically.
+When self-hosting, this feature requires configuring a signing key. The Afiax CDK construct includes this automatically.
 
 Learn more about AWS CloudFront presigned URLs: [Using signed URLs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html)
 
-## Proxy `Binary` content through Medplum server
+## Proxy `Binary` content through Afiax server
 
-While Medplum's default behavior of rewriting Attachment URLs to presigned URLs offers many benefits (as described above), there are scenarios where you might prefer to serve binary content directly through your Medplum server instance. This can be useful for:
+While Afiax's default behavior of rewriting Attachment URLs to presigned URLs offers many benefits (as described above), there are scenarios where you might prefer to serve binary content directly through your Afiax server instance. This can be useful for:
 
 - **Self-hosting environments** where direct access might be restricted or undesirable.
 - **Simplified network configuration** by routing all traffic through a single endpoint.
-- **Centralized logging and monitoring** on your Medplum server for binary data access.
+- **Centralized logging and monitoring** on your Afiax server for binary data access.
 
-Medplum provides a way to configure your server to act as a proxy for binary content, allowing all `Attachment.url` references to be served directly from your Medplum API endpoint.
+Afiax provides a way to configure your server to act as a proxy for binary content, allowing all `Attachment.url` references to be served directly from your Afiax API endpoint.
 
 #### How it Works
 
-When configured for proxying, Medplum will continue to store your binary data in your chosen storage solution (e.g., S3, Azure Blob Storage, Google Cloud Storage, local filesystem). However, instead of generating presigned URLs that point directly to the storage provider, it will generate URLs that point back to your Medplum server's `/storage/` endpoint. When a request comes to this endpoint, the Medplum server retrieves the binary content from your configured storage and proxies it back to the client.
+When configured for proxying, Afiax will continue to store your binary data in your chosen storage solution (e.g., S3, Azure Blob Storage, Google Cloud Storage, local filesystem). However, instead of generating presigned URLs that point directly to the storage provider, it will generate URLs that point back to your Afiax server's `/storage/` endpoint. When a request comes to this endpoint, the Afiax server retrieves the binary content from your configured storage and proxies it back to the client.
 
 #### Configuration Steps
 
-To enable the Medplum server as a binary content proxy, you need to set two key configuration properties in your Medplum server's configuration:
+To enable the Afiax server as a binary content proxy, you need to set two key configuration properties in your Afiax server's configuration:
 
 1.  **`binaryStorage`**: This setting specifies your underlying storage solution. This is where the binary files will actually be stored.
 
     - **Examples:** `file:./binary/`, `s3:your-bucket-name`, `azure:your-container-name`, `gs:your-bucket-name`
 
-2.  **`storageBaseUrl`**: This setting tells Medplum the base URL for serving binary content. For server proxying, this should be your Medplum `baseUrl` followed by `/storage/`.
+2.  **`storageBaseUrl`**: This setting tells Afiax the base URL for serving binary content. For server proxying, this should be your Afiax `baseUrl` followed by `/storage/`.
 
     - **Example:**
       If your `baseUrl` is `https://api.example.com/`, then `storageBaseUrl` should be `https://api.example.com/storage/`.
 
-Here's an example of how these settings might appear in your Medplum server configuration (e.g., `medplum.config.json`):
+Here's an example of how these settings might appear in your Afiax server configuration (e.g., `medplum.config.json`):
 
 ```json
 {
@@ -255,9 +255,9 @@ Here's an example of how these settings might appear in your Medplum server conf
 
 **Important Considerations:**
 
-- **Performance:** Proxying binary data through your Medplum server adds an extra hop and processing overhead compared to direct access via presigned URLs. For very high-traffic applications or extremely large files, consider the performance implications.
-- **Scalability:** Ensure your Medplum server infrastructure (e.g., CPU, memory, network bandwidth) is adequately scaled to handle the increased load if you are proxying a large volume of binary data.
-- **CORS:** When proxying, your `storageBaseUrl` will be on the same origin as your Medplum API. This can simplify CORS configurations for clients compared to accessing external storage domains.
-- **Security:** While proxying can centralize access control, ensure your Medplum server is properly secured and hardened, as it will now be directly exposed for serving binary content.
+- **Performance:** Proxying binary data through your Afiax server adds an extra hop and processing overhead compared to direct access via presigned URLs. For very high-traffic applications or extremely large files, consider the performance implications.
+- **Scalability:** Ensure your Afiax server infrastructure (e.g., CPU, memory, network bandwidth) is adequately scaled to handle the increased load if you are proxying a large volume of binary data.
+- **CORS:** When proxying, your `storageBaseUrl` will be on the same origin as your Afiax API. This can simplify CORS configurations for clients compared to accessing external storage domains.
+- **Security:** While proxying can centralize access control, ensure your Afiax server is properly secured and hardened, as it will now be directly exposed for serving binary content.
 
-By configuring `binaryStorage` and `storageBaseUrl` appropriately, you gain more control over how your binary content is served, tailoring Medplum to your specific deployment and operational requirements.
+By configuring `binaryStorage` and `storageBaseUrl` appropriately, you gain more control over how your binary content is served, tailoring Afiax to your specific deployment and operational requirements.

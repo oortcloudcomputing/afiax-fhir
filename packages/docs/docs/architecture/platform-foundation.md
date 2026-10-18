@@ -16,37 +16,27 @@ real Afiax product rather than a generic fork.
 
 Use these names consistently:
 
-- `Afiax FHIR`
-  - the FHIR-native clinical core in this repo
-- `Afiax Enterprise`
-  - the broader commercial platform offering that connects Afiax FHIR to adjacent services
-- `Afiax Connected Healthcare`
-  - the broader program and market-facing initiative under Oortcloud Computing
-- `Medplum`
-  - the upstream open-source foundation
-
-## What this means in practice
-
-When documenting or implementing behavior in this repo:
-
-- use `Afiax FHIR` for the product behavior in this repo
-- use `Afiax Enterprise` when discussing the surrounding commercial platform
-- use `Medplum` only where the upstream foundation, technical namespace, or legal attribution matters
-
-This is the rule that lets the docs read like a product without hiding the upstream base.
+- `Afiax FHIR`: the FHIR-native clinical core in this repo, the backbone of **Afiax Clinical Suite**
+- `Afiax Enterprise`: the broader commercial platform that connects Afiax FHIR to adjacent services
+- `Afiax Connected Healthcare`: the trading name of Oortcloud Computing Limited and its market-facing programme
+- `Medplum`: the upstream open-source project (Apache-2.0) that Afiax FHIR is built on
 
 ## Rebrand rule
 
-Product-facing docs and UI copy should present this repo as Afiax FHIR.
+**All prose is Afiax.** Headings, explanations, tutorials, UI copy, diagrams and contact details say Afiax, not Medplum. Hosted URLs point to Afiax (`app.afiax.africa`, `fhir.afiax.africa`), and contact addresses are `@afiax.africa`.
 
-Technical and upstream references should remain Medplum where needed, including:
+Some names stay as they are, because changing them would break code or misstate facts:
 
-- package namespaces such as `@medplum/*`
-- FHIR profile and canonical URLs already defined by the upstream platform
-- open-source attribution, license, and notice material
-- references to inherited upstream examples or behavior
+| Keep as is | Why | Examples |
+| --- | --- | --- |
+| Code identifiers | Renaming breaks builds and every existing integration | `@medplum/core`, `MedplumClient`, `MEDPLUM_BASE_URL`, `medplum.config.json`, `medplum` CLI |
+| Canonical and system URLs | Stored in data and FHIR profiles; changing them breaks existing records | `https://medplum.com/fhir/StructureDefinition/...`, `https://www.medplum.com/bots` |
+| Install paths and package names of upstream builds | They are the real names on disk | `C:\Program Files\Medplum Agent`, `medplum/medplum-server` image |
+| Open-source attribution | Required by the Apache-2.0 licence | SPDX headers, `NOTICE`, "built on Medplum open-source software" |
 
-Do not do a blind global rename of `Medplum` to `Afiax`. That breaks both technical accuracy and upstream alignment.
+**Medplum Inc.'s own claims must never be presented as Afiax's.** These include its SOC 2, HIPAA, ONC and other US certifications, its uptime and usage figures, customer logos, pricing, careers, terms and privacy policy. That material lives in `_upstream-medplum/` folders, which are not published. For Afiax's own position, see [Compliance](/docs/compliance) and [Security](/security).
+
+When you write a new page, read it through once before committing and check for stray "Medplum" in prose.
 
 ## Current engineering scope of this repo
 
@@ -55,7 +45,7 @@ This repo currently documents and implements:
 - Afiax FHIR core behavior
 - pack-aware administration and workflow surfaces
 - country-pack contracts
-- Medplum-aligned extensions needed for Afiax Enterprise
+- extensions that stay compatible with upstream Medplum, needed for Afiax Enterprise
 - documentation contracts for Afiax Billing, Afiax Pay, and partner integrations
 
 This repo does not currently implement:
@@ -71,28 +61,17 @@ broader Afiax Enterprise architecture, but not part of the core documented scope
 
 ## Upstream alignment rule
 
-Afiax FHIR is a Medplum-based product, not a rewrite of Medplum.
-
-That means this repo should preserve:
+Afiax FHIR is built on Medplum. It is not a rewrite, so this repo should preserve:
 
 - upstream package compatibility where practical
-- Medplum-aligned extension points
+- extension points that stay compatible with upstream Medplum
 - open-source attribution
-- a clean conceptual split between upstream foundation and Afiax-specific adaptation
+- a clean split between the upstream foundation and Afiax-specific adaptation (for example, country packs)
 
 It should avoid:
 
-- renaming technical namespaces without a migration strategy
-- hiding the upstream base in legal or technical docs
-- changing core behavior only for branding reasons
-
-## Why this matters
-
-This keeps the project honest in both directions:
-
-- users and partners see a real Afiax product rather than a raw fork
-- developers still understand where the upstream foundation begins and where Afiax-specific extensions start
-- maintainers can keep the repo aligned with Medplum concepts instead of drifting into an incompatible platform
+- renaming code identifiers (`@medplum/*`, `MEDPLUM_*`) without a migration plan
+- changing core behaviour only for branding reasons
 
 ## Practical documentation rule
 
@@ -100,8 +79,8 @@ When writing docs in this repo:
 
 - product pages should sound like Afiax FHIR
 - architecture pages should explain how Afiax FHIR fits into Afiax Enterprise
-- country-specific behavior should live in country-pack docs
-- upstream-specific behavior or attribution should still name Medplum when that is the technically correct reference
+- country-specific behaviour should live in country-pack docs
+- write for a beginner: say what the reader will end up with, list prerequisites, number the steps, show the expected result, and add a troubleshooting section
 
 ## Related docs
 

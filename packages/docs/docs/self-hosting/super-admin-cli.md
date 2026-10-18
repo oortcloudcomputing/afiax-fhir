@@ -4,9 +4,9 @@ sidebar_position: 80
 
 # Super Admin CLI
 
-Medplum includes a CLI (Command Line Interface).
+Afiax includes a CLI (Command Line Interface).
 
-The main docs for the CLI are available here: https://github.com/medplum/medplum/blob/main/packages/cli/README.md
+The main docs for the CLI are available here: https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/cli/README.md
 
 ## Installation
 
@@ -28,7 +28,7 @@ If you install it as a package dependency, then you will need to prefix with `np
 
 ## Base URL
 
-By default, the Medplum CLI connects to the Medplum hosted API at https://api.medplum.com/
+By default, the Afiax CLI connects to the Afiax hosted API at https://fhir.afiax.africa/
 
 You can use the `MEDPLUM_BASE_URL` to connect to your own hosted servers.
 
@@ -71,7 +71,7 @@ medplum whoami
 
 ## User Management
 
-The Medplum CLI supports RESTful CRUD operations. We can use that functionality to perform basic user management.
+The Afiax CLI supports RESTful CRUD operations. We can use that functionality to perform basic user management.
 
 List users:
 

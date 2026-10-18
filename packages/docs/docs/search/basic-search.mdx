@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 ## Intro
 
-One of the most basic operations when working with the Medplum FHIR API is to query resources that fulfill certain criteria.
+One of the most basic operations when working with the Afiax FHIR API is to query resources that fulfill certain criteria.
 
 The FHIR specification defines [rich search semantics](https://www.hl7.org/fhir/R4/search.html) to support these use cases, and this guide will cover some of the basic search operations to get you started. If you're new to FHIR, we'd recommend checking out our [FHIR Basics](/docs/fhir-basics) page first.
 
@@ -50,7 +50,7 @@ Lastly, _some_ search parameters rename/alias the target element. For example, t
 
 To search for resources, you can simply add search parameters and values as query parameters in your `GET` request.
 
-The [Medplum Client SDK](/docs/sdk/core.medplumclient) also provides the `search` helper method, which accepts a `string` or `object`.
+The [Afiax Client SDK](/docs/sdk/core.medplumclient) also provides the `search` helper method, which accepts a `string` or `object`.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -71,7 +71,7 @@ This request will return a [FHIR `Bundle`](/docs/api/fhir/resources/bundle) reso
   {ExampleCode}
 </MedplumCodeBlock>
 
-Because iterating over the `Bundle.entry` array is such a common pattern, the Medplum SDK provides the `searchResources` convenience method that unwraps the bundle and returns an array of resources.
+Because iterating over the `Bundle.entry` array is such a common pattern, the Afiax SDK provides the `searchResources` convenience method that unwraps the bundle and returns an array of resources.
 
 <MedplumCodeBlock language="ts" selectBlocks="searchAnd">
   {ExampleCode}

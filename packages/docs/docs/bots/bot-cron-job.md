@@ -8,10 +8,10 @@ You can add a cron job for your bot so it can automatically run from a schedule.
 
 ## To add a scheduled timer for your Bot
 
-- Navigate to your [Bots Page](https://app.medplum.com/admin/bots)
+- Navigate to your [Bots Page](https://app.afiax.africa/admin/bots)
 - Click on the Bot you would like create a Cron Job for
 - Click on the name of the Bot
-  - When you click on the Bot's name and open up the page, you should see the url similar to this `https://app.medplum.com/Bot/<botId>`
+  - When you click on the Bot's name and open up the page, you should see the url similar to this `https://app.afiax.africa/Bot/<botId>`
 - Click on the Edit Tab ![Edit Tab](/img/tutorials/edit-bot-page.png)
 
 ## The Edit Form

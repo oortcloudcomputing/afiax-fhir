@@ -108,7 +108,7 @@ For any range, if these demographic qualifiers are left unspecified, the system 
 
 :::tip Matching [`Patients`](/docs/api/fhir/resources/patient) to reference ranges
 
-The Medplum SDK provides helper functions,[ `findObservationInterval`](/docs/sdk/core.findobservationinterval), [`findObservationReferenceRange`](/docs/sdk/core.findobservationreferencerange), and [`matchesRange`](/docs/sdk/core.matchesrange) to find reference ranges that match a particular patient.
+The Afiax SDK provides helper functions,[ `findObservationInterval`](/docs/sdk/core.findobservationinterval), [`findObservationReferenceRange`](/docs/sdk/core.findobservationreferencerange), and [`matchesRange`](/docs/sdk/core.matchesrange) to find reference ranges that match a particular patient.
 
 <details>
   <summary>Example</summary>
@@ -141,16 +141,16 @@ The type of reference range is specified in the `qualifiedInterval.category` fie
   </MedplumCodeBlock>
 </details>
 
-## Editing reference ranges in the Medplum App
+## Editing reference ranges in the Afiax App
 
-Medplum has developed user interface tools to simplify the process of editing [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) reference ranges.
+Afiax has developed user interface tools to simplify the process of editing [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) reference ranges.
 The [ReferenceRangeEditor](https://storybook.medplum.com/?path=/story/medplum-referencerangeeditor--empty) component enables you to define groups of reference ranges for each set of patient attributes.
 
-You can integrate this component into your custom application, or you can use it directly within the Medplum App.
+You can integrate this component into your custom application, or you can use it directly within the Afiax App.
 
-To edit reference ranges in the Medplum App:
+To edit reference ranges in the Afiax App:
 
-1. Navigate to the Medplum App's ObservationDefinition page at https://app.medplum.com/ObservationDefinition.
+1. Navigate to the Afiax App's ObservationDefinition page at https://app.afiax.africa/ObservationDefinition.
 2. Select the specific [`ObservationDefinition`](/docs/api/fhir/resources/observationdefinition) resource you wish to edit.
 3. Click on the "Ranges" tab.
 

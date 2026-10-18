@@ -88,7 +88,7 @@ The operation returns a `Parameters` resource containing the validation result.
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$validate-code' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -115,5 +115,5 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
 - [ValueSet $expand](/docs/api/fhir/operations/valueset-expand) - Expand a value set to see all valid codes
 - [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate codes against code systems
 - [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up details about codes
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
 - [FHIR ValueSet $validate-code](https://hl7.org/fhir/R4/valueset-operation-validate-code.html) - FHIR specification

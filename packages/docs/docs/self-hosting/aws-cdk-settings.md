@@ -4,9 +4,9 @@ sidebar_position: 2
 
 # AWS CDK Settings Reference
 
-When deploying Medplum on AWS using the provided CDK, you will need to create a configuration file to define your infrastructure settings. This is a JSON file that contains all of the custom infrastructure configuration settings for your environment.
+When deploying Afiax on AWS using the provided CDK, you will need to create a configuration file to define your infrastructure settings. This is a JSON file that contains all of the custom infrastructure configuration settings for your environment.
 
-Here is a full example for the Medplum staging environment. See the detailed information for each setting below.
+Here is a full example for the Afiax staging environment. See the detailed information for each setting below.
 
 ```json
 {
@@ -41,7 +41,7 @@ Here is a full example for the Medplum staging environment. See the detailed inf
 
 ### name
 
-The short name of your environment. This should be unique among your Medplum deployments. This will be used as part of Parameter Store path and CloudWatch Logs path. For example, `prod` or `staging`.
+The short name of your environment. This should be unique among your Afiax deployments. This will be used as part of Parameter Store path and CloudWatch Logs path. For example, `prod` or `staging`.
 
 ### stackName
 
@@ -65,7 +65,7 @@ Optional preexisting VPC ID. Use this to import an existing VPC. If this setting
 
 ### apiDomainName
 
-The domain name of the API server. This should be a subdomain of `domainName`. For example, `api.medplum.com` or `api.staging.medplum.com`.
+The domain name of the API server. This should be a subdomain of `domainName`. For example, `fhir.afiax.africa` or `api.staging.medplum.com`.
 
 ### apiPort
 
@@ -85,7 +85,7 @@ Optional ARN of the WAF IP Set to use for the API server load balancer. When set
 
 ### appDomainName
 
-The domain name of the app server. This should be a subdomain of `domainName`. For example, `app.medplum.com` or `app.staging.medplum.com`.
+The domain name of the app server. This should be a subdomain of `domainName`. For example, `app.afiax.africa` or `app.staging.medplum.com`.
 
 ### appSslCertArn
 
@@ -165,7 +165,7 @@ The number of running ECS/Fargate instances in steady state. Use `1` when gettin
 
 ### serverImage
 
-The DockerHub server image to deploy. Use `medplum/medplum-server:4.0` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
+The DockerHub server image to deploy. Use `medplum/medplum-server:4.0` for the most recent version published by the Afiax team. Or use your own repository if you need to deploy a custom instance.
 
 ### serverMemory
 

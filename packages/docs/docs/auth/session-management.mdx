@@ -8,13 +8,13 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Access Token Management
 
-This guide explains how Medplum manages authentication tokens and how to implement secure token handling in your applications.
+This guide explains how Afiax manages authentication tokens and how to implement secure token handling in your applications.
 
 ## Access Tokens vs Refresh Tokens
 
-Medplum uses two types of tokens to manage authentication securely:
+Afiax uses two types of tokens to manage authentication securely:
 
-**Access Tokens** are short-lived JSON Web Tokens (JWTs) that grant access to Medplum APIs. Each access token contains essential information about the user's permissions and session details. Every API request must include a valid access token.
+**Access Tokens** are short-lived JSON Web Tokens (JWTs) that grant access to Afiax APIs. Each access token contains essential information about the user's permissions and session details. Every API request must include a valid access token.
 
 **Refresh Tokens** are long-lived credentials used to obtain new access tokens without requiring the user to log in again. These tokens are stored securely by client applications and are only transmitted when requesting a new access token.
 
@@ -62,13 +62,13 @@ Consider your security requirements carefully when adjusting these values. Longe
 
 ## Managing Token Refresh with Grace Periods
 
-The Medplum client includes a token refresh system that helps prevent service interruptions. The system uses a "grace period" to proactively refresh tokens before they expire.
+The Afiax client includes a token refresh system that helps prevent service interruptions. The system uses a "grace period" to proactively refresh tokens before they expire.
 
 ### How Grace Periods Work
 
 The grace period represents how long before expiration the client should attempt to refresh the token. By default, this is set to 5 minutes (300,000 milliseconds). For example, if your access token expires at 2:00 PM, the client will attempt to refresh it starting at 1:55 PM.
 
-The Medplum client automatically handles token refresh in three scenarios:
+The Afiax client automatically handles token refresh in three scenarios:
 
 1. Before making API requests when the token is within the grace period
 2. When receiving a 401 Unauthorized response from the server
@@ -98,7 +98,7 @@ To handle this scenario, you should:
 
 ### Customizing the Grace Period
 
-You can adjust the grace period when initializing the Medplum client:
+You can adjust the grace period when initializing the Afiax client:
 
 <MedplumCodeBlock language="ts" selectBlocks="graceCustomization" showLineNumbers>
   {ExampleCode}
@@ -108,11 +108,11 @@ You can adjust the grace period when initializing the Medplum client:
 
 1. **Use Short-Lived Access Tokens**
 
-   Keep access token lifetimes short (1-2 hours maximum) to minimize the impact of token theft. The Medplum client's automatic refresh mechanism means you don't need long-lived access tokens for continuous operation.
+   Keep access token lifetimes short (1-2 hours maximum) to minimize the impact of token theft. The Afiax client's automatic refresh mechanism means you don't need long-lived access tokens for continuous operation.
 
 2. **Leverage Automatic Token Refresh**
 
-   The Medplum client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
+   The Afiax client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
 
    <MedplumCodeBlock language="ts" selectBlocks="bestPractices" showLineNumbers>
      {ExampleCode}

@@ -90,7 +90,7 @@ medplum post admin/projects/:projectId/invite \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/invite \
+curl https://fhir.afiax.africa/admin/projects/:projectId/invite \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -163,7 +163,7 @@ medplum post admin/projects/:projectId/invite \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/invite \
+curl https://fhir.afiax.africa/admin/projects/:projectId/invite \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -234,7 +234,7 @@ medplum post admin/projects/:projectId/invite \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/invite \
+curl https://fhir.afiax.africa/admin/projects/:projectId/invite \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

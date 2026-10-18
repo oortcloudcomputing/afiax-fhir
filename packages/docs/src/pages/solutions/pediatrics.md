@@ -1,7 +1,7 @@
 # Pediatrics
 
 Pediatric care models often need more flexible family access, communication-heavy workflows, and stronger operational
-coordination than adult-first systems assume. Afiax can support pediatric delivery patterns on the same Medplum core
+coordination than adult-first systems assume. Afiax can support pediatric delivery patterns on the same Afiax core
 without forcing pediatric teams into generic workflow assumptions.
 
 ## Common pediatric requirements
@@ -22,7 +22,7 @@ without forcing pediatric teams into generic workflow assumptions.
 ## Why this matters
 
 Pediatric workflows are a strong example of why Afiax should remain configurable at the workflow and access-policy
-layer while keeping Medplum as the canonical record layer.
+layer while keeping Afiax as the canonical record layer.
 
 ## Related docs
 

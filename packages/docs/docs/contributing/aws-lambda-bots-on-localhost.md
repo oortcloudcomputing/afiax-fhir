@@ -4,7 +4,7 @@ sidebar_position: 1000
 
 # Running AWS Lambda Bots with Localhost
 
-When developing for Medplum, you may want your **local Medplum Server** to trigger and execute **AWS Lambda-based Bots**. This setup allows you to test Lambda-specific behavior (like cold starts or resource limits) without deploying your entire server stack to the cloud.
+When developing for Afiax, you may want your **local Afiax Server** to trigger and execute **AWS Lambda-based Bots**. This setup allows you to test Lambda-specific behavior (like cold starts or resource limits) without deploying your entire server stack to the cloud.
 
 ### Architecture Overview
 
@@ -14,7 +14,7 @@ When configured this way, your local server acts as the "orchestrator," using yo
 
 ### 1. Configure AWS Credentials
 
-Your local server needs permission to create and invoke Lambda functions. Medplum recommends using **AWS IAM Identity Center (SSO)** for secure access.
+Your local server needs permission to create and invoke Lambda functions. Afiax recommends using **AWS IAM Identity Center (SSO)** for secure access.
 
 To authenticate with a specific profile:
 
@@ -32,7 +32,7 @@ aws sts get-caller-identity --profile medplum-dev
 
 > **Note:** If you aren't using SSO, ensure your `~/.aws/credentials` file is properly configured with an `access_key` and `secret_key`.
 
-### 2. Configure the Medplum Server
+### 2. Configure the Afiax Server
 
 Update your `packages/server/medplum.config.json` to point to the correct AWS resources.
 
@@ -48,7 +48,7 @@ Update your `packages/server/medplum.config.json` to point to the correct AWS re
 The most efficient way to get these values is to pull them from an existing environment's **AWS Parameter Store**:
 
 1. Open the **AWS Console** and navigate to **Systems Manager > Parameter Store**.
-2. Look for the following keys (standard for Medplum deployments):
+2. Look for the following keys (standard for Afiax deployments):
 
 - `/medplum/staging/botLambdaRoleArn`
 - `/medplum/staging/botLambdaLayerName`
@@ -66,10 +66,10 @@ AWS_PROFILE=medplum-dev npm run dev --workspace=packages/server
 
 Once the server is running with the correct configuration:
 
-1. **Create/Open a Bot:** In your local Medplum web app (typically `localhost:3000`), navigate to your Bot.
+1. **Create/Open a Bot:** In your local Afiax web app (typically `localhost:3000`), navigate to your Bot.
 2. **Set Runtime:** Ensure the `Bot.runtimeVersion` is set to `awslambda`.
 3. **Deploy:** Click **"Deploy"**. The local server will now bundle your bot and upload it as a Lambda function to your AWS account.
-4. **Execute:** Click **"Execute"**. You should see the execution logs in your local terminal and the Medplum UI.
+4. **Execute:** Click **"Execute"**. You should see the execution logs in your local terminal and the Afiax UI.
 
 ## Troubleshooting
 
@@ -78,6 +78,6 @@ Once the server is running with the correct configuration:
 
 ## See Also
 
-- [Medplum Bot Basics](/docs/bots/bot-basics)
+- [Afiax Bot Basics](/docs/bots/bot-basics)
 - [Provisioning Bot Layers](/docs/bots/bot-lambda-layer)
 - [AWS CLI Configuration Guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html)

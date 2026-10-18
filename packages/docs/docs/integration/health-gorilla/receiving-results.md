@@ -354,7 +354,7 @@ Unstructured PDF reports are stored as `DocumentReference` resources, with diffe
 
 ### Detected Issues
 
-The Medplum Health Gorilla integration creates `DetectedIssue` resources to flag clinical workflow concerns.
+The Afiax Health Gorilla integration creates `DetectedIssue` resources to flag clinical workflow concerns.
 
 Currently, the main source of `DetectedIssues` are unsolicited reports (see below)
 
@@ -390,7 +390,7 @@ Currently, the main source of `DetectedIssues` are unsolicited reports (see belo
 
 ### Organizations
 
-Health Gorilla returns detailed information about the performing laboratory for each observation. If the corresponding lab does not exist inside your Medplum project, `receive-from-health-gorilla` will create the corresponding `Organization` resource and link it to each observation.
+Health Gorilla returns detailed information about the performing laboratory for each observation. If the corresponding lab does not exist inside your Afiax project, `receive-from-health-gorilla` will create the corresponding `Organization` resource and link it to each observation.
 
 **Key Information Captured:**
 
@@ -438,7 +438,7 @@ Health Gorilla returns detailed information about the performing laboratory for 
 
 ### Quest
 
-- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource _in-place_. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
+- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Afiax's `DiagnosticReport` resource _in-place_. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
 
 ## Special Workflows
 

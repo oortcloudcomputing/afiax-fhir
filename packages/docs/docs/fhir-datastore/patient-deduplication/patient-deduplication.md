@@ -17,7 +17,7 @@ While it requires some planning up front, reconciling patient data from multiple
 
 The merge techniques described here are general purpose, but can exist in two contexts (a) automatic merge, (b) manual merge or "human-in-the-loop." In both cases, audit reports are produced allowing visibility into why records were matched, why they were merged and who merged them.
 
-You can also check out our [blog post](/blog/patient-deduplication) on the topic for more information.
+You can also check out our [blog post](https://www.medplum.com/blog/patient-deduplication) on the topic for more information.
 
 ## See Also
 

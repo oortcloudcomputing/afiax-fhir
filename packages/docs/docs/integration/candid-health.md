@@ -15,7 +15,7 @@ This page is under construction and should not be used as reference material.
 
 ## Integration Set Up
 
-Setup requires project linking or `Organizations` with the correct identifiers and metadata to your Medplum Project.  Bots ando other automations should be added to enable integration.
+Setup requires project linking or `Organizations` with the correct identifiers and metadata to your Afiax Project.  Bots ando other automations should be added to enable integration.
 
 ## On Demand Workflows
 
@@ -42,7 +42,7 @@ Check and store balances.  Data model TBD.
 
 ### Claim Submission
 
-Synchronize the finalized `Encounter` to the [Encounter endpoint for Candid](https://docs.joincandidhealth.com/api-reference/encounters/v-4/create).  A claim will be generated on the Candid side and included in the response.  A copy of that `Claim` resources, with the appropriate identifiers should be saved to the Medplum process.
+Synchronize the finalized `Encounter` to the [Encounter endpoint for Candid](https://docs.joincandidhealth.com/api-reference/encounters/v-4/create).  A claim will be generated on the Candid side and included in the response.  A copy of that `Claim` resources, with the appropriate identifiers should be saved to the Afiax process.
 
 ## Daily Sync Job
 

@@ -6,7 +6,7 @@ sidebar_position: 99
 
 # HealthGorilla Integration Changelog
 
-This page tracks updates, improvements, and changes to the HealthGorilla integration in Medplum.
+This page tracks updates, improvements, and changes to the HealthGorilla integration in Afiax.
 
 ## [October 2025]
 

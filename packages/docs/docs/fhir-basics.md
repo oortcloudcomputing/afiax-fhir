@@ -27,16 +27,16 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 [reference]: /docs/api/fhir/datatypes/reference
 [codeableconcept]: /docs/api/fhir/datatypes/codeableconcept
 
-To follow along with the concepts described in this guide, you can download and import this [sample FHIR bundle](https://drive.google.com/file/d/1196wfX-aBMUK33GdQiIdBUNlYn_cymBU/view?usp=drive_link) into your Medplum project. For instructions on how to import the data, refer to our [Import Sample Data](/docs/tutorials/importing-sample-data) guide.
+To follow along with the concepts described in this guide, you can download and import this [sample FHIR bundle](https://drive.google.com/file/d/1196wfX-aBMUK33GdQiIdBUNlYn_cymBU/view?usp=drive_link) into your Afiax project. For instructions on how to import the data, refer to our [Import Sample Data](/docs/tutorials/importing-sample-data) guide.
 
 ## Why FHIR?
 
-Medplum stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:
+Afiax stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:
 
 - **Interoperability**: Increasingly, healthcare partners are exposing their data via FHIR APIs. Storing your data according to FHIR spec smooths the path to interoperating with multiple partners
 - **Future Proofing**: The healthcare ecosystem is complex and fragmented. As they encounter these complexities, many digital health companies end up performing costly data migrations. The FHIR spec anticipates many of the complexities that arise in the healthcare domain, helping teams avoid these backend rewrites.
 
-While FHIR is quite powerful, it can have a bit of a learning curve. This page covers the basic concepts for understanding FHIR data in Medplum. For more information, you can check out the [official FHIR documentation](http://hl7.org/fhir/).
+While FHIR is quite powerful, it can have a bit of a learning curve. This page covers the basic concepts for understanding FHIR data in Afiax. For more information, you can check out the [official FHIR documentation](http://hl7.org/fhir/).
 
 ## Storing Data: Resources
 
@@ -114,7 +114,7 @@ To create a link between objects, we use [`Reference`][reference] elements. A FH
 }
 ```
 
-In Medplum, we will typically only use the `reference` and `display` elements.
+In Afiax, we will typically only use the `reference` and `display` elements.
 
 <details>
 <summary>
@@ -154,11 +154,11 @@ The example below shows a resource modeling a prescription (i.e. [`MedicationReq
 
 <br/>
 
-FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](/blog/graphql-vs-rest) for tradeoffs between REST and GraphQL).
+FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](https://www.medplum.com/blog/graphql-vs-rest) for tradeoffs between REST and GraphQL).
 
 **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification defines specific [search parameters](/docs/search/basic-search#search-parameters) for each resource that can be used for queries.
 
-Refer to the [Medplum search documentation](/docs/search/basic-search) for a more in-depth tutorial on FHIR search.
+Refer to the [Afiax search documentation](/docs/search/basic-search) for a more in-depth tutorial on FHIR search.
 
 ## Standardizing Data: Codeable Concepts
 
@@ -182,7 +182,7 @@ FHIR [`CodeableConcepts`][codeableconcept] use the `system` element to identify 
 More detailed information about using coded values with FHIR are available in our
 [Terminology Services documentation](/docs/terminology).
 
-Refer to [this blog post](/blog/demystifying-fhir-systems) for a longer discussion of `system` strings.
+Refer to [this blog post](https://www.medplum.com/blog/demystifying-fhir-systems) for a longer discussion of `system` strings.
 
 Refer to the [FHIR official documentation](https://hl7.org/fhir/R4/terminologies-systems.html) for a list of `systems` for common healthcare code systems.
 
@@ -216,7 +216,7 @@ FHIR anticipates this complexity by allowing each resource to have multiple iden
 
 Each identifier is defined by a `(system, value)` pair. As with [`CodeableConcepts`][codeableconcept], the `system` acts as namespace for the identifier, and _must be specified as an absolute URL_ to ensure that it is globally unique.
 
-Refer to [this blog post](/blog/demystifying-fhir-systems#identifiers-1) for best practices on using identifier `system` strings.
+Refer to [this blog post](https://www.medplum.com/blog/demystifying-fhir-systems#identifiers-1) for best practices on using identifier `system` strings.
 
 Using the identifier system allows you to simplify your healthcare applications by consolidating data in a single resource, while allowing different systems to access the data by different ID schemes.
 
@@ -308,6 +308,6 @@ ValueSets are a collection of codes that are used to represent a concept. They a
 - **criteria**: This is a string expression that defines _which_ resources to listen to, specified in [FHIRPath](https://hl7.org/fhirpath/) format. This subscription is invoked whenever a resource that matches the criteria is created or updated.
 - **channel**: this describes the kind of action that the `Subscription` will take when it sees a matching resource. Currently, the possible values are `rest-hook`, `websocket`, `email`, and `message`.
 
-In Medplum, a powerful feature is to **use a [Medplum Bot](./bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](./bots/bot-for-questionnaire-response) for more information.
+In Afiax, a powerful feature is to **use an [Afiax Bot](./bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](./bots/bot-for-questionnaire-response) for more information.
 
 <br/>

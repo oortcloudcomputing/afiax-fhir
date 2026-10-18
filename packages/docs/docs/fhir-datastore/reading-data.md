@@ -14,7 +14,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/read
 
 A very common operation is reading the data of a specified resource given its `id`. The FHIR `read` operation is used by sending an HTTP `GET` request.
 
-Medplum also provides the `readResource` helper function as a part of the `MedplumClient`. This function takes a `resourceType` and `id` of the resource you would like to read.
+Afiax also provides the `readResource` helper function as a part of the `MedplumClient`. This function takes a `resourceType` and `id` of the resource you would like to read.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -41,6 +41,6 @@ If you attempt to read a resource with an `id` that does not exist, you will rec
 :::
 :::note Reading Multiple Resources
 
-If you want to read multiple resources, you should use Medplum's search functionality. For more info see the [Search Basics docs](/docs/search/basic-search)
+If you want to read multiple resources, you should use Afiax's search functionality. For more info see the [Search Basics docs](/docs/search/basic-search)
 
 :::

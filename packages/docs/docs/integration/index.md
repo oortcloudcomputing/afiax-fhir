@@ -1,6 +1,6 @@
 # Integration
 
-Medplum's integrations the most commonly used features of the platform, and the tools can be used to build effective robust integrations. Medplum supports three types of integrations:
+Afiax's integrations the most commonly used features of the platform, and the tools can be used to build effective robust integrations. Afiax supports three types of integrations:
 
 - **First party** integrations with common medical systems
 - **Common medical integrations** like FHIR, HL7 V2, SMART-on-FHIR and SFTP
@@ -8,7 +8,7 @@ Medplum's integrations the most commonly used features of the platform, and the 
 
 ## First Party Integrations
 
-Medplum supports the following first party integrations.
+Afiax supports the following first party integrations.
 
 <table>
   <thead>
@@ -60,7 +60,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.epic.com/">Epic Systems</a></td>
       <td>EHR</td>
       <td>Read/Write via FHIR API</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic">Epic JWT authentication</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/epic">Epic JWT authentication</a></td>
     </tr>
     <tr>
       <td><a href="https://www.healthgorilla.com/">Health Gorilla Patient 360</a></td>
@@ -72,7 +72,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://zushealth.com/">Zus Health</a></td>
       <td>HIE</td>
       <td>Integrated HIE, analytics and longitudinal care</td>
-      <td><a href="https://docs.zushealth.com/docs/medplum">Medplum integration</a></td>
+      <td><a href="https://docs.zushealth.com/docs/medplum">Afiax integration</a></td>
     </tr>
     <tr>
       <td><a href="https://www.healthgorilla.com/">Health Gorilla Lab Network</a></td>
@@ -90,7 +90,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.questdiagnostics.com/">Quest</a></td>
       <td>Diagnostics</td>
       <td>Lab orders and results</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Communications</strong></td>
@@ -108,7 +108,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.joincandidhealth.com/">Candid Health</a></td>
       <td>Billing</td>
       <td>Revenue cycle and insurance eligibility check</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Data and Observability</strong></td>
@@ -138,14 +138,14 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.openai.com/">OpenAI</a></td>
       <td>AI</td>
       <td>Large language models</td>
-      <td><a href="/docs/ai">Medplum AI</a></td>
+      <td><a href="/docs/ai">Afiax AI</a></td>
     </tr>
   </tbody>
 </table>
 
 ## Common Medical Integrations
 
-Medplum provides templates and playbooks for common medical integrations.
+Afiax provides templates and playbooks for common medical integrations.
 
 <table>
   <thead>
@@ -171,7 +171,7 @@ Medplum provides templates and playbooks for common medical integrations.
       <td>EHR</td>
       <td>FHIR API for other EHRs</td>
       <td>
-        <a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic">Example bot FHIR API connectivity</a><br />
+        <a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/epic">Example bot FHIR API connectivity</a><br />
         <a href="/docs/cli/external-fhir-servers">CLI connector</a>
       </td>
     </tr>
@@ -184,7 +184,7 @@ Medplum provides templates and playbooks for common medical integrations.
     <tr>
       <td>SMART-on-FHIR</td>
       <td>EHR</td>
-      <td>SMART app launch from Medplum or another EHR</td>
+      <td>SMART app launch from Afiax or another EHR</td>
       <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
     </tr>
     <tr>
@@ -249,7 +249,7 @@ Medplum provides templates and playbooks for common medical integrations.
 
 ## Custom built integrations
 
-Medplum provides building blocks for custom integrations. Some examples are below.
+Afiax provides building blocks for custom integrations. Some examples are below.
 
 <table>
   <thead>
@@ -268,7 +268,7 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td><a href="https://stripe.com/">Stripe</a></td>
       <td>Bot Webhooks</td>
       <td>Synchronize payments data</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe bot</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe bot</a></td>
     </tr>
     <tr>
       <td><a href="https://www.acuityscheduling.com/">Acuity Scheduling</a></td>
@@ -298,13 +298,13 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td><a href="https://www.cms.gov/medicare/cms-forms/cms-forms/downloads/cms1500.pdf">CMS 1500</a></td>
       <td>Bot PDF</td>
       <td>Create PDF for CMS 1500</td>
-      <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
     </tr>
     <tr>
       <td>Superbill</td>
       <td>Bot PDF</td>
       <td>Create PDF for Superbill</td>
-      <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
     </tr>
   </tbody>
 </table>
@@ -317,7 +317,7 @@ Complex integrations are built by composing [bots](/docs/bots/), [subscriptions]
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers
 - [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
 - [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
-- [Bot Pull Requests](https://github.com/medplum/medplum/issues?q=label%3Abots) can be good reference material for how integrations work.
+- [Bot Pull Requests](https://github.com/oortcloudcomputing/afiax-fhir/issues?q=label%3Abots) can be good reference material for how integrations work.
 - [Auth Pull Requests](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.
 
 ## Related

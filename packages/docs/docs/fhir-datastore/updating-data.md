@@ -12,7 +12,7 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/upda
 
 # Updating Data
 
-Medplum offers three FHIR operations that can be used to update data:
+Afiax offers three FHIR operations that can be used to update data:
 
 - `update`: Replaces the entire resource
 - `upsert`: Replaces the entire resource and creates a new one if the specified resource is not found
@@ -22,7 +22,7 @@ Medplum offers three FHIR operations that can be used to update data:
 
 The `update` operation is performed by sending a `PUT` request, which will create an entirely new version of your resource, rewriting every element. When sending an update request you must include the `resourceType` and the `id` of the resource you are updating, as well as the updated resource itself in the body of the request.
 
-Medplum provides the `updateResource` method on the `MedplumClient` which implements the `update` operation. The function takes the updated resource as an argument.
+Afiax provides the `updateResource` method on the `MedplumClient` which implements the `update` operation. The function takes the updated resource as an argument.
 
 The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resource.
 
@@ -55,7 +55,7 @@ The `upsert` operation also sends a `PUT` request, updating your entire resource
 - If it does not find a matching resource, one will be created from the given data.
 - If multiple matches are found, an error will be returned. In this case, more specific search criteria are required to unambiguously identify the resource to be updated or created.
 
-Medplum provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a FHIR search query to find the resource to be updated.
+Afiax provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a FHIR search query to find the resource to be updated.
 
 The below operation searches for a patient to add a name to, and creates it if it cannot be found.
 
@@ -109,7 +109,7 @@ To prevent this, you can use the `If-Match` header (or `ifMatch` option) to spec
 
 The `patch` operation is performed by sending an HTTP `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.
 
-Medplum provides the `patchResource` method on the `MedplumClient` which implements the `patch` operation. The function takes the `resourceType`, `id`, and an array of `PatchOperations`. A `PatchOperation` details the updates that will be made to your resource, and has three required fields: `op`, `path`, and `value`. The `op` is the actual operation that will be performed, the `path` is the path to the element on the resource that is being updated, and the `value` is the new value for the element at the given path.
+Afiax provides the `patchResource` method on the `MedplumClient` which implements the `patch` operation. The function takes the `resourceType`, `id`, and an array of `PatchOperations`. A `PatchOperation` details the updates that will be made to your resource, and has three required fields: `op`, `path`, and `value`. The `op` is the actual operation that will be performed, the `path` is the path to the element on the resource that is being updated, and the `value` is the new value for the element at the given path.
 
 The `PatchOperation` below sends an `add` operation to the `name` of the [`Patient`](/docs/api/fhir/resources/patient) with our newly created name. The `add` operation can be used even if the patient already has a name, as it will replace any value it finds at the given path.
 

@@ -4,7 +4,7 @@ sidebar_position: 7
 
 # Install on Azure
 
-This document is intended to guide users through the deployment of Medplum on Azure using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Network (Vnet), Azure Kubernetes Services (AKS) cluster, PostgreSQL database, Storage accounts, CDN, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Medplum’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
+This document is intended to guide users through the deployment of Afiax on Azure using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Network (Vnet), Azure Kubernetes Services (AKS) cluster, PostgreSQL database, Storage accounts, CDN, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Afiax’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
 
 :::caution
 
@@ -12,31 +12,31 @@ This deployment option has been validated for production use and offers a robust
 
 This is a complex multi-step process, and requires high proficiency with Azure, Terraform, Node.js, and command line tools.
 
-Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
+Afiax strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
+If you have any questions, please [contact us](mailto:info@afiax.africa).
 
 :::
 
 ## High-level overview {#high-level-overview}
 
-To deploy Medplum in Azure, the process is divided into two parts:
+To deploy Afiax in Azure, the process is divided into two parts:
 
 - Static Infrastructure (using terraform)
-- Medplum App (helm chart)
+- Afiax App (helm chart)
 
 This division allows a fully customizable deployment, for example: if a customer wants to use an existing K8s cluster, they can just deploy the helm chart to it.
 
-The Medplum application is configured using a secret in Azure KeyVault.  
+The Afiax application is configured using a secret in Azure KeyVault.  
 See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### Azure Architecture {#azure-architecture}
 
-![Medplum Azure Architecture](./azure-architecture.webp)
+![Afiax Azure Architecture](./azure-architecture.webp)
 
 ### Infrastructure summary {#infrastructure-summary}
 
-- The Medplum backend (API) container runs in Kubernetes.
+- The Afiax backend (API) container runs in Kubernetes.
   - The API is exposed using an Application Gateway, which is created in terraform
   - Azure AppService managed certificates are used. (they need to be created and exported to a KeyVault)
 - We use a managed Redis cache and PostgreSQL flexible servers
@@ -46,7 +46,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 
 1. Create a KeyVault for certificates. Generate the certificates and make them available in the KV.
 2. Deploy static infrastructure using terraform (VNET, AKS, PostgreSQL, Redis, Storage Accounts, Application Gateway)
-3. With the values from Step 2, create the Medplum app configuration
+3. With the values from Step 2, create the Afiax app configuration
 4. With the values from Step 2, point the DNS records
 5. Deploy the backend application using the helm chart
 6. Copy the frontend files to the CDN storage, using the script
@@ -94,7 +94,7 @@ The `terraform` folder contains **Terraform** configurations for deploying infra
 Run:
 
 ```
-git clone https://github.com/medplum/medplum
+git clone https://github.com/oortcloudcomputing/afiax-fhir
 cd terraform/azure/
 ```
 
@@ -172,7 +172,7 @@ Use `terraform output postgresql_password` to retrieve the PostgreSQL password
 
 ### Generate configuration secret {#generate-configuration-secret}
 
-The configuration secret holds the Medplum application configuration, and it contains the connection strings to the rest of the infrastructure that we deployed before using terraform.
+The configuration secret holds the Afiax application configuration, and it contains the connection strings to the rest of the infrastructure that we deployed before using terraform.
 
 **1\. Use an existing or create a new KeyVault in Azure**
 
@@ -192,7 +192,7 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
     "appBaseUrl": "http://localhost:3000/",
     "binaryStorage": "file:./binary/",
     "storageBaseUrl": "http://localhost:8103/storage/",
-    "supportEmail": "\"Medplum\" <support@medplum.com>",
+    "supportEmail": "\"Afiax\" <support@afiax.africa>",
     "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
     "googleClientSecret": "",
     "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
@@ -253,10 +253,10 @@ cdn_endpoint = "medplumapp7d8c-endpoint-cv01.azurefd.net"
 
 - **Update DNS Records:**  
   In your DNS provider’s management console, create an A record pointing to the IP address, and a CNAME record pointing to the CDN address:
-- **For** `api.medplum.com`**:**
-  - Create an A record for api.medplum.com pointing to `201.429.43.229`
-- **For** `app.medplum.com`**:**
-  - Create a CNAME record for app.medplum.com pointing to `medplumapp-endpoint-cv01.azurefd.net`
+- **For** `fhir.afiax.africa`**:**
+  - Create an A record for fhir.afiax.africa pointing to `201.429.43.229`
+- **For** `app.afiax.africa`**:**
+  - Create a CNAME record for app.afiax.africa pointing to `medplumapp-endpoint-cv01.azurefd.net`
 
 ### Deploy the APP Using Helm {#deploy-the-app-using-helm}
 
@@ -335,7 +335,7 @@ ingress:
 
 **Create a K8s secret from the KeyVault certificate:**
 
-In the Step 1, we prepared a certificate for `api.medplum.com` and exported it to a KeyVault. Now we need to download that certificate and create a kubernetes secret with it:
+In the Step 1, we prepared a certificate for `fhir.afiax.africa` and exported it to a KeyVault. Now we need to download that certificate and create a kubernetes secret with it:
 
 ```
 # download cert

@@ -5,9 +5,9 @@ tags: [auth]
 
 # Google Authentication
 
-Medplum supports using Google Authentication as an external identity provider, as well as [other external identity providers](/docs/auth/external-identity-providers) using the OAuth2 protocol. Google Authentication allows users to log in to your application using their Google profile.
+Afiax supports using Google Authentication as an external identity provider, as well as [other external identity providers](/docs/auth/external-identity-providers) using the OAuth2 protocol. Google Authentication allows users to log in to your application using their Google profile.
 
-By default, Medplum automatically syncs user profile data with each user login, thereby ensuring that changes made in the connection source are automatically updated in Medplum. Optionally, you can disable user profile data synchronization to allow for updating profile attributes from your application.
+By default, Afiax automatically syncs user profile data with each user login, thereby ensuring that changes made in the connection source are automatically updated in Afiax. Optionally, you can disable user profile data synchronization to allow for updating profile attributes from your application.
 
 ## Prerequisites
 
@@ -52,15 +52,15 @@ While setting up your credentials, use the following settings:
 
 When you successfully create the OAuth client, you will receive a **Client ID** and **Client Secret**. Google will present you with the option to "Download JSON". Do this, and save the JSON file for next steps.
 
-You can initiate a login attempt using the Medplum Client with the [`startGoogleLogin`](/docs/sdk/core.medplumclient.startgooglelogin) convenience method.
+You can initiate a login attempt using the Afiax Client with the [`startGoogleLogin`](/docs/sdk/core.medplumclient.startgooglelogin) convenience method.
 
 ## Add Google Client ID to your Project
 
-Go to the [sites](https://app.medplum.com/admin/sites) section of your admin console to set up your domain.
+Go to the [sites](https://app.afiax.africa/admin/sites) section of your admin console to set up your domain.
 
 ### Add Google Client ID to your SignInForm
 
-If using the Medplum React Component library, add your Google Client ID:
+If using the Afiax React Component library, add your Google Client ID:
 
 ```tsx
 <SignInForm onSuccess={() => navigate('/')?.catch(console.error)} googleClientId={process.env.GOOGLE_CLIENT_ID}>

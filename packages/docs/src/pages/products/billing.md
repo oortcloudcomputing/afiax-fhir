@@ -86,7 +86,7 @@ Kenya is the first reference pack for this pattern, and payer logic remains port
 ## Capability boundary
 
 In this repo, Afiax Billing appears as an external enterprise system. The repo documents the contracts and integration
-surfaces while Afiax Billing implementation code and ERPNext customization remain outside this Medplum fork.
+surfaces while Afiax Billing implementation code and ERPNext customization remain outside this Afiax fork.
 
 ## Related resources
 

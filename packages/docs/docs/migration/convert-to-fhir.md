@@ -14,7 +14,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 [condition]: /docs/api/fhir/resources/condition
 
 
-When migrating data from a 3rd party system to Medplum, a crucial step is converting your existing data into FHIR-compliant resources. This section will guide you through the process of reshaping your data elements, adding identifiers, dealing with codeable concepts, and linking data using conditional references.
+When migrating data from a 3rd party system to Afiax, a crucial step is converting your existing data into FHIR-compliant resources. This section will guide you through the process of reshaping your data elements, adding identifiers, dealing with codeable concepts, and linking data using conditional references.
 
 ## Reshaping Data Elements from the Source
 
@@ -40,12 +40,12 @@ FHIR [`Patient`][patient] Resource:
 
 ## Using FHIR Identifiers to link to the Source System
 
-To maintain traceability and link back to your source system, it's crucial to add the primary keys from your source system as [identifiers](/docs/fhir-basics#naming-data-identifiers) in Medplum.
+To maintain traceability and link back to your source system, it's crucial to add the primary keys from your source system as [identifiers](/docs/fhir-basics#naming-data-identifiers) in Afiax.
 
 Adding source system identifiers helps in:
 - Tracking the origin of each resource
 - Facilitating data reconciliation and auditing
-- Allow for idempotent updates within Medplum
+- Allow for idempotent updates within Afiax
 
 #### Example
 
@@ -117,7 +117,7 @@ This approach allows you to migrate your data quickly while still maintaining th
 
 When migrating data to FHIR, it's crucial to maintain relationships between resources. Conditional references are particularly helpful in this process.
 
-During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Medplum will assign to a resource once it's created. You may have noticed the reference to `Patient/????` in the previous example.
+During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Afiax will assign to a resource once it's created. You may have noticed the reference to `Patient/????` in the previous example.
 
 Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Medplum-generated IDs.
 
@@ -129,7 +129,7 @@ Let's amend the previous example to use a conditional reference to link our [`Co
 </MedplumCodeBlock>
 
 
-With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Medplum before writing the [`Condition`][condition]. The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
+With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Afiax before writing the [`Condition`][condition]. The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
 
 ## An End-to-End Example
 

@@ -13,7 +13,7 @@ The `$evaluate-measure` operation executes a defined clinical quality measure ag
 - **Performance dashboards**: Generate real-time metrics for provider performance tracking and quality improvement initiatives
 - **Research cohort analysis**: Count and analyze patient populations meeting specific clinical criteria for research studies
 
-Medplum supports the Measure [$evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) operation.
+Afiax supports the Measure [$evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) operation.
 
 :::caution
 
@@ -55,7 +55,7 @@ First, create a FHIR `Measure`:
 Next, make an HTTP POST request to the `$evaluate-measure` endpoint:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Measure/MY_MEASURE_ID/$evaluate-measure' \
+curl 'https://fhir.afiax.africa/fhir/R4/Measure/MY_MEASURE_ID/$evaluate-measure' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
@@ -105,4 +105,4 @@ The result will be a FHIR `MeasureReport` resource:
 - [FHIR MeasureReport Resource](https://hl7.org/fhir/R4/measurereport.html) - FHIR specification for MeasureReport
 - [FHIR $evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) - FHIR specification for the operation
 - [CMS eCQM Information](https://ecqi.healthit.gov/ecqms) - Electronic clinical quality measures resources
-- [Medplum Analytics Guide](/docs/analytics) - Building analytics and dashboards with Medplum
+- [Afiax Analytics Guide](/docs/analytics) - Building analytics and dashboards with Afiax

@@ -18,9 +18,9 @@ Also, Mailtrap provides a built-in Email Sandbox, which acts as a dummy SMTP ser
    - Username
    - Password
 
-## Configure Medplum Server
+## Configure Afiax Server
 
-1. Open your Medplum server configuration file (default location for local development: `packages/server/medplum.config.json`)
+1. Open your Afiax server configuration file (default location for local development: `packages/server/medplum.config.json`)
 
 2. Set your sender email address:
 ```json
@@ -39,7 +39,7 @@ Also, Mailtrap provides a built-in Email Sandbox, which acts as a dummy SMTP ser
 
 ## Testing
 
-After saving the configuration, restart the Medplum server. All emails will now be sent to your Mailtrap inbox. You can test this by:
+After saving the configuration, restart the Afiax server. All emails will now be sent to your Mailtrap inbox. You can test this by:
 - [Inviting a new user](/docs/app/invite)
 - Triggering a password reset
 

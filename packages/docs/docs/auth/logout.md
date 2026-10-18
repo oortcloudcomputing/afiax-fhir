@@ -17,7 +17,7 @@ Logout of the current session by revoking the current access token using `/oauth
 Send an HTTP POST request
 
 ```bash
-curl 'https://api.medplum.com/oauth2/logout' \
+curl 'https://fhir.afiax.africa/oauth2/logout' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
@@ -37,7 +37,7 @@ Users can retrieve a list of active sessions using the `/auth/me` endpoint. It w
 Each session has a login `id`. You can use this login `id` to revoke a specific session access token.
 
 ```bash
-curl 'https://api.medplum.com/auth/revoke' \
+curl 'https://fhir.afiax.africa/auth/revoke' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \

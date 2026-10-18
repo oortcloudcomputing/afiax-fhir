@@ -12,7 +12,7 @@ Building out a referral management experience requires composing multiple FHIR r
 
 ## Referral Overview
 
-Here is a **sample** of what a referral management experience might look like - to be clear, referral interfaces can look however you want them to. A sample referral application could be built using Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+Here is a **sample** of what a referral management experience might look like - to be clear, referral interfaces can look however you want them to. A sample referral application could be built using Afiax [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
 
 When capturing referral information, gathering the essential details using a [Questionnaire](/docs/api/fhir/resources/questionnaire.mdx) is a good first step. This can be used to create a [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) which serves as the core referral resource. You can query all resources related to a given referral from the [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) endpoint.
 
@@ -69,5 +69,5 @@ comm -->|about| referral
 - [FHIR ServiceRequest Resource](https://hl7.org/fhir/R4/servicerequest.html)
 - [FHIR Task Resource](https://hl7.org/fhir/R4/task.html)
 - [FHIR Communication Resource](https://hl7.org/fhir/R4/communication.html)
-- [Medplum Questionnaires Documentation](/docs/questionnaires/)
-- [Medplum Bots Documentation](/docs/bots/)
+- [Afiax Questionnaires Documentation](/docs/questionnaires/)
+- [Afiax Bots Documentation](/docs/bots/)

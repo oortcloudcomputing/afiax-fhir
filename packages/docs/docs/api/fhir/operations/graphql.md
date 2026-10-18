@@ -13,13 +13,13 @@ The FHIR GraphQL API allows you to query and retrieve FHIR resources using Graph
 - **Complex data relationships**: Navigate FHIR references and retrieve nested resources (e.g., Patient → Encounters → Practitioners) in one request
 - **API exploration**: Use GraphQL introspection to discover available FHIR resources and their fields programmatically
 
-Medplum provides a GraphQL API based on the [FHIR GraphQL](https://hl7.org/fhir/graphql.html) draft specification.
+Afiax provides a GraphQL API based on the [FHIR GraphQL](https://hl7.org/fhir/graphql.html) draft specification.
 
 Check out our [FHIR GraphQL Guide](/docs/graphql) for an in depth explanation of how to leverage the FHIR GraphQL API.
 
 ## Related
 
-- [Medplum FHIR GraphQL Guide](/docs/graphql) - Comprehensive guide to using GraphQL with Medplum
+- [Afiax FHIR GraphQL Guide](/docs/graphql) - Comprehensive guide to using GraphQL with Afiax
 - [GraphQL Queries](/docs/graphql/mutations) - GraphQL mutations and write operations
 - [FHIR Search](/docs/search) - Alternative REST-based search capabilities
 - [FHIR GraphQL Specification](https://hl7.org/fhir/graphql.html) - Official FHIR GraphQL draft specification

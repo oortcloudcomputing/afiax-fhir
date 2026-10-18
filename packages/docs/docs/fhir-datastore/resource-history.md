@@ -10,19 +10,19 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/reso
 
 # Resource History
 
-The Medplum backend stores every version of a resource, allowing you to easily track changes over time. Resource history can be viewed in the Medplum App or by accessing the `/_history` endpoint.
+The Afiax backend stores every version of a resource, allowing you to easily track changes over time. Resource history can be viewed in the Afiax App or by accessing the `/_history` endpoint.
 
-## Accessing History in the Medplum App
+## Accessing History in the Afiax App
 
-To access a resource's history in the [Medplum App](https://app.medplum.com), follow these steps:
+To access a resource's history in the [Afiax App](https://app.afiax.africa), follow these steps:
 
-- Navigate to the resources page at http://app.medplum.com/:resourceType.
+- Navigate to the resources page at http://app.afiax.africa/:resourceType.
 - Select your desired resource. This will bring you to that resource's page.
 - Select the `History` tab from the array of tabs at the top of the page.
 
 ![History Tab](history-tab.png)
 
-Alternatively, you can navigate directly to this page at https://app.medplum.com/:resourceType/:id/history.
+Alternatively, you can navigate directly to this page at https://app.afiax.africa/:resourceType/:id/history.
 
 The `History` tab shows every version of the selected resource, representing each time the resoruce was changed. Along with this, it will show when the change was made, as well as the user who made the update.
 
@@ -40,7 +40,7 @@ The history of a resouce can also be viewed by accessing the `/_history` endpoin
 
 To access the `/_history` endpoint, make a GET request to the url of the desired resource or resource type.
 
-The Medplum SDK also provides the `readHistory` helper function to access the `/_history` endpoint.
+The Afiax SDK also provides the `readHistory` helper function to access the `/_history` endpoint.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -68,7 +68,7 @@ There is currently no support for directly accessing the time and date that a re
 
 ## Reverting Changes to a Resource
 
-While there is no direct method to revert changes made to a resource, it can be easily done using the `readHistory` and `readVersion` helper functions provided by Medplum.
+While there is no direct method to revert changes made to a resource, it can be easily done using the `readHistory` and `readVersion` helper functions provided by Afiax.
 
 The `readHistory` function is used to get the entire history of the resource. You can then choose the version and use `readVersion` to return the complete details of that version of the resource. The current resource can then be updated to the historic details.
 

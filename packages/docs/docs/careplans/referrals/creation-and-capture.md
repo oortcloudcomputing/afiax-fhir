@@ -34,7 +34,7 @@ flowchart BT
 
 ## Example Bot for Processing Referrals
 
-Here's an example of a Medplum Bot that processes a QuestionnaireResponse and creates the necessary referral resources:
+Here's an example of an Afiax Bot that processes a QuestionnaireResponse and creates the necessary referral resources:
 
 ```typescript
 import { BotEvent, MedplumClient } from '@medplum/core';
@@ -125,7 +125,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }]
   };
   
-  // Create the ServiceRequest in Medplum
+  // Create the ServiceRequest in Afiax
   const createdServiceRequest = await medplum.createResource(serviceRequest);
   
   // Create a Task to track the referral
@@ -156,7 +156,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     description: `${specialty?.display || 'Specialist'} referral for ${reason}`
   };
   
-  // Create the Task in Medplum
+  // Create the Task in Afiax
   const createdTask = await medplum.createResource(task);
   
   // Get patient details for the referral document
@@ -190,7 +190,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }]
   };
   
-  // Create the Communication in Medplum
+  // Create the Communication in Afiax
   const createdCommunication = await medplum.createResource(communication);
   
   return {

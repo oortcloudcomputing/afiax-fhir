@@ -4,33 +4,33 @@ toc_max_heading_level: 2
 tags: [auth]
 ---
 
-# Using Medplum as IDP
+# Using Afiax as IDP
 
 ## Introduction
 
-When building your own healthcare App, you can use Medplum as an **identity provider** using the OAuth2 Authorization Code flow. Medplum provides OAuth2 endpoints to authenticate Patients and Practitioners and share data with your application.
+When building your own healthcare App, you can use Afiax as an **identity provider** using the OAuth2 Authorization Code flow. Afiax provides OAuth2 endpoints to authenticate Patients and Practitioners and share data with your application.
 
-This guide will go over the basics of Medplum's OAuth2 authorization code flow, and you can find more detailed documentation in the [API Section](/docs/api/oauth/).
+This guide will go over the basics of Afiax's OAuth2 authorization code flow, and you can find more detailed documentation in the [API Section](/docs/api/oauth/).
 
 We also have a **[minimal demo on Github](https://github.com/medplum/medplum-oauth-demo)** that implements a simple authorization code login.
 
 ## Create a Client Application
 
-The first step is to configure a [Medplum Client Application](https://app.medplum.com/ClientApplication) for your application on the Medplum Server.
+The first step is to configure an [Afiax Client Application](https://app.afiax.africa/ClientApplication) for your application on the Afiax Server.
 
-1. Go to the [**Project Admin clients page**](https://app.medplum.com/admin/clients), either by clicking "Project" on the left sidebar, or navigating to https://app.medplum.com/admin/project
+1. Go to the [**Project Admin clients page**](https://app.afiax.africa/admin/clients), either by clicking "Project" on the left sidebar, or navigating to https://app.afiax.africa/admin/project
 2. Click "Create New Client" to create your new ClientApplication resource
-3. Set the `Redirect URI` to the URL to where you would like Medplum to redirect the user after login.
+3. Set the `Redirect URI` to the URL to where you would like Afiax to redirect the user after login.
 4. **(Optional but recommended)** Assign an [Access Policy](/docs/access/access-policies) to your client to restrict the data your application has access to
 
 ## Authorize your client
 
-Next your application will need to make an `HTTPS GET` request to the Medplum Server's [`/oauth2/authorize`](/docs/api/oauth/authorize) endpoint with the following URL parameters:
+Next your application will need to make an `HTTPS GET` request to the Afiax Server's [`/oauth2/authorize`](/docs/api/oauth/authorize) endpoint with the following URL parameters:
 
 | Parameter                                                          | Value                                                                                                                                                                                                     |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`client_id`](/docs/api/oauth/authorize#client_id-required)         | The ID of your new Client Application                                                                                                                                                                     |
-| [`redirect_uri`](/docs/api/oauth/authorize#redirect_uri-required)   | **Must match exactly** to the uri registered in the Medplum App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
+| [`redirect_uri`](/docs/api/oauth/authorize#redirect_uri-required)   | **Must match exactly** to the uri registered in the Afiax App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
 | [`response_type`](/docs/api/oauth/authorize#response_type-required) | Fixed value: `code`                                                                                                                                                                                       |
 | [`scope`](/docs/api/oauth/authorize#scope-required)                | Fixed value: `openid`                                                                                                                                                                                     |
 
@@ -54,8 +54,8 @@ The last step of this flow is for your application to trade in the `AUTHORIZATIO
    - `code=AUTHORIZATION_CODE`
 3. Use the `access_token` received in the [response](/docs/api/oauth/token#sample-response) to make future API calls (See the [**Client Credentials tutorial**](/docs/auth/client-credentials) for more details)
 
-:::note Using the Medplum Client
-You can also use the Medplum SDK to initiate this process, using either the [`startLogin`](/docs/sdk/core.medplumclient.startlogin) or [`signInWithRedirect`](/docs/sdk/core.medplumclient.signinwithredirect) convenience method.
+:::note Using the Afiax Client
+You can also use the Afiax SDK to initiate this process, using either the [`startLogin`](/docs/sdk/core.medplumclient.startlogin) or [`signInWithRedirect`](/docs/sdk/core.medplumclient.signinwithredirect) convenience method.
 :::
 
 ## See Also

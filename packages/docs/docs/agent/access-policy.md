@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Agent Access Policy
 
-This guide covers the minimal access policy configuration required for the Medplum Agent, including how to use parameterized policies for multi-organization deployments.
+This guide covers the minimal access policy configuration required for the Afiax Agent, including how to use parameterized policies for multi-organization deployments.
 
 ## Minimal Access Policy
 
@@ -206,4 +206,4 @@ This configuration allows you to:
 
 - [Access Policies](/docs/access/access-policies) - Full documentation on access policies
 - [Parameterized Policies](/docs/access/access-policies#parameterized-policies) - Details on using variables in access policies
-- [Intro to Medplum Agent](/docs/agent) - Agent setup and configuration
+- [Intro to Afiax Agent](/docs/agent) - Agent setup and configuration

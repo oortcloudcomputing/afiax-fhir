@@ -8,33 +8,33 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # On-Behalf-Of
 
-The Medplum API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of a Medplum user.
+The Afiax API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of an Afiax user.
 
-This feature is designed to enable a common Medplum architectural pattern where the Customer Server Side App is the only system component that interacts with Medplum Server.
+This feature is designed to enable a common Afiax architectural pattern where the Customer Server Side App is the only system component that interacts with Afiax Server.
 
 ## Overview
 
-Consider this common Medplum architectural pattern:
+Consider this common Afiax architectural pattern:
 
 ![On-Behalf-Of](./on-behalf-of.webp)
 
-Here, the Medplum "Customer" has a custom End User App and a Server Side App to enable their business requirements.
+Here, the Afiax "Customer" has a custom End User App and a Server Side App to enable their business requirements.
 
-In this model, the Customer Server Side App is the only system component that interacts with Medplum Server. In this model, the Medplum Server is more like an internal data store.
+In this model, the Customer Server Side App is the only system component that interacts with Afiax Server. In this model, the Afiax Server is more like an internal data store.
 
-Historically, it was difficult to use this model and take advantage of many Medplum features related to Medplum authentication (author tracking, access policies, etc).
+Historically, it was difficult to use this model and take advantage of many Afiax features related to Afiax authentication (author tracking, access policies, etc).
 
-Now, with the "On-Behalf-Of" feature, the Customer Server Side App can act on behalf of a Medplum user.
+Now, with the "On-Behalf-Of" feature, the Customer Server Side App can act on behalf of an Afiax user.
 
 ## How to Use
 
-First, the Customer Server Side App must authenticate with Medplum Server as a `ClientApplication`. This is the same as any other Medplum `ClientApplication`.
+First, the Customer Server Side App must authenticate with Afiax Server as a `ClientApplication`. This is the same as any other Afiax `ClientApplication`.
 
-The only requirement for the `ClientApplication` is that it has [Project Admin](/docs/access/admin#project-admin) rights. This is because the `ClientApplication` will be acting on behalf of a Medplum ProjectMembership.
+The only requirement for the `ClientApplication` is that it has [Project Admin](/docs/access/admin#project-admin) rights. This is because the `ClientApplication` will be acting on behalf of an Afiax ProjectMembership.
 
 Then, when making API requests, the Customer Server Side App must include an `X-Medplum-On-Behalf-Of` HTTP header. The value of this header can be either:
 
-1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Medplum user. The Customer Server Side App would presumably store this id in its own database.
+1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Afiax user. The Customer Server Side App would presumably store this id in its own database.
 2. A profile ID such as `Patient` or `Practitioner` - This is a more natural value for the Customer Server Side App to use, but requires a lookup to find the corresponding `ProjectMembership`.
 
 For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](/docs/user-management).
@@ -45,7 +45,7 @@ The `X-Medplum-On-Behalf-Of` feature is compatible with both JWT access tokens a
 
 ## How it Works
 
-When the Medplum Server receives a request with the `X-Medplum-On-Behalf-Of` header, it will:
+When the Afiax Server receives a request with the `X-Medplum-On-Behalf-Of` header, it will:
 
 1. Authenticate the `ClientApplication` as normal
 2. Check for the `X-Medplum-On-Behalf-Of` header
@@ -63,7 +63,7 @@ Here is a curl example of using the `X-Medplum-On-Behalf-Of` header:
   {ExampleCode}
 </MedplumCodeBlock>
 
-Here is the same example using the Medplum SDK:
+Here is the same example using the Afiax SDK:
 
 <MedplumCodeBlock language="ts" selectBlocks="createResourceOnBehalfOf">
   {ExampleCode}
@@ -77,7 +77,7 @@ If you want to apply the header to all requests, set a default header when const
 
 Note the two extra HTTP request headers:
 
-1. `X-Medplum: extended` - This is required to enable the extended Medplum API features, such as `meta.author` and `meta.onBehalfOf`.
+1. `X-Medplum: extended` - This is required to enable the extended Afiax API features, such as `meta.author` and `meta.onBehalfOf`.
 2. `X-Medplum-On-Behalf-Of` - This is the `ProjectMembership` ID that the client is acting on behalf of.
 
 Here is the resulting FHIR JSON:

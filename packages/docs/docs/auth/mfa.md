@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 
 # Multi-Factor Authentication (MFA)
 
-Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Medplum supports Time-based One-Time Password (TOTP) authentication, which is compatible with authenticator apps like Google Authenticator, Microsoft Authenticator, Authy, and others.
+Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Afiax supports Time-based One-Time Password (TOTP) authentication, which is compatible with authenticator apps like Google Authenticator, Microsoft Authenticator, Authy, and others.
 
 :::note
 Users enrolled in MFA will only be asked for an MFA code during a login with Username/Password
@@ -16,11 +16,11 @@ Users enrolled in MFA will only be asked for an MFA code during a login with Use
 
 ## Self-Enrollment
 
-Users can self-enroll in MFA through the Medplum App security settings.
+Users can self-enroll in MFA through the Afiax App security settings.
 
 ### Steps to Self-Enroll
 
-1. Navigate to the Security page at `https://app.medplum.com/security`
+1. Navigate to the Security page at `https://app.afiax.africa/security`
 2. You will see the "Multi Factor Auth" section showing your current enrollment status
 3. If not enrolled, click the **"Enroll"** button
 
@@ -74,7 +74,7 @@ medplum post admin/projects/:projectId/invite \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/invite \
+curl https://fhir.afiax.africa/admin/projects/:projectId/invite \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,9 +92,9 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 For more details on the invite endpoint, see the [Invite User Endpoint](/docs/api/project-admin/invite) documentation.
 
 
-## Using Medplum's SignInForm Component
+## Using Afiax's SignInForm Component
 
-**We recommend using Medplum's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:
+**We recommend using Afiax's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) React component** for handling authentication flows that include MFA. The `SignInForm` component automatically handles all MFA-related UI and flows, including:
 
 - **MFA Enrollment**: Automatically detects when a user needs to enroll in MFA (e.g., when `mfaRequired: true` was set during invitation) and displays the enrollment screen with QR code
 - **MFA Verification**: Automatically prompts for MFA codes when users with enrolled MFA attempt to log in

@@ -61,7 +61,7 @@ medplum post admin/projects/:projectId/client \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/client \
+curl https://fhir.afiax.africa/admin/projects/:projectId/client \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

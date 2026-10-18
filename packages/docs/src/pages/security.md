@@ -5,222 +5,49 @@ slug: /security
 
 # Security
 
-## Security as a Company Value
+Afiax Clinical Suite holds patient health records, so security is designed into every layer, from the data centre to the browser. This page describes the controls in plain language. The detailed specifications (Encryption Implementation Specification, Audit Trail Specification, Incident Response Plan, Backup and Disaster Recovery plans) are available on request from [security@afiax.africa](mailto:security@afiax.africa).
 
-Medplum’s security & compliance principles guide how we deliver our products and services, enabling people to simply and securely access the digital world.
+## Where your data lives
 
-## Secure Personnel
+- **In Kenya only.** Production runs on servers we control in two Liquid Intelligent Technologies data centres in Kenya: Nairobi, plus a second Kenyan site for disaster recovery. Identifiable health data is never processed outside Kenya.
+- **No real data in test systems.** Development and testing environments use synthetic (made-up) data only.
+- **Hardened servers.** Servers run Talos Linux, an operating system built only to run Kubernetes. It has no shell and no SSH, so nobody can log in to a server and change it by hand. Every change goes through code review and GitOps (ArgoCD).
+- **Encrypted disks.** Disk encryption keys are sealed to each server's TPM 2.0 chip.
 
-Medplum takes the security of its data and that of its clients and customers seriously and ensures that only vetted personnel are given access to their resources.
+## Signing in
 
-- All Medplum contractors and employees undergo background checks prior to being engaged or employed by us in accordance with local laws and industry best practices.
-- Confidentiality or other types of Non-Disclosure Agreements (NDAs) are signed by all employees, contractors, and others who have a need to access sensitive or internal information.
-- We embed the culture of security into our business by conducting employee security training & testing using current and emerging techniques and attack vectors.
+- Every user has a personal account. Shared logins are not allowed.
+- Sign-in is handled by Zitadel (OpenID Connect) with **mandatory multi-factor authentication**.
+- Password and session rules: passwords of at least 12 characters, a 90-day maximum password age, lockout after 5 failed attempts, and automatic sign-out after 30 minutes of inactivity.
 
-## Secure Development
+## Who can see what
 
-- All development projects at Medplum, including on-premises software products, support services, and our own Digital Identity Cloud offerings follow secure development lifecycle principles.
-- All development of new products, tools, and services, and major changes to existing ones, undergo a design review to ensure security requirements are incorporated into proposed development.
-- All team members that are regularly involved in any system development undergo annual secure development training in coding or scripting languages that they work with as well as any other relevant training.
-- Software development is conducted in line with OWASP Top 10 recommendations for web application security.
+- Access is role-based: each user sees only what their job requires, enforced on every API request.
+- Data is separated per facility and project, with row-level security in the database.
+- **Break-glass access** for emergencies requires a written justification and is flagged for review.
 
-## Secure Testing
+## Encryption
 
-Medplum deploys third party penetration testing and vulnerability scanning of all production and Internet facing systems on a regular basis.
+- **In transit:** TLS 1.2 or newer for all traffic into the platform. Traffic between internal services is encrypted with mutual TLS (Istio ambient mesh).
+- **At rest:** AES-256 for databases, object storage and backups. Particularly sensitive fields also get field-level encryption.
+- **Secrets:** passwords, keys and tokens are kept in HashiCorp Vault and never stored in source code.
 
-- All new systems and services are scanned prior to being deployed to production.
-- We perform penetration testing both by internal security engineers and external penetration testing companies on new systems and products or major changes to existing systems, services, and products to ensure a comprehensive and real-world view of our products & environment from multiple perspectives.
-- We perform static and dynamic software application security testing of all code, including open source libraries, as part of our software development process.
+## Audit and monitoring
 
-## Cloud Security
+- Every read, change, search, sign-in and administrative action creates an audit record (a FHIR `AuditEvent`).
+- Audit records stream through Kafka into OpenSearch and are kept for **20 years** in write-once storage, as required by the Digital Health Regulations 2025.
+- Runtime threat detection (Falco) and security event management (Wazuh) watch for suspicious activity. Certificate-expiry and security alerts go to the on-call team.
 
-Hosted Medplum provides maximum security with complete customer isolation in a modern, multi-tenant cloud architecture.
+## Backups and recovery
 
-Hosted Medplum leverages the native physical and network security features of the cloud service, and relies on the providers to maintain the infrastructure, services, and physical access policies and procedures.
+- Encrypted backups are stored in Kenya.
+- The disaster-recovery site keeps a continuously updated standby copy of the databases, and takes over if the Nairobi site is lost.
 
-- All customer cloud environments and data are isolated using Medplum’s account based isolation approach. Each customer environment is stored within a dedicated trust zone to prevent any accidental or malicious co-mingling.
-- All data is also encrypted at rest and in transmission to prevent any unauthorized access and prevent data breaches. Our entire platform is also continuously monitored by dedicated, highly trained Medplum staff.
-- We separate each customer's data and our own, utilizing accounts to ensure data is protected and isolated.
-- Client’s data protection complies with SOC 2 standards to encrypt data in transit and at rest, ensuring customer and company data and sensitive information is protected at all times.
-- We implement role-based access controls and the principles of least privileged access, and review revoke access as needed.
+## Reporting a security issue
 
-### Guidelines
+If you think you have found a vulnerability in Afiax, email [security@afiax.africa](mailto:security@afiax.africa) with:
 
-#### General Server Security (NIST SP 800-123)
+- the steps to reproduce it
+- what you expected to happen, and what actually happened.
 
-All servers will be installed, hardened, and maintained in accordance with the principles outlined in NIST SP 800-123. This includes, but is not limited to:
-
-- Performing risk assessments to understand the potential threats and vulnerabilities to each server.
-- Implementing necessary security controls during server installation.
-- Regularly updating and patching servers to address known security vulnerabilities.
-- Conducting regular audits to ensure the ongoing security of each server.
-
-#### Application Container Security (NIST SP 800-190)
-
-For all applications deployed in containers, we will follow the security guidelines provided in NIST SP 800-190. This includes, but is not limited to:
-
-- Implementing secure configurations for host OS, container runtime, and the container itself.
-- Regularly scanning containers and container images for vulnerabilities.
-- Enforcing resource management and isolation at the container and kernel level.
-
-#### Definition and Use of Microservices, Application Containers, and System Virtual Machines (NIST SP 800-180)
-
-We will adhere to the definitions and best practices outlined in NIST SP 800-180 when designing and implementing architectures involving microservices, application containers, and system virtual machines. This includes:
-
-- Ensuring microservices are small, autonomous, and perform a single business capability.
-- Implementing security at all levels of the architecture, from individual microservices to the orchestration level.
-- Utilizing system virtual machines to isolate different applications and services as needed.
-
-#### Web Application Security Scanning (NIST SP 500-269)
-
-In alignment with the best practices defined in NIST SP 500-269, "Software Assurance Tools: Web Application Security Scanner Functional Specification", we utilize software assurance tools throughout our software development lifecycle (SDLC) to ensure the security of our web applications.
-
-Medplum uses [AWS Web Application Firewall](https://aws.amazon.com/waf/) as an additional layer of protection against common exploits. By default, the WAF includes the following rule groups:
-
-- [Core rule set](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html) - contains rules that are generally applicable to web applications. This provides protection against exploitation of a wide range of vulnerabilities, including some of the high risk and commonly occurring vulnerabilities described in OWASP publications such as [OWASP Top 10](https://owasp.org/www-project-top-ten/).
-- [Amazon IP reputation list](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html) - contains rules that are based on Amazon internal threat intelligence, typically associated with bots or other threats. Blocking these IP addresses can help mitigate bots and reduce the risk of a malicious actor discovering a vulnerable application.
-- [SQL database](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-sql-db) - contains rules to block request patterns associated with exploitation of SQL databases, like SQL injection attacks. This can help prevent remote injection of unauthorized queries.
-- [Linux operating system](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os) - contains rules that block request patterns associated with the exploitation of vulnerabilities specific to Linux, including Linux-specific Local File Inclusion (LFI) attacks.
-
-## Application Security
-
-- Encryption - Data is encrypted in transit with TLS 1.2 and 1.3. Data is encrypted at rest with AES.
-- Continuous Monitoring - Independent third-party penetration, threat, and vulnerability testing.
-- Data Handling - Medplum is in full compliance with GDPR and has support for data deletion.
-- SSO - User access controls with single sign on.
-- Secure Hosting - Medplum's cloud environments are backed by AWS' security measures.
-- RBAC - Role based account access workflows.
-
-## Continuous Security Commitment
-
-- Penetration Testing - We perform an independent third-party penetration test at least annually to ensure that the security posture of our services is uncompromised.
-- Security Awareness Training - Our team members are required to go through employee security awareness training covering industry standard practices and information security topics such as phishing and password management.
-- Third-Party Audits - Our organization undergoes independent third-party assessments to test our security controls.
-- Roles and Responsibilities - Roles and responsibilities related to our information security program and the protection of our customer's data are well defined and documented.
-- Information Security Program - We have an information security program in place that is communicated throughout the organization. Our information security program follows the criteria set forth by SOC 2.
-- Continuous Monitoring - We continuously monitor our security and compliance status to ensure there are no lapses.
-
-## Compliance
-
-Medplum is committed to providing secure products and services to safely and easily manage billions of digital identities across the globe. Our external certifications provide independent assurance of Medplum’s dedication to protecting our customers by regularly assessing and validating the protections and effective security practices Medplum has in place.
-
-## SOC 2 Type 1 & 2
-
-Orangebot, Inc (dba Medplum) successfully completed the AICPA Service Organization Control (SOC) 2 Type II audit. The audit confirms that Orangebot, Inc (dba Medplum)’s information security practices, policies, procedures, and operations meet the SOC 2 standards for security.
-
-Medplum was audited by Prescient Assurance, a leader in security and compliance certifications for B2B, SAAS companies worldwide. Prescient Assurance is a registered public accounting in the US and Canada and provide risk management and assurance services which includes but not limited to SOC 2, PCI, ISO, NIST, GDPR, CCPA, HIPAA, CSA STAR etc. For more information about Prescient Assurance, you may reach out them at info@prescientassurance.com.
-
-An unqualified opinion on a SOC 2 Type II audit report demonstrates to the Medplum’s current and future customers that they manage their data with the highest standard of security and compliance.
-
-<img src="/img/compliance/soc.png" alt="AICPA SOC Logo" style={{ width: 150 }} />
-
-Customers can request access to the audit report.
-
-## Security Tools
-
-Medplum continuously monitors all services to track security best practices.
-
-### SonarCloud
-
-[SonarCloud](https://sonarcloud.io/) is a cloud-based code quality and security service.
-
-<a href="https://sonarcloud.io/summary/new_code?id=medplum_medplum" target="_blank"><img src="/img/compliance/sonarcloud.png" alt="SonarCloud screenshot" width="500" /></a>
-
-https://sonarcloud.io/summary/new_code?id=medplum_medplum
-
-### Mozilla Observatory
-
-[Mozilla Observatory](https://observatory.mozilla.org/) is a tool that is geared towards informing website owners of best practices for securing their sites.
-
-<a href="https://observatory.mozilla.org/analyze/api.medplum.com" target="_blank"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
-<a href="https://observatory.mozilla.org/analyze/app.medplum.com" target="_blank"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
-
-https://observatory.mozilla.org/analyze/api.medplum.com
-
-### SSL Labs
-
-[SSL Labs](https://www.ssllabs.com/index.html) is an online service that performs a deep analysis of the configuration of any SSL web server on the public Internet.
-
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com" target="_blank"><img src="/img/compliance/ssllabs-api.png" alt="SSL Labs api.medplum.com screenshot" width="350" /></a>
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com" target="_blank"><img src="/img/compliance/ssllabs-app.png" alt="SSL Labs app.medplum.com screenshot" width="350" /></a>
-
-https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com
-
-### Socket
-
-[Socket](https://socket.dev/) is a security platform that specializes in analyzing and monitoring software dependencies throughout the development pipeline, with a particular focus on detecting malicious code and vulnerabilities in real-time during pull requests.
-
-<a href="https://socket.dev/npm/package/@medplum/core" target="_blank"><img src="/img/compliance/socket-dev.webp" alt="Socket screenshot" width="500" /></a>
-
-https://socket.dev/npm/package/@medplum/core
-
-### Docker Scout
-
-[Docker Scout](https://docs.docker.com/scout/) is a security solution that analyzes container images by creating a Software Bill of Materials (SBOM) and checking components against known vulnerabilities in real-time, helping organizations proactively identify and address security weaknesses in their containerized applications.
-
-<a href="https://hub.docker.com/r/medplum/medplum-server" target="_blank"><img src="/img/compliance/docker-scout.webp" alt="Docker Scout screenshot" width="500" /></a>
-
-https://hub.docker.com/r/medplum/medplum-server
-
-### Docker Hardened Images (DHI)
-
-Medplum builds server images on Docker Hardened Images (DHI), a minimal, security-focused base image designed to reduce attack surface and unnecessary packages. Moving to DHI significantly reduces downstream CVE noise in customer security scans without changing application behavior.
-
-Read more in [Docker’s case study on our adoption of DHI](https://www.docker.com/blog/medplum-healthcare-docker-hardened-images/).
-
-### Security Scorecard
-
-[Security Scorecard](https://securityscorecard.com/) is an information security company that rates cybersecurity postures of corporate entities through completing scored analysis of cyber threat intelligence signals for the purposes of third party management and IT risk management.
-
-<a href="https://securityscorecard.com/security-rating/medplum.com?utm_medium=badge&utm_source=medplum.com&utm_campaign=seal-of-trust&utm_content=https://platform.securityscorecard.io/" target="_blank"><img src="/img/compliance/securityscorecard.png" alt="Security Scorecard Logo" width="200" /></a>
-
-https://securityscorecard.com/security-rating/medplum.com
-
-### OpenSSF Scorecard
-
-[OpenSSF Scorecard](https://scorecard.dev/) is a tool that automatically checks a project's repository against a set of security best practices and assigns a risk score.
-
-<a href="https://scorecard.dev/viewer/?uri=github.com/medplum/medplum" target="_blank"><img src="/img/compliance/openssf-scorecard-screenshot.webp" alt="OpenSSF Scorecard screenshot" width="500" /></a>
-
-https://scorecard.dev/viewer/?uri=github.com/medplum/medplum
-
-### OpenSSF Best Practices
-
-[OpenSSF Best Practices](https://www.bestpractices.dev/en) is a badge program that allows open source projects to demonstrate their adherence to security-related best practices.
-
-<a href="https://www.bestpractices.dev/en/projects/10900" target="_blank"><img src="/img/compliance/openssf-best-practices-screenshot.webp" alt="OpenSSF Best Practices screenshot" width="500" /></a>
-
-https://www.bestpractices.dev/en/projects/10900
-
-### Snyk
-
-[Snyk](https://snyk.io/) is a comprehensive developer security platform that integrates security scanning across proprietary code, open source dependencies, container images, and cloud infrastructure, providing unified vulnerability detection and remediation capabilities throughout the development lifecycle.
-
-### GitHub CodeQL
-
-[CodeQL](https://codeql.github.com/) is a semantic code analysis engine that treats code as queryable data, allowing developers to write and run queries to identify potential vulnerabilities and their variants across an entire codebase.
-
-### GitHub Dependabot
-
-[GitHub Dependabot](https://github.com/dependabot) is an automated dependency management tool that continuously monitors repository dependencies, creating pull requests to update outdated packages and alerting developers to security vulnerabilities in their project's dependencies.
-
-## Availability
-
-Medplum tracks and reports status on the [Medplum Status Page](https://status.medplum.com/) using [StatusCake](https://www.statuscake.com/) and [Pingdom](https://www.pingdom.com/).
-
-## Report Vulnerabilities
-
-Found a potential issue? Please help us by reporting it so we can fix it quickly.
-
-Contact us at security@medplum.com
-
-For encrypted vulnerability reports, you may use our PGP key:
-
-```
-pub   ed25519 2026-02-28 [SC] [expires: 2027-02-28]
-      85A1 FB97 A38F 277C 43C8  AD5C 5D93 6917 2E41 F38D
-uid           [ultimate] Medplum Security <security@medplum.com>
-sub   cv25519 2026-02-28 [E] [expires: 2027-02-28]
-```
-
-[Download Public Key](/medplum-security-public.asc)
+Please do not access or change other people's data while testing, and give us a reasonable time to fix the issue before you make it public. We will acknowledge your report and keep you updated until it is resolved.

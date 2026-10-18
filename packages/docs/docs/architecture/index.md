@@ -33,7 +33,7 @@ Afiax is structured into four layers:
 Use the architecture docs in this order:
 
 1. read this page to understand the top-level layers
-2. read [Platform foundation](./platform-foundation.md) to understand the Afiax FHIR versus Medplum naming and scope model
+2. read [Platform foundation](./platform-foundation.md) to understand the naming rules (Afiax versus the upstream Medplum project) and the scope of this repo
 3. read [Enterprise platform](./enterprise-platform.md) for the wider system shape
 4. read [Canonical FHIR model](./canonical-model.md) for the shared data contract
 5. read [Integration boundaries](./integration-boundaries.md) before adding any adjacent service or connector logic
@@ -147,7 +147,7 @@ Interpretation:
 
 Use the rest of the architecture docs by question:
 
-- if you need the Afiax FHIR versus Medplum scope and naming model:
+- if you need the naming rules (Afiax versus upstream Medplum) and scope:
   [Platform foundation](./platform-foundation.md)
 - if you need the broader platform shape:
   [Enterprise platform](./enterprise-platform.md)

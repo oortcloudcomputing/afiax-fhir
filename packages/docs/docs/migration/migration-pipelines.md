@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 # Building Migration Pipelines
 
-When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data _into_ Medplum.
+When migrating data to Afiax, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data _into_ Afiax.
 
 [patient]: /docs/api/fhir/resources/patient
 [condition]: /docs/api/fhir/resources/condition
@@ -88,7 +88,7 @@ For large-scale migrations, you can combine batches and transactions to balance 
 
 ## Migrating Binary Files
 
-When migrating files to Medplum, you can use our [auto-download feature](/docs/self-hosting/server-config) to simplify your migration. If your current system can generate pre-signed URLs (or URLs that are accessible to our servers), Medplum will automatically detect any external URLs and attempt to download them and store them in the Medplum storage system. An example DocumentReference is shown below:
+When migrating files to Afiax, you can use our [auto-download feature](/docs/self-hosting/server-config) to simplify your migration. If your current system can generate pre-signed URLs (or URLs that are accessible to our servers), Afiax will automatically detect any external URLs and attempt to download them and store them in the Afiax storage system. An example DocumentReference is shown below:
 
 ```
 {
@@ -184,4 +184,4 @@ This example demonstrates:
 
 This approach allows for efficient bulk operations while ensuring data integrity for related resources. It also demonstrates how to handle different types of relationships and references in a complex data migration scenario.
 
-In the next guide, we'll talk about **best practices for adopting Medplum in end user workflows.**
+In the next guide, we'll talk about **best practices for adopting Afiax in end user workflows.**

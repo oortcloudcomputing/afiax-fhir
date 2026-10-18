@@ -4,7 +4,7 @@ sidebar_position: 70
 
 # Super Admin Guide
 
-When self-hosting a Medplum server, you will have access to a "Super Admin" project. When you sign in as a member of the "Super Admin" project, you will have access to very powerful super admin privileges.
+When self-hosting an Afiax server, you will have access to a "Super Admin" project. When you sign in as a member of the "Super Admin" project, you will have access to very powerful super admin privileges.
 
 :::danger
 
@@ -14,7 +14,7 @@ Super admin features can cause unrepairable damage. Proceed with caution. With g
 
 ## Protected Resources
 
-Medplum uses custom FHIR resource types to manage user accounts and project administration. While these are not official FHIR resources, Medplum uses the same FHIR semantics: the same RESTful operations, same search capabilities, `StructureDefinition` resources, `SearchParameter` resources, etc.
+Afiax uses custom FHIR resource types to manage user accounts and project administration. While these are not official FHIR resources, Afiax uses the same FHIR semantics: the same RESTful operations, same search capabilities, `StructureDefinition` resources, `SearchParameter` resources, etc.
 
 The most important custom resource types are:
 
@@ -25,7 +25,7 @@ The most important custom resource types are:
 
 ## Server Maintenance
 
-From time to time, you may need to perform system level maintenance. The Medplum app has a special "Super Admin" page to make it easier to perform these tasks. You can find the "Super Admin" page at `/admin/super`.
+From time to time, you may need to perform system level maintenance. The Afiax app has a special "Super Admin" page to make it easier to perform these tasks. You can find the "Super Admin" page at `/admin/super`.
 
 :::note
 
@@ -41,19 +41,19 @@ In the "Super Admin" page, there are buttons and sections for:
 - Rebuild Search Parameters
 - Rebuild Value Sets
 
-From time to time, Medplum will make changes to custom resources. The server runtime uses `StructureDefinition` and `SearchParameter` files directly from disk. However, the client requests `StructureDefinition` resources to dynamically generate client-side UI elements such as search filters, the "Details" page, and the "Edit" page. If a Medplum changes these resources, you may need to rebuild the index before you see the changes in the client.
+From time to time, Afiax will make changes to custom resources. The server runtime uses `StructureDefinition` and `SearchParameter` files directly from disk. However, the client requests `StructureDefinition` resources to dynamically generate client-side UI elements such as search filters, the "Details" page, and the "Edit" page. If an Afiax changes these resources, you may need to rebuild the index before you see the changes in the client.
 
 ### Reindex Resources
 
-From time to time, Medplum makes changes to the underlying search indexing logic. This usually happens when adding support for new FHIR search capabilities. Resource indexes are updated automatically on every `create` or `update` operation. Use the "Reindex Resources" button to reindex existing resources.
+From time to time, Afiax makes changes to the underlying search indexing logic. This usually happens when adding support for new FHIR search capabilities. Resource indexes are updated automatically on every `create` or `update` operation. Use the "Reindex Resources" button to reindex existing resources.
 
 ### Rebuild Compartments
 
-From time to time, Medplum makes changes to the underlying compartment logic. This can happen when adding enhancements to compartment features, or new compartment definitions. Compartments are updated automatically on every `create` or `update` operation. Use the "Rebuild Compartments" button to rebuild compartments for all existing resources.
+From time to time, Afiax makes changes to the underlying compartment logic. This can happen when adding enhancements to compartment features, or new compartment definitions. Compartments are updated automatically on every `create` or `update` operation. Use the "Rebuild Compartments" button to rebuild compartments for all existing resources.
 
 ### Purge Resources
 
-Some system generated resources can accumulate and lead to degraded performance. Use the "Purge Resources" form to permanently delete resources from the database. Note that this operation is a true `DELETE`, and not the normal "soft delete", so this is permanent. Medplum recommends backing up all data, or synchronizing data to a data warehouse before using this feature.
+Some system generated resources can accumulate and lead to degraded performance. Use the "Purge Resources" form to permanently delete resources from the database. Note that this operation is a true `DELETE`, and not the normal "soft delete", so this is permanent. Afiax recommends backing up all data, or synchronizing data to a data warehouse before using this feature.
 
 ### Force Set Password
 

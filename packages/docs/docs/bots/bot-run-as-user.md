@@ -4,7 +4,7 @@ sidebar_position: 10
 
 # Run as User
 
-By default, the AccessPolicy that is applied to a Medplum Bot is defined by the Bot's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). This can be useful for many cases where the Bot should have different access to resources than the user who triggered the Bot.
+By default, the AccessPolicy that is applied to an Afiax Bot is defined by the Bot's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). This can be useful for many cases where the Bot should have different access to resources than the user who triggered the Bot.
 
 However, there are cases where you may want the __Bot to inherit the access of the user who triggered it__. To do this, you can set the `runAsUser` field on the [Bot](/docs/api/fhir/medplum/bot) to true.
 

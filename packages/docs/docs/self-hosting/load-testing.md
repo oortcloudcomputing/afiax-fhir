@@ -4,9 +4,9 @@ sidebar_position: 201
 
 # Load Testing
 
-Medplum is designed to be a critical component of system architecture. It is important that Medplum server is robust, performant, and scalable. But no matter how well designed, the capacity of the server will eventually be limited by the hardware it runs on. Therefore, it is also important to understand how Medplum server responds under extreme load, such as how and when the server will break.
+Afiax is designed to be a critical component of system architecture. It is important that Afiax server is robust, performant, and scalable. But no matter how well designed, the capacity of the server will eventually be limited by the hardware it runs on. Therefore, it is also important to understand how Afiax server responds under extreme load, such as how and when the server will break.
 
-This document describes how the Medplum team performs load testing using [Artillery](https://www.artillery.io).
+This document describes how the Afiax team performs load testing using [Artillery](https://www.artillery.io).
 
 We will demonstrate **"Load Testing"** (how the system functions under the projected number of concurrent users) and **"Stress Testing"** (how to find the upper limits of the system by testing it under extreme loads).
 
@@ -28,7 +28,7 @@ Artillery Scenarios define the steps you want the virtual users to go through du
 
 ### Healthcheck Testing
 
-One of the most basic Medplum server endpoints is the healtcheck at `/healthcheck`. This endpoint is unauthenticated. It connects to the Postgres database and Redis cache to verify connectivity. The healthcheck endpoint is used by load balancers to determine if the server instance is healthy.
+One of the most basic Afiax server endpoints is the healtcheck at `/healthcheck`. This endpoint is unauthenticated. It connects to the Postgres database and Redis cache to verify connectivity. The healthcheck endpoint is used by load balancers to determine if the server instance is healthy.
 
 Here is a sample Artillery configuration for testing the healthcheck endpoint:
 
@@ -57,7 +57,7 @@ scenarios:
 
 The key points:
 
-- Targeting the Medplum staging environment at [https://api.staging.medplum.com](https://api.staging.medplum.com)
+- Targeting the Afiax staging environment at [https://api.staging.medplum.com](https://api.staging.medplum.com)
 - 10 second warmup with 10 virtual users with loops of 10 requests (100 requests per second)
 - 5 minute ramp up to 100 virtual users with loops of 10 requests (1000 requests per second)
 - Note that we use a blend of virtual users and loops to generate load without oversaturating our own host system
@@ -68,7 +68,7 @@ We can now run Artillery:
 artillery run healthcheck.yml
 ```
 
-Here is a sample report. Note that it was run on a laptop in California against the Medplum staging environment in AWS `us-east-1`.
+Here is a sample report. Note that it was run on a laptop in California against the Afiax staging environment in AWS `us-east-1`.
 
 ```
 All VUs finished. Total time: 5 minutes, 15 seconds
@@ -110,7 +110,7 @@ Let's look at AWS ECS Health Metrics to help understand what happened.
 
 ![AWS ECS Health Metrics](./load-testing-ecs-health-1.png)
 
-At the time of that run, the Medplum staging server was configured with the bare minimum configuration:
+At the time of that run, the Afiax staging server was configured with the bare minimum configuration:
 
 | Key                  | Value      | Description                                                                                                                                                                                                                      |
 | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

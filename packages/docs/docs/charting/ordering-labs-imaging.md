@@ -6,7 +6,7 @@ sidebar_position: 3
 
 Certified EHRs are required to support Computerized Physician Order Entry (CPOE) for Medications Labs and/or Imaging. These correspond to the ONC (a)(1), (a)(2) and (a)(3) criteria and which are described on [HealthIt.gov](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications).
 
-This guide will describe how Medplum supports CPOE for Labs and Imaging. The guide for meds will be covered in the [Medications](/docs/medications) section.
+This guide will describe how Afiax supports CPOE for Labs and Imaging. The guide for meds will be covered in the [Medications](/docs/medications) section.
 
 ## Order Form
 
@@ -17,14 +17,14 @@ Building a custom computerized order form that represents an organization's [Dia
 - **Specimen details** - support data capture for specimen collected time as well as details on the specimen itself.
 - **Billing and insurance questions** - indicating which account or payor should pay for the test.
 
-This [questionnaire](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--lab-ordering) demonstrates a sample CPOE order form and can be added to your Medplum app or provider facing application to enable an ordering workflow.
+This [questionnaire](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--lab-ordering) demonstrates a sample CPOE order form and can be added to your Afiax app or provider facing application to enable an ordering workflow.
 
 ## Common Diagnostics Providers
 
-Medplum is provider agnostic and supports connecting to Lab and Imaging orders of all types, assuming an integration is in place. Common integrations can be found in the [integration](/docs/integration) section. Quest, Labcorp and [Health Gorilla](/docs/integration/health-gorilla) are the most frequently enabled.
+Afiax is provider agnostic and supports connecting to Lab and Imaging orders of all types, assuming an integration is in place. Common integrations can be found in the [integration](/docs/integration) section. Quest, Labcorp and [Health Gorilla](/docs/integration/health-gorilla) are the most frequently enabled.
 
 :::caution
-Lab and imaging ordering requires setup. Contact us at [info@medplum.com](mailto:info+diagnostics@medplum.com?subject=enabling%20diagnostic%20providers) to enable a provider.
+Lab and imaging ordering requires setup. Contact us at [info@afiax.africa](mailto:info+diagnostics@medplum.com?subject=enabling%20diagnostic%20providers) to enable a provider.
 :::
 
 ## Logistics
@@ -40,7 +40,6 @@ CPOE should be aware of the logistics workflow a provider wants to enable. Below
 ## Related Material
 
 - [Sandbox CPOE video](https://www.youtube.com/watch?v=m0AWpEOh1es)
-- [ONC Certification](/docs/compliance/onc)
 - [Health Gorilla](/docs/integration/health-gorilla) in integration
 - [(a)(2) CPOE Laboratory](https://youtu.be/bb_ISvpcw6o) on Youtube
 

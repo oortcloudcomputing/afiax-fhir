@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 # Prescriber Enrollment
 
-This guide explains how to enroll a new prescriber in DoseSpot via the Medplum **Enroll Prescriber Bot**.
+This guide explains how to enroll a new prescriber in DoseSpot via the Afiax **Enroll Prescriber Bot**.
 
 Note: In order to process an invite, the User that executes the bot must be
 
@@ -30,7 +30,7 @@ await medplum.executeBot({system: "https://www.medplum.com/bots", value: "dosesp
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \

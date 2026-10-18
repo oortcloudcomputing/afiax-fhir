@@ -1,6 +1,6 @@
 # FHIRcast with .NET client
 
-This is a guide for using the official [FHIRcast .NET client](https://github.com/fhircast/.net) with the Medplum server.
+This is a guide for using the official [FHIRcast .NET client](https://github.com/fhircast/.net) with the Afiax server.
 
 ## Prerequisites
 
@@ -26,17 +26,17 @@ Once the solution opens successfully, you can run the test application:
 
 If all goes well, you should now have a running instance of the test app.
 
-## Connecting to Medplum Server
+## Connecting to Afiax Server
 
 On the "Configuration Data" tab:
 
 1. Check "Use Existing Auth Token" (the built-in authentication only works with Auth0)
-2. Enter the Hub URL for your Medplum server
-   a. Add "/fhircast/STU3" to your Medplum server base URL
-   b. For Medplum cloud hosted: https://api.medplum.com/fhircast/STU3
+2. Enter the Hub URL for your Afiax server
+   a. Add "/fhircast/STU3" to your Afiax server base URL
+   b. For Afiax cloud hosted: https://fhir.afiax.africa/fhircast/STU3
    c. By default for running from source: http://localhost:8103/fhircast/STU3
 3. Enter your FHIRcast topic
-4. Enter your Medplum server auth token (see [Auth and Identity](http://localhost:3000/docs/auth) to get started)
+4. Enter your Afiax server auth token (see [Auth and Identity](http://localhost:3000/docs/auth) to get started)
 
 ![TestPowerCast Configuration Data](./testpowercast-configuration-data.png)
 

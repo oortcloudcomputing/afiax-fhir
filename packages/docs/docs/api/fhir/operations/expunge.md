@@ -32,7 +32,7 @@ This operation requires **admin privileges**. You must be a project admin (`Memb
 For example, to expunge a single Patient:
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Patient/example-id/$expunge' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Patient/example-id/$expunge' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
@@ -48,7 +48,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Patient/example-id/$expunge' \
 When expunging a Project or using `everything=true`, the operation deletes all resources belonging to that compartment. This runs as an async job due to the potentially large number of resources involved.
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Project/project-id/$expunge?everything=true' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Project/project-id/$expunge?everything=true' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
@@ -78,13 +78,13 @@ When expunging a project or using `everything=true`, the operation returns immed
 
 ```
 HTTP/1.1 202 Accepted
-Content-Location: https://api.medplum.com/fhir/R4/AsyncJob/job-id
+Content-Location: https://fhir.afiax.africa/fhir/R4/AsyncJob/job-id
 ```
 
 You can poll the AsyncJob to check the status:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/AsyncJob/job-id' \
+curl 'https://fhir.afiax.africa/fhir/R4/AsyncJob/job-id' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 

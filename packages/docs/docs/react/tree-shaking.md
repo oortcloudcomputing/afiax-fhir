@@ -25,13 +25,13 @@ We recommend using the [`source-map-explorer`](https://www.npmjs.com/package/sou
 
 ## Example
 
-The [Medplum Hello World](https://github.com/medplum/medplum-hello-world) project uses tree shaking. The project is pre-configured with `source-map-explorer`, so you can quickly analyze the bundle size.
+The [Afiax Hello World](https://github.com/medplum/medplum-hello-world) project uses tree shaking. The project is pre-configured with `source-map-explorer`, so you can quickly analyze the bundle size.
 
-![Medplum Hello World Tree Shaking](./tree-shaking.png)
+![Afiax Hello World Tree Shaking](./tree-shaking.png)
 
 ## Behind the scenes
 
-Medplum libraries such as `@medplum/core` and `@medplum/react` follow best practices, so tree shaking should work automatically for most build tools.
+Afiax libraries such as `@medplum/core` and `@medplum/react` follow best practices, so tree shaking should work automatically for most build tools.
 
 - Libraries ship with `preserveModules` for ESM builds
 - Libraries ship with `"sideEffects": false`

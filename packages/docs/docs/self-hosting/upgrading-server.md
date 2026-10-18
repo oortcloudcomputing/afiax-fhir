@@ -2,9 +2,9 @@
 sidebar_position: 90
 ---
 
-# Upgrading Medplum Server
+# Upgrading Afiax Server
 
-Keeping your Medplum server up-to-date ensures you get the latest security patches, new features, and performance improvements while maintaining compliance with healthcare regulations.
+Keeping your Afiax server up-to-date ensures you get the latest security patches, new features, and performance improvements while maintaining compliance with healthcare regulations.
 
 ## Before You Begin
 
@@ -13,7 +13,7 @@ You cannot skip minor versions when upgrading. Attempting to jump ahead (e.g., f
 :::
 
 **Prerequisites:**
-- Review the [versioning policy](../compliance/versions) if you're unfamiliar with Medplum's semantic versioning
+- Review the versioning policy if you're unfamiliar with Afiax's semantic versioning
 - Ensure you have access to [monitor migration progress](#monitoring-migration-progress)
 
 ## Step-by-Step Upgrade Process
@@ -52,7 +52,7 @@ For each step in your upgrade path:
 ## Monitoring Migration Progress
 
 ### Using the Admin Panel (available after [v4.1.12+](https://github.com/medplum/medplum/pull/6862))
-Navigate to `/admin/super/asyncjob` in your Medplum app to view:
+Navigate to `/admin/super/asyncjob` in your Afiax app to view:
 - Currently running migrations
 - Migration progress and status
 - Completion timestamps
@@ -64,7 +64,7 @@ Query `AsyncJob` resources where:
 
 ## Understanding Database Migrations
 
-Medplum uses two types of migrations to minimize downtime:
+Afiax uses two types of migrations to minimize downtime:
 
 ### Pre-deploy Migrations
 - **When they run**: Automatically during server startup
@@ -105,5 +105,5 @@ Medplum uses two types of migrations to minimize downtime:
 
 If you encounter issues during your upgrade:
 1. Check the server logs for specific error messages
-2. Review the [changelog](https://github.com/medplum/medplum/releases) for known issues
-3. Contact Medplum support with your specific error details and upgrade path
+2. Review the [changelog](https://github.com/oortcloudcomputing/afiax-fhir/releases) for known issues
+3. Contact Afiax support with your specific error details and upgrade path

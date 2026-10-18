@@ -7,7 +7,7 @@ tags: [auth]
 
 ## Introduction
 
-This document describes the core concepts of Medplum Access Controls. Security and access controls are notoriously difficult. Complex business and regulatory requirements often lead to a mess of incomprehensible rules. Medplum strives to create a simple and understandable model, which is flexible enough to handle all unique security needs.
+This document describes the core concepts of Afiax Access Controls. Security and access controls are notoriously difficult. Complex business and regulatory requirements often lead to a mess of incomprehensible rules. Afiax strives to create a simple and understandable model, which is flexible enough to handle all unique security needs.
 
 ## Core Model
 
@@ -67,7 +67,7 @@ See the [Search documentation](/docs/search/basic-search) for more information o
 ```
 
 :::warning Limitations
-While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
+While Afiax `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
 
 - Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
 - [Chained searches](/docs/search/chained-search#forward-chained-search) are **not** allowed.
@@ -251,7 +251,7 @@ For example, consider an "Observation" resource representing a blood pressure me
 - "Practitioner" - for the "performer" of the observation
 - "Encounter" - for the "encounter" of the observation
 
-Resources are automatically assigned to compartments based on rules. Currently, the Medplum server automatically assigns resources to the "Patient" compartment. You can find the full definition of the patient compartment [here](https://hl7.org/fhir/R4/compartmentdefinition-patient.html).
+Resources are automatically assigned to compartments based on rules. Currently, the Afiax server automatically assigns resources to the "Patient" compartment. You can find the full definition of the patient compartment [here](https://hl7.org/fhir/R4/compartmentdefinition-patient.html).
 
 You can use compartments to succinctly create an [AccessPolicy](/docs/api/fhir/medplum/accesspolicy) for resources related to a single patient.
 
@@ -282,7 +282,7 @@ See [Binary Security Context](/docs/access/binary-security-context) for more inf
 
 For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
 
-Medplum provides the following built-in variables:
+Afiax provides the following built-in variables:
 
 | Variable      | Description                                                                                  |
 | ------------- | -------------------------------------------------------------------------------------------- |
@@ -562,7 +562,7 @@ The [patient access policy](#patient-access) above can be combined with [policy 
 
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 
-In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
+In Afiax, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Afiax server consolidates these resources into a single enforceable AccessPolicy.  
 The recent enhancements introduce the **AccessPolicy.basedOn element**, which enhances traceability and linkage of access policies. These improvements are made accessible to the front end via the /auth/me endpoint, enabling seamless role-based access control (RBAC) for users. For more information, see the [PR](https://github.com/medplum/medplum/pull/4925) detailing the changes.
 
 This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
@@ -575,7 +575,7 @@ This update allows for more granular control and visibility in RBAC implementati
 
   - This element is an array containing references to original AccessPolicy resources.
   - It provides traceability by linking the resolved AccessPolicy back to its source policies.
-  - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.
+  - At runtime, Afiax resolves all nested and parameterized policies to build the basedOn array.
 
 - **Client-Side**
   - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.

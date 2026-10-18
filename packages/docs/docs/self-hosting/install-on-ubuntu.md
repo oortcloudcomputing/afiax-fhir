@@ -4,9 +4,9 @@ sidebar_position: 3
 
 # Install on Ubuntu
 
-This guide provides step-by-step instructions for deploying Medplum on Ubuntu using our official APT repository. The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions.
+This guide provides step-by-step instructions for deploying Afiax on Ubuntu using the upstream open-source APT repository (`apt.medplum.com`). The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions.
 
-Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
+Using the APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
 
 This installation method is well-suited for production deployments where you want to maintain direct control over your infrastructure while benefiting from streamlined package management. It provides a balance between ease of deployment and system control, making it an excellent choice for organizations that prefer traditional Linux server architectures.
 
@@ -23,7 +23,7 @@ This installation method is well-suited for production deployments where you wan
 
 :::note
 
-These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
+These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Afiax server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
 
 :::
 
@@ -134,22 +134,22 @@ sudo certbot --nginx -d app.example.com
 sudo certbot --nginx -d api.example.com
 ```
 
-## Install Medplum
+## Install Afiax
 
-Add the Medplum Ubuntu repository:
+Add the Afiax Ubuntu repository:
 
 ```bash
 curl -fsSL https://apt.medplum.com/setup.sh | sudo bash -
 sudo apt-get update
 ```
 
-Install Medplum:
+Install Afiax:
 
 ```bash
 sudo apt-get install medplum
 ```
 
-Start Medplum:
+Start Afiax:
 
 ```bash
 sudo systemctl start medplum
@@ -226,11 +226,11 @@ Force reinstall:
 sudo apt-get install --reinstall medplum
 ```
 
-Reconfigure Medplum:
+Reconfigure Afiax:
 
 :::caution
 
-During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file.
+During the installation of Afiax, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file.
 If you've missed these configuration you can reconfigure with the following command line
 
 :::
@@ -239,17 +239,17 @@ If you've missed these configuration you can reconfigure with the following comm
 sudo dpkg-reconfigure medplum
 ```
 
-Then force a reinstallation of Medplum.
+Then force a reinstallation of Afiax.
 
 ## Additional Configuration
 
-The Medplum server configuration is located at `/etc/medplum/medplum.config.json`. You can edit this file to change the server configuration. After editing the file, restart the Medplum service:
+The Afiax server configuration is located at `/etc/medplum/medplum.config.json`. You can edit this file to change the server configuration. After editing the file, restart the Afiax service:
 
 ```bash
 sudo systemctl restart medplum
 ```
 
-See [Config Settings](/docs/self-hosting/server-config) for full details on Medplum configuration settings.
+See [Config Settings](/docs/self-hosting/server-config) for full details on Afiax configuration settings.
 
 ### Step 5 - Run the server
 

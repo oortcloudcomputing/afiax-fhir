@@ -1,6 +1,6 @@
 # FHIRcast
 
-Medplum supports [FHIRcast STU3](https://build.fhir.org/ig/HL7/fhircast-docs/).
+Afiax supports [FHIRcast STU3](https://build.fhir.org/ig/HL7/fhircast-docs/).
 
 ## Overview
 
@@ -33,4 +33,4 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 
 ## Related Reading
 
-- [Medplum Certifies IRA](/blog/ihe-ira-radiology-reporting)
+- [Afiax Certifies IRA](https://www.medplum.com/blog/ihe-ira-radiology-reporting)

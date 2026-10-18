@@ -11,7 +11,7 @@ The following features should be used in concert to build out an analytics progr
 
 Analytics on healthcare data generally have two broad areas of application: **retroactive analysis** of performance and quality metrics, and **predictive modeling** to make recommendations for future behavior.
 
-Retroactive analysis can be used to measure metrics related to operational efficiency and quality of care. In addition, many payors, including Medicare and Medicaid, provide higher reimbursements to providers who report specific [quality-of-care measures](/docs/compliance/onc#materials-and-usage).
+Retroactive analysis can be used to measure metrics related to operational efficiency and quality of care. In addition, many payors, including Medicare and Medicaid, provide higher reimbursements to providers who report specific quality-of-care measures.
 
 On the predictive side, Clinical Decision Support (CDS) systems encode evidence-based clinical guidelines into rules-based suggestions to guide clinicians. Machine learning can also be used to identify common patterns across patients and care plan recommendations.
 

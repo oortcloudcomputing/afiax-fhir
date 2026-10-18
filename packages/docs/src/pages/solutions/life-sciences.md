@@ -1,7 +1,7 @@
 # Life Sciences and Research Operations
 
 Afiax can support research and life-sciences workflows where structured data capture, participant engagement,
-protocol execution, and interoperable exports are important. In this pattern, Medplum remains the clinical and
+protocol execution, and interoperable exports are important. In this pattern, Afiax remains the clinical and
 research-record core while surrounding systems handle specialized operational or commercial concerns.
 
 ## Common use cases
@@ -38,7 +38,7 @@ The most common building blocks are:
 - `RequestGroup`
 
 These resources allow Afiax to represent protocol logic, collected data, participant workflow, and downstream export
-without abandoning the Medplum-centered source-of-truth model.
+without abandoning the FHIR-centred source-of-truth model.
 
 ## Integration model
 
@@ -50,8 +50,8 @@ Life-sciences workflows often still need other systems. Typical external integra
 - analytics and reporting platforms
 - document signing and operational systems
 
-Those systems should integrate with Medplum through the interoperability layer and Bots rather than replacing the
-normalized record in Medplum.
+Those systems should integrate with Afiax through the interoperability layer and Bots rather than replacing the
+normalized record in Afiax.
 
 ## Related docs
 

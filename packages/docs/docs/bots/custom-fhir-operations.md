@@ -1,13 +1,13 @@
 # Custom FHIR Operations
 
-Custom FHIR Operations is a powerful feature that allows you to extend the Medplum FHIR server with your own custom operations using the Medplum Bots framework. This feature enables you to create sophisticated business logic that integrates seamlessly with the FHIR API while leveraging the full power of JavaScript execution.
+Custom FHIR Operations is a powerful feature that allows you to extend the Afiax FHIR server with your own custom operations using the Afiax Bots framework. This feature enables you to create sophisticated business logic that integrates seamlessly with the FHIR API while leveraging the full power of JavaScript execution.
 
 ## What are Custom FHIR Operations?
 
-Custom FHIR Operations combine two key Medplum features:
+Custom FHIR Operations combine two key Afiax features:
 
 1. **FHIR Operations** - Standard FHIR operations (like `$validate`, `$expand`, etc.) that can be invoked via HTTP requests
-2. **Medplum Bots** - JavaScript functions that can be executed server-side with access to the Medplum SDK
+2. **Afiax Bots** - JavaScript functions that can be executed server-side with access to the Afiax SDK
 
 This integration allows you to:
 
@@ -25,7 +25,7 @@ Custom operations are implemented through three main components:
 2. **OperationDefinition** - Defines the operation interface and links to your Bot
 3. **Extension** - Links the `OperationDefinition` to the `Bot` implementation
 
-When a client calls your custom operation (e.g., `POST /fhir/R4/Patient/$my-custom-operation`), Medplum:
+When a client calls your custom operation (e.g., `POST /fhir/R4/Patient/$my-custom-operation`), Afiax:
 
 1. Looks up the corresponding `OperationDefinition`
 2. Finds the linked Bot via the extension
@@ -57,7 +57,7 @@ See [Bot Basics](/docs/bots/bot-basics) for more details on creating Bots.
 
 **Important Requirements:**
 
-- Your Medplum project must have the `bots` feature enabled
+- Your Afiax project must have the `bots` feature enabled
 - The handler function receives `medplum` (SDK instance) and `event` (operation context)
 - `event.input` contains the operation input (request body for POST, query params for GET)
 - Return value becomes the operation output
@@ -67,7 +67,7 @@ See [Bot Basics](/docs/bots/bot-basics) for more details on creating Bots.
 Deploy your Bot code using the `$deploy` operation:
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Bot/{bot-id}/\$deploy" \
+curl -X POST "https://fhir.afiax.africa/fhir/R4/Bot/{bot-id}/\$deploy" \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer {access-token}" \
   -d '{
@@ -127,7 +127,7 @@ Create an `OperationDefinition` that describes your operation and links to your 
 Once deployed, you can invoke your custom operation like any standard FHIR operation:
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Patient/\$my-custom-operation" \
+curl -X POST "https://fhir.afiax.africa/fhir/R4/Patient/\$my-custom-operation" \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer {access-token}" \
   -d '{

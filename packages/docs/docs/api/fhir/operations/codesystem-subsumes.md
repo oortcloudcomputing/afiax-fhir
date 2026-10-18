@@ -52,11 +52,11 @@ The possible `outcome` values are:
 To check whether SNOMED code `364075005` (Heart rate) is a descendant code of `363787002` (Observable entity):
 
 ```http
-GET https://api.medplum.com/fhir/R4/CodeSystem/$subsumes?system=http://snomed.info/sct&codeA=364075005&codeB=363787002
+GET https://fhir.afiax.africa/fhir/R4/CodeSystem/$subsumes?system=http://snomed.info/sct&codeA=364075005&codeB=363787002
 ```
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/CodeSystem/$subsumes' \
+curl 'https://fhir.afiax.africa/fhir/R4/CodeSystem/$subsumes' \
   --get \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d 'system=http://snomed.info/sct' \
@@ -80,5 +80,5 @@ curl 'https://api.medplum.com/fhir/R4/CodeSystem/$subsumes' \
 - [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up detailed information about codes
 - [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate a code exists in a code system
 - [CodeSystem $import](/docs/api/fhir/operations/codesystem-import) - Import hierarchical code systems
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
 - [FHIR CodeSystem $subsumes](https://hl7.org/fhir/R4/codesystem-operation-subsumes.html) - FHIR specification for $subsumes

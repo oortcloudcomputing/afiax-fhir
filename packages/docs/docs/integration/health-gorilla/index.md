@@ -5,13 +5,13 @@ tags: [integration]
 
 # Health Gorilla Lab Orders
 
-Health Gorilla is an interoperability service that enables healthcare providers to order lab tests and diagnostics through a unified API. Medplum provides a first-party integration with Health Gorilla in order to optimize this experience, minimizing errors and enhancing the patient experience. 
+Health Gorilla is an interoperability service that enables healthcare providers to order lab tests and diagnostics through a unified API. Afiax provides a first-party integration with Health Gorilla in order to optimize this experience, minimizing errors and enhancing the patient experience. 
 
 :::tip
 Need help? This is an advanced integration. [Contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for implementation support.
 :::
 
-This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering. 
+This guide provides an overview of Afiax's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering. 
 
 For more information about the FHIR resources involved in the integration, see [Sending Orders](./sending-orders.md) and [Receiving Results](./receiving-results.md). See our [Changelog](./hg-changelog.md) for information about integration upgrades. 
 
@@ -112,5 +112,5 @@ In a lab implementation, you'll see the following abbreviations.
 
 ## Related Reading
 
-- [Sample Implementation](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) via Medplum Bot - this is reference material that can be used to plan your integration
+- [Sample Implementation](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-health-gorilla-demo) via Afiax Bot - this is reference material that can be used to plan your integration
 - [React Component](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--lab-ordering) - this is a sample questionnaire that shows an ordering workflow

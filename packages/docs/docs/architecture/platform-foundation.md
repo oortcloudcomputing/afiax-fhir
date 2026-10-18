@@ -23,7 +23,7 @@ Use these names consistently:
 
 ## Rebrand rule
 
-**All prose is Afiax.** Headings, explanations, tutorials, UI copy, diagrams and contact details say Afiax, not Medplum. Hosted URLs point to Afiax (`app.afiax.africa`, `fhir.afiax.africa`), and contact addresses are `@afiax.africa`.
+**All prose is Afiax.** Headings, explanations, tutorials, UI copy, diagrams and contact details say Afiax, not Afiax. Hosted URLs point to Afiax (`app.afiax.africa`, `fhir.afiax.africa`), and contact addresses are `@afiax.africa`.
 
 Some names stay as they are, because changing them would break code or misstate facts:
 
@@ -34,9 +34,9 @@ Some names stay as they are, because changing them would break code or misstate 
 | Install paths and package names of upstream builds | They are the real names on disk | `C:\Program Files\Medplum Agent`, `medplum/medplum-server` image |
 | Open-source attribution | Required by the Apache-2.0 licence | SPDX headers, `NOTICE`, "built on Medplum open-source software" |
 
-**Medplum Inc.'s own claims must never be presented as Afiax's.** These include its SOC 2, HIPAA, ONC and other US certifications, its uptime and usage figures, customer logos, pricing, careers, terms and privacy policy. That material lives in `_upstream-medplum/` folders, which are not published. For Afiax's own position, see [Compliance](/docs/compliance) and [Security](/security).
+**Afiax Inc.'s own claims must never be presented as Afiax's.** These include its SOC 2, HIPAA, ONC and other US certifications, its uptime and usage figures, customer logos, pricing, careers, terms and privacy policy. That material lives in `_upstream-medplum/` folders, which are not published. For Afiax's own position, see [Compliance](/docs/compliance) and [Security](/security).
 
-When you write a new page, read it through once before committing and check for stray "Medplum" in prose.
+When you write a new page, read it through once before committing and check for stray "Afiax" in prose.
 
 ## Current engineering scope of this repo
 

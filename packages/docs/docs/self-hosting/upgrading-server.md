@@ -51,7 +51,7 @@ For each step in your upgrade path:
 
 ## Monitoring Migration Progress
 
-### Using the Admin Panel (available after [v4.1.12+](https://github.com/medplum/medplum/pull/6862))
+### Using the Admin Panel (available after [v4.1.12+](https://github.com/oortcloudcomputing/afiax-fhir/pull/6862))
 Navigate to `/admin/super/asyncjob` in your Afiax app to view:
 - Currently running migrations
 - Migration progress and status

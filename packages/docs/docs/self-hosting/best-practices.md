@@ -16,7 +16,7 @@ Deploy your Afiax infrastructure in a dedicated cloud account (e.g., an AWS chil
 
 - **Smaller blast radius**: Afiax resources are isolated from your other workloads
 - **Simplified access control**: Easier to grant scoped permissions for audits, compliance reviews, or vendor support
-- **Cost visibility**: Clear attribution of Medplum-related infrastructure costs
+- **Cost visibility**: Clear attribution of Afiax-related infrastructure costs
 - **Support readiness**: If you ever need hands-on assistance from the Afiax team, granting temporary access to a dedicated account is straightforward and doesn't expose your broader infrastructure
 
 ### Infrastructure as Code

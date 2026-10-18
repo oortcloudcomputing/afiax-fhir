@@ -9,6 +9,12 @@ import {
   SearchParamDocInfo,
 } from '../types/documentationTypes';
 
+// Descriptions come from the upstream resource definitions; show them with Afiax branding.
+// Only the standalone word is replaced, so identifiers such as MedplumClient are untouched.
+function brand(text: string | undefined): string | undefined {
+  return text?.replace(/(?<![\w@/.-])Medplum(?![\w/@])/g, 'Afiax');
+}
+
 export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }): JSX.Element {
   let { properties } = props;
   properties = properties.filter((p) => p.depth > 0);
@@ -43,11 +49,11 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
               {property.max === '*' ? '[]' : ''}
             </td>
             <td>
-              <p>{property.short}</p>
+              <p>{brand(property.short)}</p>
               <details open={false}>
                 <summary>Details</summary>
-                <p>{property.definition}</p>
-                <p>{property.comment}</p>
+                <p>{brand(property.definition)}</p>
+                <p>{brand(property.comment)}</p>
               </details>
             </td>
           </tr>
@@ -77,7 +83,7 @@ export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] })
           <tr key={param.name}>
             <td>{param.name}</td>
             <td>{param.type}</td>
-            <td>{param.description}</td>
+            <td>{brand(param.description)}</td>
             <td>{param.expression}</td>
           </tr>
         ))}

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Sending Orders
 
-This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
+This guide explains how laboratory orders work in the Afiax-Health Gorilla labs integration.
 
 The high-level workflow for sending laboratory & imaging orders is:
 

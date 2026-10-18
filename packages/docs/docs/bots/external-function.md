@@ -46,4 +46,4 @@ When using external functions, the Afiax server is no longer involved with deplo
 
 ## Execute the bot
 
-Executing the bot is done exactly the same as with a normal Medplum-managed AWS Lambda, using either the `$execute` endpoint or a FHIR Subscription.
+Executing the bot is done exactly the same as with a normal Afiax-managed AWS Lambda, using either the `$execute` endpoint or a FHIR Subscription.

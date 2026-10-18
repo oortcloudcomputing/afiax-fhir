@@ -21,7 +21,7 @@ Custom operations are created by:
 
 1. Creating a `Bot` resource with your JavaScript implementation
 2. Creating an `OperationDefinition` resource that defines the operation's interface
-3. Linking them using a Medplum-specific extension
+3. Linking them using a Afiax-specific extension
 
 Once configured, operations can be invoked like any standard FHIR operation:
 

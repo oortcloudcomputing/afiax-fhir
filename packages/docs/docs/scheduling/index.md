@@ -87,6 +87,6 @@ More advanced workflows can implement the [Appointment request/response model](/
 ## See Also
 
 - [Scheduling API and Workflow Video](https://youtu.be/6yAROc0KPos) on YouTube
-- [Scheduling Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Ascheduling) on Github, with sample data included.
+- [Scheduling Features and Fixes](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Ascheduling) on Github, with sample data included.
 - [Schedules](https://app.afiax.africa/Schedule) on the Afiax App
 - [Scheduling React Component](https://storybook.medplum.com/?path=/docs/medplum-scheduler--basic)

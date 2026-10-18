@@ -373,7 +373,7 @@ Some common use cases for parameterized policies include:
 
 See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
 
-See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
+See [this Github Discussion](https://github.com/oortcloudcomputing/afiax-fhir/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
 ## Example Access Policies
 
@@ -563,7 +563,7 @@ The [patient access policy](#patient-access) above can be combined with [policy 
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 
 In Afiax, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Afiax server consolidates these resources into a single enforceable AccessPolicy.  
-The recent enhancements introduce the **AccessPolicy.basedOn element**, which enhances traceability and linkage of access policies. These improvements are made accessible to the front end via the /auth/me endpoint, enabling seamless role-based access control (RBAC) for users. For more information, see the [PR](https://github.com/medplum/medplum/pull/4925) detailing the changes.
+The recent enhancements introduce the **AccessPolicy.basedOn element**, which enhances traceability and linkage of access policies. These improvements are made accessible to the front end via the /auth/me endpoint, enabling seamless role-based access control (RBAC) for users. For more information, see the [PR](https://github.com/oortcloudcomputing/afiax-fhir/pull/4925) detailing the changes.
 
 This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
 

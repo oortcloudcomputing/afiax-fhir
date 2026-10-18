@@ -45,4 +45,4 @@ Learn how to build and deploy Afiax from source code on bare metal infrastructur
 ## Additional Resources
 
 - Explore [self-hosting articles](https://www.medplum.com/blog/tags/self-host) on the upstream Medplum blog
-- Track [self-hosting features and improvements](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on GitHub
+- Track [self-hosting features and improvements](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aself-host) on GitHub

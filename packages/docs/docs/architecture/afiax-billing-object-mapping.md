@@ -34,8 +34,8 @@ Implemented in this repo today:
 
 Not implemented in this repo today:
 
-- ERPNext document builders
-- ERPNext field-level transforms
+- Afiax Billing document builders
+- Afiax Billing field-level transforms
 - inbound finance write-back consumers
 
 This page therefore documents the mapping target for external integration services.

@@ -4,7 +4,7 @@ sidebar_position: 202
 
 # Server Profiling
 
-Afiax is designed to be a critical component of system architecture. It is important that Afiax server is robust, performant, and scalable. Hand in hand with [Load Testing](/docs/self-hosting/load-testing), profiling the server is critical in understanding performance bottlenecks and scaling challenges.
+Afiax is designed to be a critical component of system architecture. It is important that Afiax server is robust, performant, and scalable. Hand in hand with [Load Testing](/docs/afiax-cloud), profiling the server is critical in understanding performance bottlenecks and scaling challenges.
 
 This document describes how the Afiax team uses the [Node.js Profiler](https://nodejs.org/en/docs/guides/simple-profiling) to analyze server performance.
 
@@ -46,7 +46,7 @@ The server is now running with the profiler attached. Because we used `node` dir
 
 Generating load depends on which aspect of the server that you want to profile.
 
-For general guidance on using [Artillery](https://www.artillery.io/) to generate load, see the Afiax guide on [Load Testing](/docs/self-hosting/load-testing).
+For general guidance on using [Artillery](https://www.artillery.io/) to generate load, see the Afiax guide on [Load Testing](/docs/afiax-cloud).
 
 For a quick test of a single HTTP endpoint, we can use Artillery's `quick` mode:
 

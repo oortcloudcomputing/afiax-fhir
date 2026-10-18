@@ -13,7 +13,7 @@ This guide demonstrates how to set up a DL-IDP, using Okta as an example provide
 
 :::caution Note
 
-Setting up DL-IDPs on the Afiax Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
+Domain-level identity providers (DL-IDPs) are available on the Enterprise plan and are set up by Oortcloud. See [Plans and onboarding](/docs/afiax-cloud/plans-and-onboarding).
 
 :::
 
@@ -94,6 +94,6 @@ Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) res
 
 :::caution Note
 
-Configuring a DL-IDP on the Afiax Hosted service requires an Afiax team member, contact us at info@afiax.africa to enable. For those self-hosting, setup below requires super admin privileges.
+Configuring a DL-IDP is done by Oortcloud; contact [support@afiax.africa](mailto:support@afiax.africa) to request one. The steps below show what is configured, for reference.
 
 :::

@@ -30,7 +30,7 @@ Demonstrating which training data was used to train an algorithm (and keeping a 
 
 ### Code Systems
 
-It is recommended that data is tagged with UMLS code systems, including [LOINC](/docs/careplans/loinc), SNOMED and RxNorm. For certification, data must conform to [USCDI profiles](/docs/fhir-datastore/understanding-uscdi-dataclasses). Implementations of predictive clinical decision support sometimes include annotating data with code systems using an algorithm or large language model.
+It is recommended that data is tagged with UMLS code systems, including [LOINC](/docs/careplans/loinc), SNOMED and RxNorm. For certification, data must conform to [USCDI profiles](/docs/country-packs/kenya-terminology-and-surveillance). Implementations of predictive clinical decision support sometimes include annotating data with code systems using an algorithm or large language model.
 
 ### Insights Reporting
 

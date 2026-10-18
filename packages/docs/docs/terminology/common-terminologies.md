@@ -1,78 +1,62 @@
 # Commonly Used Terminologies
 
-This guide provides a comprehensive reference for the most commonly used code systems and valuesets in healthcare applications. Each section includes the FHIR `system` URLs needed for proper coding in FHIR resources.
+This page tells you which code system to use for each kind of clinical data in Afiax, and the FHIR `system` URL to put in each `Coding`.
 
-## Overview of Common Code Systems
+In Kenya, every code comes from the **Kenya National Health Terminology Service (KNHTS)**, run by the Digital Health Agency. If a code is not in KNHTS, do not use it. Request it through the KNHTS request service instead of inventing a local code. SNOMED CT, CVX, RxNorm, NDC, CPT and ICD-10-CM are **not** published in KNHTS, so Afiax does not use them.
 
-The following table shows the most commonly used code system for each clinical application area:
+KNHTS sources without a published canonical URL are identified by their KNHTS source URL, `https://ilm-hie.dha.go.ke/ocl/orgs/<owner>/sources/<source>`. The constants for each one are in `@medplum/core` (`packages/core/src/kenya.ts`).
 
-| Clinical Application             | Primary Code System | CodeSystem URL                                | Description                                                     | Full System Valueset                             |
-| -------------------------------- | ------------------- | --------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
-| Clinical Findings                | LOINC               | `http://loinc.org`                            | Laboratory tests, vital signs, clinical observations            | `http://loinc.org/vs`                            |
-| Medications                      | RXNorm              | `http://www.nlm.nih.gov/research/umls/rxnorm` | Normalized medication names                                     | `http://www.nlm.nih.gov/research/umls/rxnorm/vs` |
-| Procedures                       | CPT                 | `http://www.ama-assn.org/go/cpt`              | Current Procedural Terminology                                  | `http://www.ama-assn.org/go/cpt/vs`              |
-| Diagnoses                        | ICD-10-CM           | `http://hl7.org/fhir/sid/icd-10-cm`           | International Classification of Diseases, Clinical Modification | `http://hl7.org/fhir/sid/icd-10-cm/vs`           |
-| Vaccines                         | CVX                 | `http://hl7.org/fhir/sid/cvx`                 | Vaccine Administered                                            | `http://hl7.org/fhir/sid/cvx/vs`                 |
-| Allergies (food + environmental) | SNOMED CT           | `http://snomed.info/sct`                      | Substance and clinical concepts                                 | `http://snomed.info/sct/vs`                      |
+## Which code system for what
 
-## Use-case Specific ValueSets
+| Clinical data | Code system (KNHTS source) | FHIR `system` | Constant | Status |
+| --- | --- | --- | --- | --- |
+| Diagnoses and problems | ICD-11 MMS (`WHO/ICD-11`) | `http://id.who.int/icd/release/11/mms` | `KenyaIcd11System` | Required; checked when saved |
+| Legacy diagnoses | ICD-10 (`WHO/ICD-10-WHO`) | `http://hl7.org/fhir/sid/icd-10` | `KenyaIcd10System` | Only as an extra coding next to ICD-11 |
+| Laboratory tests and results, vital signs | LOINC (`Regenstrief/LOINC`) | `http://loinc.org` | | Preferred |
+| Kenyan investigations list | `MOH-PPB/Investigations` | KNHTS source URL | `KenyaInvestigationSystem` | Available |
+| Procedures | ICHI (`WHO/ICHI`) | KNHTS source URL | `KenyaIchiSystem` | Binding planned |
+| Medicines, vaccines and medical devices | Health Products and Technologies (`MOH-PPB/HPT`) | KNHTS source URL | `KenyaHealthProductSystem` | Binding planned |
+| SHA benefits and interventions | `MOH-KENYA/BenefitsAndInterventions` | KNHTS source URL | `KenyaShaInterventionSystem` | Required on SHA pre-authorisation; checked |
+| Allergies | Kenyan allergy codes (`MOH-KENYA/ORG-00001-SRC-012`) | KNHTS source URL | `KenyaAllergyCodeSystem` | Binding planned |
+| Encounter types | `MOH-KENYA/ORG-00001-SRC-027` | KNHTS source URL | `KenyaEncounterTypeSystem` | Binding planned |
+| Patient identifier types | `MOH-KENYA/ORG-00001-SRC-016` | KNHTS source URL | `KenyaPatientIdentifierTypeSystem` | Binding planned |
+| Document types | `MOH-KENYA/document-types` | KNHTS source URL | `KenyaDocumentTypeSystem` | Binding planned |
+| Units of measure | UCUM | `http://unitsofmeasure.org` | | International standard |
 
-Each clinical area has predefined sets of codes that cover the most common scenarios you'll encounter. While each clinical area has a primary code system, healthcare applications often need to support multiple coding systems for different use cases.
+"Binding planned" means the code system is defined, but Afiax does not yet enforce it. Enforcement is planned for Q4 2026 to Q1 2027. Use these systems now, so your data is ready when enforcement starts.
 
-### Clinical Findings and Laboratory Tests
+## Example: an ICD-11 diagnosis
 
-| Valueset Name      | Description                                                          | Valueset URL                                                           | Example Values                                 | Code Systems |
-| ------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- | ------------ |
-| Vital Signs Type   | Codes for types of vital sign measurements and clinical observations | `http://hl7.org/fhir/us/core/ValueSet/us-core-vital-signs`             | `[8302-2] Body height`, `[8867-4] Heart rate`, | LOINC        |
-| Smoking Status     | Codes for patient smoking status and tobacco use                     | `http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38`    | `[8517006] Ex-smoker`                          | SNOMED CT    |
-| Pregnancy Status   | Codes for pregnancy status and related observations                  | `http://hl7.org/fhir/us/core/ValueSet/us-core-pregnancy-status`        | `[77386006] Pregnancy`                         | SNOMED CT    |
-| SDOH Assessment    | Social determinants of health assessment codes                       | `http://hl7.org/fhir/us/core/ValueSet/us-core-common-sdoh-assessments` | `[71802-3]	Housing status`                      | LOINC        |
-| Sexual Orientation | Codes for sexual orientation and gender identity                     | `http://hl7.org/fhir/us/core/ValueSet/us-core-sexual-orientation`      | `[20430005] 	Heterosexual`                      | SNOMED CT    |
+```json
+{
+  "resourceType": "Condition",
+  "code": {
+    "coding": [
+      {
+        "system": "http://id.who.int/icd/release/11/mms",
+        "code": "1F40.Z",
+        "display": "Malaria due to Plasmodium falciparum, unspecified"
+      }
+    ]
+  }
+}
+```
 
-### Allergies and Adverse Reactions
+In a project using the Kenya country pack, saving a `Condition` without an ICD-11 coding is rejected. See [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance#icd-11-diagnosis-rule).
 
-Allergy coding uses SNOMED CT for substance identification and RXNorm for medication allergies, following US Core 5.0.1 specifications.
+## Looking up a code
 
-| Code System | System URL                                    | Description                     | Use Cases                                                  |
-| ----------- | --------------------------------------------- | ------------------------------- | ---------------------------------------------------------- |
-| SNOMED CT   | `http://snomed.info/sct`                      | Substance and clinical concepts | Food allergies, environmental allergies, clinical findings |
-| RXNorm      | `http://www.nlm.nih.gov/research/umls/rxnorm` | Medication substances           | Drug allergies, medication intolerances                    |
+KNHTS has a public read API. To check a code:
 
-**Common ValueSets**
+```bash
+curl -s https://ilm-hie.dha.go.ke/ocl/orgs/WHO/sources/ICD-11/concepts/1F40.Z/ | jq -r .display_name
+# Malaria due to Plasmodium falciparum, unspecified
+```
 
-| Valueset Name             | Description                                                                       | Valueset URL                                                        | Example Values        | Code Systems      |
-| ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------- | ----------------- |
-| US Core Allergy Substance | Common substances for allergy and intolerance documentation including refutations | `http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8` | `[7980] Penicillin G` | SNOMED CT, RXNorm |
+A `404` means the code is not in KNHTS. To search by name, use `.../concepts/?q=<term>`, then confirm the code you choose with a direct lookup, because search also matches synonyms.
 
-### Medications
+## Related
 
-For detailed information about medication coding systems including RxNorm and NDC, see [Medication Code Systems](/docs/medications/medication-codes).
-
-### Medical Procedures
-
-Procedure coding varies by setting and purpose, with CPT being primary for billing.
-
-| Code System | System URL                                                 | Description                               | Use Cases                                        |
-| ----------- | ---------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------ |
-| CPT         | `http://www.ama-assn.org/go/cpt`                           | Current Procedural Terminology            | Billing, procedure documentation                 |
-| HCPCS       | `https://www.cms.gov/Medicare/Coding/HCPCSReleaseCodeSets` | Healthcare Common Procedure Coding System | Medicare/Medicaid billing, Value-based care, DME |
-| SNOMED CT   | `http://snomed.info/sct`                                   | Clinical procedure concepts               | Clinical documentation, procedure notes          |
-| ICD-10-PCS  | `http://www.cms.gov/Medicare/Coding/ICD10`                 | ICD-10 Procedure Coding System            | Hospital inpatient billing                       |
-
-### Diagnoses and Conditions
-
-Diagnosis coding primarily uses ICD-10-CM for standardized disease classification, with SNOMED CT providing more granular clinical concepts preferred in international settings.
-
-| Code System | System URL                          | Description                                                     | Use Cases                                |
-| ----------- | ----------------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
-| ICD-10-CM   | `http://hl7.org/fhir/sid/icd-10-cm` | International Classification of Diseases, Clinical Modification | Primary diagnoses, billing, epidemiology |
-| SNOMED CT   | `http://snomed.info/sct`            | Clinical findings and disorders                                 | Clinical documentation, problem lists    |
-
-### Vaccines and Immunizations
-
-Vaccine coding uses CVX codes for vaccine types and CPT codes for administration procedures.
-
-| Code System | System URL                       | Description                       | Use Cases                                    |
-| ----------- | -------------------------------- | --------------------------------- | -------------------------------------------- |
-| CVX         | `http://hl7.org/fhir/sid/cvx`    | Vaccine Administered              | Immunization records, vaccine administration |
-| CPT         | `http://www.ama-assn.org/go/cpt` | Vaccine administration procedures | Billing for vaccine administration           |
+- [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance)
+- [Medication codes](/docs/medications/medication-codes)
+- [Terminology services](/docs/terminology)

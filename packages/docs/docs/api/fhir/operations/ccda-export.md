@@ -28,7 +28,7 @@ curl 'https://fhir.afiax.africa/fhir/R4/Patient/<PATIENT_ID>/$ccda-export' \
 
 ## Related
 
-- [C-CDA Integration Guide](/docs/integration/c-cda) - Detailed guide on working with C-CDA documents
+- C-CDA Integration Guide - Detailed guide on working with C-CDA documents
 - [Patient $everything](/docs/api/fhir/operations/patient-everything) - Export all patient data in FHIR format
 - [FHIR Patient Resource](https://hl7.org/fhir/R4/patient.html) - FHIR specification for Patient
 - [HL7 C-CDA Specification](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=492) - Official C-CDA implementation guide

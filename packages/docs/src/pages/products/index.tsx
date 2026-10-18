@@ -17,7 +17,7 @@ export default function ProductsPage(): JSX.Element {
             <p className={styles.heroText}>
               Afiax FHIR is the clinical core inside Afiax Enterprise. The product surface is broader than a single
               app or one country integration: it spans clinical operations, interoperability, digital care services,
-              analytics, developer tooling, and sovereign deployment models.
+              analytics and developer tooling, all delivered as a managed service on Afiax Cloud in Kenya.
             </p>
           </div>
         </Jumbotron>
@@ -174,19 +174,20 @@ export default function ProductsPage(): JSX.Element {
 
         <Jumbotron>
           <div className={styles.heroContent}>
-            <h2>Deployment, Governance, and Sovereign Operations</h2>
+            <h2>Managed by Oortcloud, Hosted in Kenya</h2>
             <p className={styles.heroText}>
               Afiax is designed for African healthcare delivery realities, where data sovereignty, variable
               infrastructure maturity, and multi-organization governance need to be first-class product concerns.
             </p>
             <ul>
               <li>
-                <strong>Shared SaaS and dedicated runtime models:</strong> serve customers with different scale and
-                isolation requirements.
+                <strong>Afiax Cloud:</strong> Oortcloud operates the whole platform in two Kenyan data centres, with
+                backups, disaster recovery, security monitoring and upgrades included. See{' '}
+                <a href="/docs/afiax-cloud">Afiax Cloud</a>.
               </li>
               <li>
-                <strong>Managed PaaS patterns:</strong> operate the platform inside customer or country-specific cloud
-                footprints when needed.
+                <strong>Per-facility plans:</strong> Starter, Professional and Enterprise, each with onboarding by
+                Oortcloud's implementation team. See <a href="/pricing">Plans</a>.
               </li>
               <li>
                 <strong>Audit, provenance, and access control:</strong> make every workflow traceable and governable.

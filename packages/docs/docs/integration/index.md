@@ -1,326 +1,54 @@
 # Integration
 
-Afiax's integrations the most commonly used features of the platform, and the tools can be used to build effective robust integrations. Afiax supports three types of integrations:
+This page lists everything Afiax connects to, and how partners connect their own systems. Integrations are part of the managed service: Oortcloud builds, runs and maintains them on [Afiax Cloud](/docs/afiax-cloud), and keeps them up to date when national systems change.
 
-- **First party** integrations with common medical systems
-- **Common medical integrations** like FHIR, HL7 V2, SMART-on-FHIR and SFTP
-- **Custom built** integrations using the SDK and Bot templates
+## Kenyan national systems
 
-## First Party Integrations
+Delivered by the [Kenya country pack](/docs/country-packs/kenya) and included in Afiax Clinical Suite.
 
-Afiax supports the following first party integrations.
+| System | What Afiax does with it | Status | Docs |
+| --- | --- | --- | --- |
+| **SHA** (Social Health Authority) | Eligibility checks, pre-authorisation, claim submission and claim status, built from the encounter | Implemented | [Kenya billing and settlement](/docs/country-packs/kenya-billing-and-settlement) |
+| **DHA Health Information Exchange** | Patient identity (Client Registry), facility and practitioner verification, publishing the Shared Health Record | Implemented | [Kenya reference pack](/docs/country-packs/kenya) |
+| **KNHTS** (national terminology) | Every ICD-11 diagnosis and SHA intervention code checked when saved | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance) |
+| **KHIS / DHIS2** | Weekly MOH 505 disease surveillance report, with zero reporting | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance#khis-weekly-export-moh-505) |
+| **IDSR** | Immediate notification for notifiable diseases | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance#idsr-immediate-notification) |
+| **M-Pesa** (Safaricom Daraja) | Patient payments by STK push or recorded M-Pesa code | Implemented | [Afiax Pay and patient payments](/docs/integration/afiax-pay) |
+| **KMPDC, NCK, PPB** | Practitioner registration checks | Implemented, through the HIE | [Kenya reference pack](/docs/country-packs/kenya) |
+| **MOH 705/711** monthly reports | Monthly facility reporting | Planned | |
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Documentation</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Authentication and Identity</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.okta.com/">Okta</a></td>
-      <td>Authentication</td>
-      <td>Enable Okta SSO for Providers</td>
-      <td><a href="/docs/auth/domain-level-identity-providers#okta-setup">Okta setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://auth0.com/">Auth0</a></td>
-      <td>Authentication</td>
-      <td>Enable Auth0 SSO for Providers and Patients</td>
-      <td><a href="/docs/user-management/external-ids#invite-user">Auth0 account Setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://safety.google/authentication/">Google Authentication</a></td>
-      <td>Authentication</td>
-      <td>Enable Google SSO for Providers and Patients</td>
-      <td><a href="/docs/auth/google-auth">Google Auth Setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://learn.microsoft.com/en-us/entra/identity-platform">Entra SSO</a> (fka Azure SSO)</td>
-      <td>Authentication</td>
-      <td>Enable Microsoft Entra SSO for Providers and Patients</td>
-      <td><a href="/docs/auth/external-identity-providers">Entra Auth Setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.google.com/recaptcha/about/">Recaptcha</a></td>
-      <td>Security</td>
-      <td>Enable recaptcha on patient registration</td>
-      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Setup recaptcha</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Clinical Systems (EHR, HIE, Labs)</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.epic.com/">Epic Systems</a></td>
-      <td>EHR</td>
-      <td>Read/Write via FHIR API</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/epic">Epic JWT authentication</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.healthgorilla.com/">Health Gorilla Patient 360</a></td>
-      <td>HIE</td>
-      <td>Integrated records and ADT data</td>
-      <td><a href="/docs/integration/health-gorilla">Health Gorilla Integration</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://zushealth.com/">Zus Health</a></td>
-      <td>HIE</td>
-      <td>Integrated HIE, analytics and longitudinal care</td>
-      <td><a href="https://docs.zushealth.com/docs/medplum">Afiax integration</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.healthgorilla.com/">Health Gorilla Lab Network</a></td>
-      <td>Diagnostics</td>
-      <td>Lab orders and results</td>
-      <td><a href="/docs/integration/health-gorilla">Health Gorilla Integration</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.labcorp.com/">Labcorp</a></td>
-      <td>Diagnostics</td>
-      <td>Lab orders and results</td>
-      <td><a href="/docs/integration/health-gorilla">Bot and setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.questdiagnostics.com/">Quest</a></td>
-      <td>Diagnostics</td>
-      <td>Lab orders and results</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Communications</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.efax.com/">eFax</a></td>
-      <td>Communications</td>
-      <td>Send and receive faxes via FHIR Communication resources</td>
-      <td><a href="/docs/integration/efax">eFax Integration</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Billing</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.joincandidhealth.com/">Candid Health</a></td>
-      <td>Billing</td>
-      <td>Revenue cycle and insurance eligibility check</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Data and Observability</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.datadoghq.com/">Datadog</a></td>
-      <td>Observability</td>
-      <td>Application monitoring</td>
-      <td><a href="/docs/self-hosting/datadog">Datadog sidecar setup</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.sumologic.com/">Sumo Logic</a></td>
-      <td>Observability</td>
-      <td>Application monitoring</td>
-      <td>Coming soon</td>
-    </tr>
-    <tr>
-      <td><a href="https://www.snowflake.com/">Snowflake</a></td>
-      <td>Data warehouse</td>
-      <td>Synchronize data to datawarehouse</td>
-      <td>Documentation coming soon</td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Artificial Intelligence</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.openai.com/">OpenAI</a></td>
-      <td>AI</td>
-      <td>Large language models</td>
-      <td><a href="/docs/ai">Afiax AI</a></td>
-    </tr>
-  </tbody>
-</table>
+## Afiax products
 
-## Common Medical Integrations
+Afiax FHIR is the clinical record that the other Afiax products connect to.
 
-Afiax provides templates and playbooks for common medical integrations.
+| Product | Integration | Docs |
+| --- | --- | --- |
+| **Afiax Pay** | Patient payments, wallets and refunds, recorded against the visit's claim | [Afiax Pay and patient payments](/docs/integration/afiax-pay), [Afiax Pay boundary](/docs/architecture/afiax-pay-boundary) |
+| **Afiax Billing** | Claims, payments and invoices posted to finance; pharmacy stock and dispensing | [Afiax Billing boundary](/docs/architecture/afiax-billing-boundary), [contract](/docs/architecture/afiax-billing-contract) |
+| **Afiax DICOM** | Imaging orders, studies and reports | [Afiax DICOM](/docs/integration/afiax-dicom) |
+| **Afiax AI** | Decision support, imaging AI and risk scores written back as FHIR resources for clinician review | [Afiax AI](/docs/products/afiax-ai) |
+| **Afiax Workspace** | Single sign-on; secure messaging; practitioner credentials | [Afiax Workspace](/docs/products/afiax-workspace) |
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Description</th>
-      <th>Documentation</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Clinical and EHR Data</strong></td>
-    </tr>
-    <tr>
-      <td>HL7 V2</td>
-      <td>EHR</td>
-      <td>Connect to ADT ORU or other HL7 Feeds</td>
-      <td><a href="/docs/agent">On premise agent</a></td>
-    </tr>
-    <tr>
-      <td>FHIR (g)(10)</td>
-      <td>EHR</td>
-      <td>FHIR API for other EHRs</td>
-      <td>
-        <a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/epic">Example bot FHIR API connectivity</a><br />
-        <a href="/docs/cli/external-fhir-servers">CLI connector</a>
-      </td>
-    </tr>
-    <tr>
-      <td>SFTP</td>
-      <td>EHR</td>
-      <td>Synchronize data</td>
-      <td><a href="/docs/bots/file-uploads#sftp-uploads">Example bot</a></td>
-    </tr>
-    <tr>
-      <td>SMART-on-FHIR</td>
-      <td>EHR</td>
-      <td>SMART app launch from Afiax or another EHR</td>
-      <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
-    </tr>
-    <tr>
-      <td>FHIRcast</td>
-      <td>Radiology</td>
-      <td>Event driven workflow for workstations</td>
-      <td><a href="/docs/fhircast">Documentation</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Payor and Compliance</strong></td>
-    </tr>
-    <tr>
-      <td>FHIR CMS 9115</td>
-      <td>Payor</td>
-      <td>FHIR Provider directory for Payor compliance</td>
-      <td><a href="/docs/administration/provider-directory">Documentation</a></td>
-    </tr>
-    <tr>
-      <td>BulkFHIR</td>
-      <td>EHR/Payor</td>
-      <td>Export FHIR Data for use by partners</td>
-      <td><a href="/docs/api/fhir/operations/bulk-fhir">BulkFHIR documentation</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Identity and Authentication</strong></td>
-    </tr>
-    <tr>
-      <td>OAuth2</td>
-      <td>Identity</td>
-      <td>Plug in any oAuth2 provider</td>
-      <td><a href="/docs/auth/external-identity-providers">Documentation</a></td>
-    </tr>
-    <tr>
-      <td>Basic Auth</td>
-      <td>Identity</td>
-      <td>Support connections via Basic Auth for legacy systems</td>
-      <td><a href="/docs/sdk/core.medplumclient.setbasicauth">Basic auth</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Binary and Media</strong></td>
-    </tr>
-    <tr>
-      <td>Video</td>
-      <td>Binary Files</td>
-      <td>Upload and transcode video</td>
-      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
-    </tr>
-    <tr>
-      <td>PDF</td>
-      <td>Binary Files</td>
-      <td>Upload and access PDF</td>
-      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
-    </tr>
-    <tr>
-      <td>Images</td>
-      <td>Binary Files</td>
-      <td>Upload and access image files</td>
-      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
-    </tr>
-  </tbody>
-</table>
+## Inside your facility
 
-## Custom built integrations
+| Integration | What it connects | Docs |
+| --- | --- | --- |
+| **Afiax Facility Agent** | Lab analysers, imaging modalities and other on-site systems that speak HL7 v2 or DICOM, connected securely to Afiax Cloud | [Afiax Facility Agent](/docs/agent) |
+| **Laboratory** | In-house analysers and external reference labs | [Laboratory orders and results](/docs/integration/laboratory) |
+| **HL7 v2** | Admissions (ADT), orders and results from existing hospital systems | [HL7 interfacing](/docs/integration/hl7-interfacing) |
 
-Afiax provides building blocks for custom integrations. Some examples are below.
+## Connecting your own system (partners)
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Template Type</th>
-      <th>Description</th>
-      <th>Documentation</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Scheduling and Payments (Bot Webhooks)</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://stripe.com/">Stripe</a></td>
-      <td>Bot Webhooks</td>
-      <td>Synchronize payments data</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe bot</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.acuityscheduling.com/">Acuity Scheduling</a></td>
-      <td>Bot Webhooks</td>
-      <td>Enable third party scheduling</td>
-      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
-    </tr>
-    <tr>
-      <td><a href="https://cal.com/">Cal.com</a></td>
-      <td>Bot Webhooks</td>
-      <td>Enable third party scheduling</td>
-      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Clinical (API)</strong></td>
-    </tr>
-    <tr>
-      <td>Medications</td>
-      <td>API</td>
-      <td>Prescribe and check medications</td>
-      <td><a href="https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb">Medication related integration</a></td>
-    </tr>
-    <tr style={{backgroundColor: '#f6f8fa'}}>
-      <td colspan="4"><strong>Documents and Forms (Bot PDF)</strong></td>
-    </tr>
-    <tr>
-      <td><a href="https://www.cms.gov/medicare/cms-forms/cms-forms/downloads/cms1500.pdf">CMS 1500</a></td>
-      <td>Bot PDF</td>
-      <td>Create PDF for CMS 1500</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
-    </tr>
-    <tr>
-      <td>Superbill</td>
-      <td>Bot PDF</td>
-      <td>Create PDF for Superbill</td>
-      <td><a href="https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
-    </tr>
-  </tbody>
-</table>
+Partners such as laboratories, insurers, app developers and county systems connect through standard APIs, using credentials issued by Oortcloud:
 
-## Integration Building Blocks and Testing
+- **FHIR R4 REST API** for reading and writing clinical data. See the [API reference](/docs/api).
+- **SMART on FHIR** for apps that launch from Afiax Provider with the user's context. See [SMART App Launch](/docs/integration/smart-app-launch).
+- **Subscriptions** to be notified when data changes, instead of polling. See [Subscriptions](/docs/subscriptions).
+- **Bots** for custom logic that runs inside Afiax Cloud, next to the data. See [Bots](/docs/bots).
+- **FHIRcast** for keeping several apps on the same patient. See [FHIRcast](/docs/fhircast).
 
-Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions/index.md), [authentication and authorization](/docs/auth/index.md) and the [TypeScript SDK](/docs/sdk/).
+Start with [Environments and partner access](/docs/afiax-cloud/environments-and-access): you build and test in UAT with synthetic data, and production access is granted after review.
 
-- [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
-- [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers
-- [Integration Features and Fixes](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
-- [Audit and Logging Features](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
-- [Bot Pull Requests](https://github.com/oortcloudcomputing/afiax-fhir/issues?q=label%3Abots) can be good reference material for how integrations work.
-- [Auth Pull Requests](https://github.com/oortcloudcomputing/afiax-fhir/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.
+## Need an integration that isn't listed?
 
-## Related
-
-- [Epic Server to Server](https://youtu.be/E8VD9rgadG0) demo on Youtube
-- [HL7 Handling using Bots](https://youtu.be/q0SXeb_8H2Q) on Youtube
+Enterprise plans include an allowance for custom integrations; on other plans they are quoted as professional services. Email [info@afiax.africa](mailto:info@afiax.africa) with the system and what you need to exchange.

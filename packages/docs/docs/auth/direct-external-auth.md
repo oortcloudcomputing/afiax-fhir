@@ -7,9 +7,9 @@ tags: [auth]
 
 Afiax supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Afiax API directly.
 
-:::caution Self-Hosted Deployments Only
+:::caution Configured by Oortcloud
 
-This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Afiax deployments. If you are using Afiax's cloud-hosted service and need this capability, please contact [Afiax support](/contact).
+On Afiax Cloud, external authentication providers (`externalAuthProviders` in the server configuration) are set up by Oortcloud. To request one, raise a request with the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla).
 
 :::
 

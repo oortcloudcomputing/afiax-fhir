@@ -38,16 +38,9 @@
 
 ---
 
-### Question 1.3: Are you self-hosting the Afiax deployment, or using a managed Afiax cloud environment?
+### Note on hosting
 
-**Pick one:**
-
-- [ ] **A) We're self-hosting** (running the Afiax deployment in our own environment)
-- [ ] **B) We're using a managed Afiax cloud environment**
-
-**Why this matters:**
-- Complete database separation is only available for self-hosted customers
-- Cloud customers will use the "shared database with access rules" approach
+All Afiax tenants run on Afiax Cloud, operated by Oortcloud. Strict isolation is achieved by giving each tenant its own Afiax project; Oortcloud creates the projects on request.
 
 ---
 
@@ -342,8 +335,8 @@ Based on your answers to Part 1:
 | Your Answer | Technical Approach |
 |-------------|-------------------|
 | 1.1 = A (single org) | No multi-tenancy needed |
-| 1.2 = A (strict isolation) + 1.3 = A (self-hosted) | Separate Afiax Projects per tenant |
-| 1.2 = B or C (some sharing) OR 1.3 = B (cloud) | Single Project with MSO access model |
+| 1.2 = A (strict isolation) | Separate Afiax Projects per tenant (created by Oortcloud) |
+| 1.2 = B or C (some sharing) | Single Project with MSO access model |
 
 ### Tenant Resource Type
 Based on your answer to Question 2.1:

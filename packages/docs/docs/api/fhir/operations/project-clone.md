@@ -12,7 +12,7 @@ The `$clone` operation creates a complete copy of an Afiax project, including al
 - **Creating a Project Template**: Clone configuration and bots without patient data for new client projects
 - **Cloning Specific Resources**: Selectively clone bots, questionnaires, or other resources
 
-:::caution Self-Hosted Deployments Only
+:::caution Performed by Oortcloud
 This operation requires super admin privileges, which are only available on self-hosted Afiax deployments. If you are using Afiax's cloud-hosted service and need to clone a project, please contact [Afiax support](/contact).
 :::
 
@@ -128,7 +128,7 @@ The following resources are cloned (if `resourceTypes` is not specified):
 
 | Status Code | Description |
 |-------------|-------------|
-| `403 Forbidden` | User is not a super admin (requires self-hosted deployment) |
+| `403 Forbidden` | User is not a super admin (only Oortcloud operators are) |
 | `404 Not Found` | Source project not found |
 
 ## Notes

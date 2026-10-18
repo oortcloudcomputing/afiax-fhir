@@ -6,7 +6,7 @@ sidebar_position: 1
 
 Afiax Billing is the enterprise billing capability inside Afiax Enterprise.
 
-It runs on an ERPNext-based operational surface and connects directly to Afiax FHIR, which remains the canonical
+It runs as part of Afiax Clinical Suite and connects directly to Afiax FHIR, which remains the canonical
 clinical and reimbursement source of truth.
 
 Afiax Enterprise also uses Afiax Pay as the country-neutral payments rail for co-pay, wallet, subsidy, and embedded

@@ -34,20 +34,16 @@ You might be asking yourself, what is the difference between the `Medication` an
 
 ## Medication Code
 
-When defining `MedicationKnowledge.code`, it's highly recommended to use RxNorm as the primary coding system. RxNorm is an international standard that normalizes drug names from many different data sources.
+Code `MedicationKnowledge.code` with the Kenya Health Products and Technologies list (`MOH-PPB/HPT`) from KNHTS. See [Medication codes](/docs/medications/medication-codes) for its levels: `AC` active ingredient, `GE` generic product (ingredient, strength and form) and `PH` specific product.
 
-RxNorm has codes for medications with different levels of specificity, called "term types". Refer to our [RxNorm guide](./medication-codes) for a detailed understanding of the term-type hierarchy.
+| Level | Use in the formulary | Example |
+| --- | --- | --- |
+| `GE` generic product | Required: what clinicians prescribe | `GE10177` Paracetamol 500 mg Oral Tablet |
+| `PH` specific product | Optional: the products your pharmacy stocks and dispenses | `PH7913` Paracetamol 500 mg Oral Tablet |
 
-The [Da Vinci formulary guide](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) recommends using the following term type when creating a formulary to achieve the appropriate level of specificity
+Search for codes at [nhts.dha.go.ke](https://nhts.dha.go.ke), or through the KNHTS API.
 
-| Term Types                                                                                                                 | Requirement | Example                                                                    | RxCUI   |
-| -------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------- | ------- |
-| Semantic Clinical Drug (`SCD`) <br />Semantic Branded Drug (`SBD`) <br />Generic Pack (`GPCK`) <br />Branded Pack (`BPCK`) | Required    | acetaminophen 325 MG / oxycodone hydrochloride 5 MG Oral Tablet [Percocet] | 1049640 |
-| Semantic Clinical Drug Form (`SCDG`) <br />Semantic Branded Drug Form Group (`SBDG`)                                       | Optional    | Percocet Pill                                                              | 1185784 |
-
-You can use the [RxNav](https://mor.nlm.nih.gov/RxNav/) browser to search for RxNorm codes for your formulary.
-
-Below is an example [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) with both `SBD` and `SBDG` codes:
+Below is an example [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) with both a generic and a specific product code:
 
 ```ts
 {
@@ -55,31 +51,27 @@ Below is an example [`MedicationKnowledge`](/docs/api/fhir/resources/medicationk
   code: {
     coding: [
       {
-        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-        code: "1049640",
-        display: "acetaminophen 325 MG / oxycodone hydrochloride 5 MG Oral Tablet [Percocet]"
+        system: "https://ilm-hie.dha.go.ke/ocl/orgs/MOH-PPB/sources/HPT",
+        code: "GE10177",
+        display: "Paracetamol 500 mg Oral Tablet"
       },
       {
-        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-        code: "1185784",
-        display: "Percocet Pill"
+        system: "https://ilm-hie.dha.go.ke/ocl/orgs/MOH-PPB/sources/HPT",
+        code: "PH7913",
+        display: "Paracetamol 500 mg Oral Tablet"
       }
     ]
   }
 }
 ```
 
-## Branded vs. Generic Medications
+## Generic vs. Specific Products
 
-RxNorm term types `SBD`, `BPCK`, and `SBDG` all refer to specific brand names for a given drug. Including branded drugs in your formulary indicates that physicians may only prescribe a specific brand.
-
-In contrast, using generic term types (`SCD`, `GPCK`, `SCDG`) indicates that physicians may prescribe _any_ brand of the medication.
+Listing only generic (`GE`) codes in your formulary means clinicians may prescribe *any* product with that ingredient, strength and form. Listing specific (`PH`) codes restricts prescribing to those products.
 
 :::tip Prescribable vs. Dispensable Medications
 
-While most Afiax applications will include _either_ generic _or_ branded versions of a medication, some advanced implementations may include both. This is especially common with providers that own their own pharmacy.
-
-In these implementations, generic codes would be used by physicians to _prescribe_ the medication, whereas pharmacies branded medications would be used to _dispense_ the medication. See [Medication Relationships](#medication-relationships) for details on how to represent the link between branded and generic [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources.
+Facilities with their own pharmacy usually list both: clinicians *prescribe* the generic product, and the pharmacy *dispenses* a specific product from stock, which Afiax Billing tracks. See [Medication Relationships](#medication-relationships) for how to link a specific product to its generic [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge).
 
 :::
 
@@ -103,15 +95,11 @@ The table below summarizes the most important medication metadata elements.
 {
   resourceType: 'MedicationKnowledge',
   code: {
-    text: 'acetaminophen 325 MG [Tylenol]',
+    text: 'Paracetamol 500 mg Oral Tablet',
     coding: [
       {
-        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-        code: '569998',
-      },
-      {
-        system: 'http://hl7.org/fhir/sid/ndc',
-        code: '5058049501',
+        system: 'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-PPB/sources/HPT',
+        code: 'PH7913',
       },
     ],
   },
@@ -207,7 +195,7 @@ The `MedicationKnowledge.productType` field can be used to categorize the drug w
 
 :::caution Representing Controlled Substance Schedules
 
-Certain medications, including narcotics, are classified into schedules based on the U.S. Controlled Substances Act (CSA). `MedicationKnowledge.regulatory.schedule` is used for specifying the regulatory schedule for any medications subject to these restrictions.
+In Kenya, some medicines, including narcotics and psychotropics, are controlled under the Narcotic Drugs and Psychotropic Substances (Control) Act and the Pharmacy and Poisons Act. Use `MedicationKnowledge.regulatory.schedule` to record the schedule of any medicine subject to these controls.
 
 Refer to the [HL7 Controlled Substances Schedule](https://terminology.hl7.org/ValueSet-v2-0477.html) for an example valueset.
 
@@ -215,7 +203,7 @@ Refer to the [HL7 Controlled Substances Schedule](https://terminology.hl7.org/Va
 
 ## Compounded Medications
 
-For medications that must be mixed before being dispensed, the `MedicationKnowledge.ingredient` field is used for listing ingredients of compounded medications, with RxNorm as the preferred code system for each ingredient.
+For medications that must be mixed before being dispensed, the `MedicationKnowledge.ingredient` field is used for listing ingredients of compounded medications, with HPT active-ingredient (`AC`) codes for each ingredient. If an ingredient is not in HPT, describe it in `text` and request the code through KNHTS.
 
 The `MedicationKnowledge.amount` field indicates the total amount of the compound to be dispensed, and the `strength` of each ingredient is stored as a ratio of the total volume (e.g. 1g per 100g).
 
@@ -470,8 +458,8 @@ graph TD
         text: 'Baclofen powder',
         coding: [
           {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: '1292',
+            system: 'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-PPB/sources/HPT',
+            code: 'AC11057',
           },
         ],
       },
@@ -494,8 +482,8 @@ graph TD
         text: 'Ketoprofen powder',
         coding: [
           {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: '6142',
+            system: 'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-PPB/sources/HPT',
+            code: 'AC11021',
           },
         ],
       },
@@ -515,12 +503,7 @@ graph TD
       isActive: true,
       itemCodeableConcept: {
         text: 'Capcaicin 0.75 mg/mL topical lotion',
-        coding: [
-          {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: '1992',
-          },
-        ],
+        // Not in HPT: coded by text only until KNHTS publishes it
       },
       strength: {
         numerator: {
@@ -537,12 +520,7 @@ graph TD
       isActive: true,
       itemCodeableConcept: {
         text: 'Tetracaine 10 mg/mL topical cream',
-        coding: [
-          {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: '10391',
-          },
-        ],
+        // Not in HPT: coded by text only until KNHTS publishes it
       },
       strength: {
         numerator: {
@@ -559,12 +537,7 @@ graph TD
       isActive: false,
       itemCodeableConcept: {
         text: 'PLO flowable Pluronic Lecithin Organogel',
-        coding: [
-          {
-            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-            code: '012345',
-          },
-        ],
+        // Not in HPT: coded by text only until KNHTS publishes it
       },
       strength: {
         numerator: {
@@ -598,7 +571,7 @@ graph TD
 
 ## Medication Relationships
 
-Advanced implementations might want to model structured relationships between medications. For example, administrators might want to link [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources representing generic and branded medications, to aid in fulfillment (see [Branded vs. Generic Medications](#branded-vs-generic-medications))
+Advanced implementations might want to model structured relationships between medications. For example, administrators might want to link [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources representing generic and branded medications, to aid in fulfillment (see [Branded vs. Generic Medications](#generic-vs-specific-products))
 
 Relationships between drugs in the formulary are modeled using the `MedicationKnowledge.relatedMedicationKnowledge` field. The type of each relationship is specified by `MedicationKnowledge.relatedMedicationKnowledge.type`.
 
@@ -610,7 +583,6 @@ Common relationship types include:
 
 Custom relationship type systems can be defined for organization-specific needs, such as the "compounded-medication-family" system shown in the compound examples above.
 
-Refer to the [RxNORM relationship codes](https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix1.html) for an example code system of relationships between drugs.
 
 ## Images and Other Documents
 

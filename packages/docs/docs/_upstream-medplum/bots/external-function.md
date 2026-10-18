@@ -18,7 +18,7 @@ Enable external functions by setting the `botCustomFunctionsEnabled` config sett
 
 For example, if using AWS Parameter Store for your configuration settings, you would create a new parameter called `/medplum/{environment}/botCustomFunctionsEnabled` with value `true`.
 
-For more details, see the [Config Settings](/docs/self-hosting/server-config) guide.
+For more details, see the [Config Settings](/docs/afiax-cloud/operations-and-updates#changing-settings) guide.
 
 ## Configure the bot
 

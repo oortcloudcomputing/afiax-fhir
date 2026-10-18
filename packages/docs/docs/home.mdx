@@ -10,6 +10,9 @@ import { Feature, FeatureGrid } from '@site/src/components/landing/FeatureGrid.t
 
 <Section>
   <FeatureGrid columns={3}>
+    <Feature title="Products" linkText="Read more" linkRef="/docs/products">
+      Afiax Clinical Suite, Afiax AI and Afiax Workspace: what each does and how they fit together.
+    </Feature>
     <Feature title="Platform architecture" linkText="Read more" linkRef="/docs/architecture">
       Understand the broader Afiax platform model, delivery layers, and governance model.
     </Feature>
@@ -25,16 +28,17 @@ import { Feature, FeatureGrid } from '@site/src/components/landing/FeatureGrid.t
     <Feature title="Integration boundaries" linkText="Read more" linkRef="/docs/architecture/integration-boundaries">
       See what belongs in Afiax FHIR, what belongs in country packs, and what belongs in adjacent services.
     </Feature>
-    <Feature title="Developer stack" linkText="Read more" linkRef="/docs/self-hosting">
-      Run the platform locally, extend it with Bots and operations, and prepare for sovereign deployment.
+    <Feature title="Afiax Cloud" linkText="Read more" linkRef="/docs/afiax-cloud">
+      The managed platform Oortcloud runs for you in Kenya: plans, onboarding, partner access and support.
     </Feature>
   </FeatureGrid>
 </Section>
 
 ## What is Afiax FHIR?
 
-Afiax FHIR is the **FHIR-native clinical core** used inside Afiax Enterprise, the broader connected-healthcare
-offering under Afiax Connected Healthcare.
+Afiax FHIR is the **FHIR-native clinical core** of Afiax Clinical Suite. Oortcloud Computing Limited (trading as
+Afiax Connected Healthcare) runs it, with the rest of the Afiax products, as a managed service on
+[Afiax Cloud](/docs/afiax-cloud), hosted in Kenya. Facilities subscribe; partners build on the APIs.
 
 Afiax Enterprise combines:
 
@@ -42,7 +46,7 @@ Afiax Enterprise combines:
 - **Digital service layers**: provider workflows, patient engagement, telehealth, analytics, remote care, and partner APIs
 - **Country packs**: national terminology, registries, payer rails, claims, and exchange connectors
 - **Tenant overlays**: customer-specific configuration, workflow toggles, and deployment choices
-- **Delivery models**: SaaS, managed PaaS, and infrastructure patterns aligned to local sovereignty and scale needs
+- **Delivery**: a managed service on Afiax Cloud, operated by Oortcloud in Kenyan data centres
 
 ## Platform scope
 
@@ -52,7 +56,7 @@ Afiax Enterprise combines:
 - Financial and administrative enablement around the clinical core
 - Analytics and AI-driven decision support
 - Developer and partner platform capabilities via APIs, Bots, and country-pack contracts
-- Shared SaaS, dedicated runtime, and managed deployment options depending on market and customer needs
+- Delivered as a managed service by Oortcloud, with per-facility plans (Starter, Professional, Enterprise)
 
 ## How the docs are organized
 
@@ -67,7 +71,7 @@ Afiax Enterprise combines:
 - Country-neutral core, country-specific overlays
 - FHIR-native source of truth in canonical resources
 - No direct national API calls from UI applications
-- Sovereign deployment for identifiable clinical data
+- Identifiable clinical data hosted in-country (Kenya) on Afiax Cloud
 - Audit, provenance, and reconciliation before production go-live
 
 ## Country-pack note
@@ -86,7 +90,8 @@ and enterprise integration boundaries. See [Platform foundation](/docs/architect
 - [FHIR datastore](/docs/fhir-datastore)
 - [Authentication and access control](/docs/auth)
 - [Bots](/docs/bots)
-- [Self hosting](/docs/self-hosting)
+- [Afiax Cloud](/docs/afiax-cloud)
+- [Integrations](/docs/integration)
 
 ## Learn more
 
@@ -97,5 +102,5 @@ Learn more about the broader company and market-facing platform at [www.afiax.af
 - [Architecture](/docs/architecture)
 - [Country packs](/docs/country-packs)
 - [API reference](/docs/api)
-- [FHIR resources](/api/fhir)
+- [FHIR resources](/docs/api/fhir)
 - [Contributing](/docs/contributing)

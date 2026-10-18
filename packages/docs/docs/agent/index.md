@@ -2,9 +2,17 @@
 sidebar_position: 1
 ---
 
-# Intro to Afiax Agent
+# Afiax Facility Agent
 
-The Afiax Agent is an application that runs inside your firewall and connects to devices over low level protocols such as HL7/MLLP, ASTM, and DICOM. These network protocols are commonly unencrypted, and therefore require an adapter to a secure transport. The Afiax Agent uses secure HTTPS WebSocket channels to stream messages between devices and an Afiax server cluster in the cloud.
+:::info Installed and managed by Oortcloud
+
+On Afiax Cloud, the Facility Agent is installed, configured and monitored by Oortcloud's implementation team as part of [onboarding](/docs/afiax-cloud/plans-and-onboarding). Facilities do not need to follow the installation steps below themselves. They are here for Oortcloud engineers, for partner IT teams working with Oortcloud, and as a reference. To connect a new device, raise a request with the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla).
+
+What the facility provides: a Windows or Linux computer that stays on, on the same network as the devices, with outbound internet access over HTTPS (see [Requirements](/docs/agent/requirements)).
+
+:::
+
+The Afiax Facility Agent is an application that runs inside your facility's network and connects to devices over low level protocols such as HL7/MLLP, ASTM, and DICOM. These network protocols are commonly unencrypted, and therefore require an adapter to a secure transport. The Afiax Agent uses secure HTTPS WebSocket channels to stream messages between devices and an Afiax server cluster in the cloud.
 
 ## How it works
 
@@ -12,7 +20,7 @@ The Afiax Agent runs in your local network and connects to devices over low leve
 
 ![Afiax Agent Overview](./medplum-agent-overview.webp)
 
-The Afiax Agent securely connects to Afiax servers running in the cloud using HTTPS and WebSockets:
+The Agent connects securely, over HTTPS and WebSockets, to Afiax Cloud in Kenya. Devices never connect to the internet directly:
 
 ![Afiax Agent Connection Diagram](./medplum-agent-connection-diagram.webp)
 

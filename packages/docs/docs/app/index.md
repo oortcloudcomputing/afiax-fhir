@@ -13,8 +13,8 @@ resources required for a country-pack or tenant rollout.
 ## Getting Started
 
 1. [Register](https://app.afiax.africa/register) a new account and project
-2. [Learn](./app-introduction) about the App interface
-3. [Invite](./invite) another user to your project
+2. [Learn](/docs/app/app-introduction) about the App interface
+3. [Invite](/docs/app/invite) another user to your project
 4. [Import a patient](/docs/tutorials/importing-sample-data.md)
 
 ## Reference

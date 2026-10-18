@@ -51,7 +51,7 @@ In Kenya, this rail is implemented through the Kenya pack for SHA workflows.
 
 This rail is country-neutral and runs through Afiax Pay.
 
-Afiax Pay is the Mifos-derived payment and wallet platform inside Afiax Enterprise.
+Afiax Pay is the payment and wallet platform inside Afiax Enterprise.
 
 It covers:
 
@@ -67,7 +67,7 @@ It covers:
 
 This rail runs through Afiax Billing.
 
-Afiax Billing is the ERPNext-derived enterprise finance and operations surface inside Afiax Enterprise.
+Afiax Billing is the enterprise finance and operations surface inside Afiax Enterprise.
 
 It covers:
 

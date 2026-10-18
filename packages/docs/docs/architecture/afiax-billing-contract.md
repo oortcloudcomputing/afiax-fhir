@@ -34,7 +34,7 @@ Today, this repo provides:
 
 This repo does not yet provide:
 
-- direct ERPNext document creation
+- direct Afiax Billing document creation
 - inbound Afiax Billing event consumers
 - finance reconciliation workers
 

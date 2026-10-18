@@ -27,7 +27,7 @@ When a project is linked, all resources from the linked project appear alongside
 
 ### Common Use Cases
 
-- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Afiax UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
+- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Afiax UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#levels-of-code), [LOINC](/docs/careplans/loinc), SNOMED
 - Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clincal domain
 - Sharing common data sets (e.g. Afiax Payor Directory, Afiax Lab Directory)
 - Sharing [Bots](/docs/bots)
@@ -51,7 +51,7 @@ When working with linked projects:
 
 ## The SuperAdmin `Project` {#superadmin}
 
-The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Afiax server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
+The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Afiax server. See our [SuperAdmin Guide](/docs/afiax-cloud/operations-and-updates#changing-settings) for more information.
 
 The SuperAdmin has the following privileges:
 
@@ -83,7 +83,7 @@ To switch to the SuperAdmin project or check if you are already in it, you can u
 ## Project Settings {#settings}
 
 Project-level settings can be used to configure server behavior for different groups of users. A subset of the available
-settings related to authentication and access control are shown below; see the full [Project Settings](/docs/self-hosting/project-settings)
+settings related to authentication and access control are shown below; see the full [Project Settings](/docs/afiax-cloud/operations-and-updates#changing-settings)
 documentation for more information.
 
 | Setting                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Default |
@@ -100,16 +100,16 @@ See [Bot Secrets](/docs/bots/bot-secrets) for more information.
 
 ## Cloning and Expunging `Projects`
 
-Self-hosted users have two advanced project administration operations available to them:
+Two advanced project administration operations are available to Oortcloud operators. To have one performed on your project, raise a request with the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla):
 
 - `$clone` - Make a copy of an existing [`Project`](/docs/api/fhir/medplum/project) and all its resources.
 - `$expunge` - Perform a "hard delete" of [`Project`](/docs/api/fhir/medplum/project) and all its resources. This will remove all the related resource rows from the database.
 
-For more information, refer to the Super Admin [Project Management guide](/docs/self-hosting/super-admin-cli#project-management)
+For more information, refer to the Super Admin [Project Management guide](/docs/afiax-cloud/operations-and-updates#changing-settings)
 
 ## See Also
 
 - [User management guide](/docs/user-management)
-- [Super Admin Guide](/docs/self-hosting/super-admin-guide)
-- [Super Admin CLI](/docs/self-hosting/super-admin-cli#project-management)
+- [Super Admin Guide](/docs/afiax-cloud/operations-and-updates#changing-settings)
+- [Super Admin CLI](/docs/afiax-cloud/operations-and-updates#changing-settings)
 - [Project Resource Schema](/docs/api/fhir/medplum/project)

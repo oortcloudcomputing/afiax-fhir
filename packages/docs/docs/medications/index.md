@@ -1,7 +1,19 @@
 # Medications
 
-Representing medications in FHIR supports many common scenarios and can be used in concert with [Bots](/docs/bots/) to enable complex medication-related workflows. A common first step is constructing a [MedicationRequest](/docs/api/fhir/resources/medicationrequest.mdx) FHIR resource. Adherence to the spec, referring to other relevant FHIR resources, and tagging the resource with RxNorm or CPT codes can be useful here to aid in integration, analytics and billing.
+Medications in Afiax Clinical Suite cover prescribing, dispensing, administration and allergies, all recorded in Afiax FHIR, with pharmacy stock managed in Afiax Billing.
 
-Appropriate use of FHIR resources can be used to represent prescriptions, prescription requests, medication dispense events, prior authorizations and allergies. To get started, we recommend reading the [MedicationRequest](/docs/api/fhir/resources/medicationrequest.mdx) and [Medication](/docs/api/fhir/resources/medication.mdx) resource pages.
+| Step | FHIR resource | Where it happens |
+| --- | --- | --- |
+| Prescribe | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) | Afiax Provider |
+| Dispense | [`MedicationDispense`](/docs/api/fhir/resources/medicationdispense) | Pharmacy; stock in Afiax Billing |
+| Administer (wards) | [`MedicationAdministration`](/docs/api/fhir/resources/medicationadministration) | Afiax Provider |
+| Record what a patient already takes | [`MedicationStatement`](/docs/api/fhir/resources/medicationstatement) | Afiax Provider |
+| Record an allergy | [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) | Afiax Provider |
 
-`MedicationRequest` resources tagged with the appropriate medication code (e.g. RxNorm) can be linked to [subscriptions](/docs/subscriptions/index.md) and [bots](/docs/bots/) to automatically send a prescription to an eRx provider.
+Medicines are coded with the Kenya Health Products and Technologies list (`MOH-PPB/HPT`) from KNHTS. See [Medication codes](/docs/medications/medication-codes).
+
+You can react to new prescriptions with [Subscriptions](/docs/subscriptions/index.md) and [Bots](/docs/bots/). For example, you can notify the pharmacy queue, or check a prescription against your facility's [formulary](/docs/medications/formulary).
+
+- [Prescribing and dispensing](/docs/medications/e-prescibe)
+- [Medication codes](/docs/medications/medication-codes)
+- [Formulary](/docs/medications/formulary)

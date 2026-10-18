@@ -100,15 +100,11 @@ Examples:
 
 ## Delivery models
 
-The wider platform can support several operating models:
-
-- `Shared SaaS`
-- `Dedicated SaaS`
-- `Managed PaaS`
-- `Sovereign deployment`
-
-Those are deployment choices around the platform. They should not distort the canonical model, pack contract, or repo
-boundaries.
+Afiax is delivered one way: as a managed service on [Afiax Cloud](/docs/afiax-cloud), operated by Oortcloud in
+Kenyan data centres. Each customer organisation is an isolated project on that platform, and customers subscribe per
+facility. Hosting stays a concern of the platform-engineering layer; it should not distort the canonical model, the
+pack contract, or repo boundaries. A future country would get its own in-country Afiax Cloud region, not a different
+product.
 
 ## Country-pack rollout
 

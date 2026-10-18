@@ -4,7 +4,7 @@ sidebar_position: 0
 
 # Bots
 
-Afiax bots are functions that execute when triggered. They are similar to AWS Lambda functions, and in Afiax we make them easy to write and deploy and trigger with [FHIR Subscriptions](/docs/subscriptions). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Afiax**.
+Afiax bots are functions that execute when triggered. They are similar to serverless functions, and in Afiax we make them easy to write and deploy and trigger with [FHIR Subscriptions](/docs/subscriptions). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Afiax**.
 
 If you are new to Afiax Bots, we encourage you to read the intro material in the [**Bot Guide**](/docs/bots/bot-basics).
 
@@ -43,12 +43,9 @@ Implement frequently-needed functionality like file handling, document generatio
 - [Create a PDF](/docs/bots/creating-a-pdf)
 - [HL7 to FHIR](/docs/bots/hl7-into-fhir)
 
-## Deployment & Infrastructure
-Deploy your bots to Afiax's cloud infrastructure or integrate with your existing AWS environment.
+## Deployment
+Bots run on [Afiax Cloud](/docs/afiax-cloud), next to your data, in Kenya. Oortcloud enables Bots per project; ask the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla) to switch them on. Develop and test in UAT before deploying to production (see [Environments and partner access](/docs/afiax-cloud/environments-and-access)).
 - [Bots in Production](/docs/bots/bots-in-production)
-- [Running Bots on Fission](/docs/bots/running-bots-on-fission)
-- [External Lambda Functions](/docs/bots/external-function)
-- [Afiax Bot Layers](/docs/bots/bot-lambda-layer)
 
 ## Security & Permissions
 Manage sensitive credentials and control what actions your bots can perform.

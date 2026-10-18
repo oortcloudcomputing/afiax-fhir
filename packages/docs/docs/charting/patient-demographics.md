@@ -4,84 +4,56 @@ sidebar_position: 1
 
 # Patient Demographics
 
-Capturing Patient Demographics is a core function of an Electronic Health Record system. Requirements for EHR demographic capture are described in the [ONC (a)(5) criteria](https://www.healthit.gov/test-method/demographics).
+Registering a patient correctly is the first step of every visit. In Kenya, it also links the patient to their national identity, so their record can follow them between facilities and their SHA cover can be checked. This page explains what to capture on the `Patient` resource and how Afiax verifies it.
 
-Demographic data can be input via multiple methods, for example via **application user interface (UI)**, synchronized via **integration** or written via **API**.
+## What to capture
 
-The [USCDI](/docs/fhir-datastore/understanding-uscdi-dataclasses) V2 data standard outlines specific technical requirements, you can see the [profile on HL7.org](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html).
+| Data | FHIR element | Notes |
+| --- | --- | --- |
+| Name | `Patient.name` | Record names as the patient's ID document shows them. Use `use: "official"`, and add previous names with `use: "old"` (see below) |
+| Sex | `Patient.gender` | [Administrative gender](https://hl7.org/fhir/R4/valueset-administrative-gender.html) |
+| Date of birth | `Patient.birthDate` | |
+| Phone | `Patient.telecom` | Used for M-Pesa payment prompts and reminders, so record the number in `2547XXXXXXXX` format |
+| Residence | `Patient.address` | County, sub-county and ward |
+| Next of kin | `Patient.contact` | Name, relationship and phone |
+| Identity document | `Patient.identifier` | National ID, Alien ID, passport, birth certificate or refugee ID (see below) |
+| Client Registry ID | `Patient.identifier` | Added by Afiax when identity is verified |
 
-## Advanced Requirements
+## Identity and the Client Registry
 
-While some demographic data is straightforward to capture, some data require careful handling. The following is a summary of the requirements for complex data capture with guidance on ensuring correctness.
+Afiax verifies the patient against the DHA **Client Registry** through the Health Information Exchange:
 
-## User Interface
+1. The registration clerk records the patient's identification type and number. The accepted types are `National ID`, `Alien ID`, `Passport`, `Birth Certificate` and `Refugee ID`.
+2. Afiax calls the Client Registry (`Patient/<id>/$resolve-patient-identity`).
+3. If the patient is found, Afiax adds their **Client Registry ID** to `Patient.identifier`, with the system `https://afiax.africa/kenya/identifier/client-registry-id` (constant `KenyaClientRegistryIdSystem`). This ID links the record to the patient's national Shared Health Record.
+4. If the patient is not found, the record is kept, marked as unverified, and can be checked again later. A national-system outage never stops a patient being registered.
 
-Afiax provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) that fulfill demographic data collection requirements and can be embedded in your application to fulfill the requirements.
+The patient's SHA cover is checked separately, on their `Coverage` (`Coverage/<id>/$check-coverage`). See [Kenya billing and settlement](/docs/country-packs/kenya-billing-and-settlement).
 
-## Capturing Aliases
-
-The specification supports capturing aliases, and correct usage is beneficial for record keeping. The following `name` field on the FHIR [Patient](/docs/api/fhir/resources/patient) resource shows an example of how to represent maiden names, as an example.
+## Previous names
 
 ```json
 "name": [
-    {
-      "given": [
-        "Marge",
-        "Jacqueline"
-      ],
-      "family": "Simpson",
-      "period": {
-        "start": "1980-01-01T00:00:00Z"
-      },
-      "use": "official"
-    },
-    {
-      "given": [
-        "Marge",
-        "Jacqueline"
-      ],
-      "family": "née Bouvier",
-      "period": {
-        "end": "1980-01-01T00:00:00Z"
-      },
-      "use": "old"
-    }
-  ]
+  {
+    "given": ["Achieng", "Mary"],
+    "family": "Otieno",
+    "period": { "start": "2015-06-01" },
+    "use": "official"
+  },
+  {
+    "given": ["Achieng", "Mary"],
+    "family": "Odhiambo",
+    "period": { "end": "2015-06-01" },
+    "use": "old"
+  }
+]
 ```
 
-## Demographic Data
+## Duplicates and deaths
 
-Health record systems must manage common demographic data. It is important not to supply your own codes, but instead use the provided ValueSets as they relate to demographics. **Correct use of value sets is crucial for correct reporting and interoperability.** The following table shows references for common demographic value sets. Afiax supports these Value sets in our UI components, or you can build [ValueSets](https://storybook.medplum.com/?path=/story/medplum-valuesetautocomplete--basic) into your own applications.
+- **Duplicates.** Verifying against the Client Registry prevents most duplicate records. For the rest, see [Patient deduplication](/docs/fhir-datastore/patient-deduplication).
+- **Deaths.** Record the death on `Patient.deceasedDateTime`. Record the cause of death as an `Observation` or `Condition`, coded in ICD-11.
 
-| Category  | Name                            | URL                                                               |
-| --------- | ------------------------------- | ----------------------------------------------------------------- |
-| Gender    | Administrative Gender Value Set | https://hl7.org/fhir/R4/valueset-administrative-gender.html       |
-| Race      | US Core Race Extension          | http://hl7.org/fhir/us/core/StructureDefinition/us-core-race      |
-| Ethnicity | US Core ethnicity Extension     | http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity |
-| Birth Sex | Birth sex Extension             | http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex  |
+## Privacy
 
-## Lifecycle
-
-Managing and merging duplicate patient records should be part of all implementations, and is covered in detail [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication).
-
-EHRs require capturing cause of death for patients. It is recommended to record death event as `Patient.deceased` with the time of death. For cause of death, it is recommended to represent as an [Observation](/docs/api/fhir/resources/observation) with an ICD-10 or other appropriate ontology.
-
-## Common Identifiers
-
-Common identifiers, such as Driver's License numbers or Social Security numbers should be captured on the `Patient` resource using [name spaced identifiers](/docs/fhir-basics#naming-data-identifiers). These are useful when querying data from a Health Information Exchange (HIE) or HIE Onramp.
-
-The [integration](/docs/integration) section has details on querying the exchanges.
-
-## Related Reading
-
-- [ONC (a)(5)](https://www.healthit.gov/test-method/demographics) official description and guide.
-- [Sample data](/docs/tutorials/importing-sample-data) see sample demographic data in accordance with USCDI.
-- [US Core Patient Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html)
-- [US Core Patient](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) react component on Storybook
-- [(a)(5) User Testing Video](https://youtu.be/NcxFl-GJ9Mc) on Youtube
-
-:::caution
-
-ONC (a)(5) certification is under development.
-
-:::
+Demographics are personal data under the Data Protection Act 2019. Capture only what care and the national systems need, and limit who can see identity documents with [access policies](/docs/access/access-policies). See [Compliance](/docs/compliance).

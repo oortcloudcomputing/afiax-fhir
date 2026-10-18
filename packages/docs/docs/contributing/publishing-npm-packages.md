@@ -13,7 +13,6 @@ Publishing NPM dependencies requires being a member of the [Afiax dev team](http
 Note that publishing to NPM is separate from deploying to production. For details on deploying to production, see:
 
 - Afiax deploys through GitOps (ArgoCD in the platform-engineering repo); a merge does not reach production until the release is promoted
-- For self-hosted, see [Install on AWS - Ongoing](/docs/self-hosting/install-on-aws#ongoing)
 
 :::
 

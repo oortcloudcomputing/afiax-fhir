@@ -48,11 +48,25 @@ const MAX_CACHE_ENTRIES = 20_000;
 const cache = new Map<string, { result: KnhtsLookupResult; expires: number }>();
 
 export function getKnhtsBaseUrl(): string {
-  return (getConfig().knhtsBaseUrl || KnhtsDefaultBaseUrl).replace(/\/$/, '');
+  return (tryGetConfig()?.knhtsBaseUrl || KnhtsDefaultBaseUrl).replace(/\/$/, '');
 }
 
+/**
+ * KNHTS validation is on by default whenever server configuration is loaded (it is turned off in
+ * the test configuration); code running without configuration (isolated unit tests) skips it.
+ * @returns True when KNHTS lookups should be made.
+ */
 export function isKnhtsValidationEnabled(): boolean {
-  return getConfig().knhtsValidation !== false;
+  const config = tryGetConfig();
+  return !!config && config.knhtsValidation !== false;
+}
+
+function tryGetConfig(): ReturnType<typeof getConfig> | undefined {
+  try {
+    return getConfig();
+  } catch {
+    return undefined;
+  }
 }
 
 /**

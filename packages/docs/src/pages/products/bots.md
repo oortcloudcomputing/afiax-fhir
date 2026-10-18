@@ -49,4 +49,4 @@ Bots should be:
 
 ## System diagram
 
-![Medplum system overview](/img/medplum-overview.svg)
+![Afiax system overview](/img/medplum-overview.svg)

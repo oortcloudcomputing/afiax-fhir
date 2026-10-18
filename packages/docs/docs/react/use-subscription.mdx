@@ -9,7 +9,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # `useSubscription` Hook
 
-`useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the
+`useSubscription` creates an in-memory `Subscription` resource on the Afiax server with the given criteria and calls the
 given callback when an event notification is triggered.
 
 Subscriptions created with this hook are lightweight, share a single WebSocket connection per instance of `MedplumClient`, and are automatically
@@ -89,7 +89,7 @@ and the resource for which the `Subscription` fired for in its second entry (`bu
         "sent": "2024-10-29T23:52:53.240Z",
         "id": "54d902bb-a8e6-4f60-a671-64591169aa5b"
       },
-      "fullUrl": "https://api.medplum.com/fhir/R4/Communication/54d902bb-a8e6-4f60-a671-64591169aa5b"
+      "fullUrl": "https://fhir.afiax.africa/fhir/R4/Communication/54d902bb-a8e6-4f60-a671-64591169aa5b"
     }
   ]
 }
@@ -166,12 +166,12 @@ Usage within `Expo` / `React Native` has some special considerations. See: [@med
 
 ### Examples
 
-- [`BaseChat` component from `@medplum/react`](https://github.com/medplum/medplum/blob/9e836dc42cde80b533d9a3fd2254aaa5c8444136/packages/react/src/chat/BaseChat/BaseChat.tsx#L122)
+- [`BaseChat` component from `@medplum/react`](https://github.com/oortcloudcomputing/afiax-fhir/blob/9e836dc42cde80b533d9a3fd2254aaa5c8444136/packages/react/src/chat/BaseChat/BaseChat.tsx#L122)
 - [`NotificationWidget` from `medplum-react-native-example`](https://github.com/medplum/medplum-react-native-example/blob/main/src/Home.tsx#L143)
 
 ## Subscription Extensions
 
-Any [Subscription extension](../subscriptions/subscription-extensions.md) supported by Medplum can be attached to a `Subscription`
+Any [Subscription extension](../subscriptions/subscription-extensions.md) supported by Afiax can be attached to a `Subscription`
 created by the `useSubscription` hook via a 3rd optional parameter to the hook, `options`, which takes an optional `subscriptionProps`.
 
 ```tsx
@@ -334,4 +334,4 @@ Currently the WebSocket `Subscription` feature which is required to use the `use
 Locally, you can enable this feature flag by logging in as a [super admin](../self-hosting/super-admin-guide.md)
 and enabling the `websocket-subscriptions` feature on your `Project` resource from `@medplum/app`.
 
-To get this feature enabled for your project on hosted Medplum (`app.medplum.com`), send an email to hello@medplum.com.
+To get this feature enabled for your project on hosted Afiax (`app.afiax.africa`), send an email to info@afiax.africa.

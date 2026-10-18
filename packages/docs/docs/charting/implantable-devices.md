@@ -36,7 +36,7 @@ The EHR also must have the option to collect the following data:
 
 ## User Interface
 
-Medplum provides [React components for implantable devices](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-implantable-device) that fulfill data collection requirements and can be embedded in your application.
+Afiax provides [React components for implantable devices](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-implantable-device) that fulfill data collection requirements and can be embedded in your application.
 
 To obtain a list of embedded devices for a given patient in your application, embed a [search control](https://storybook.medplum.com/?path=/story/medplum-searchcontrol--checkboxes) for `Device` resources with for that patient. Documentation for constructing a [search by reference](/docs/search/basic-search#searching-by-reference) is described in the search documentation.
 
@@ -44,7 +44,7 @@ The FHIR Resource that represents the implanted device is a FHIR Device resource
 
 ## Querying the FDA API
 
-Medplum supports querying the [FDA Device Lookup API](https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api) to pull in identifiers, name, manufacturer details and safety information from the FDA API. Entering the correct device specific identifier can trigger a request to the API to fill in specific data to the ONC (a)(14) standard.
+Afiax supports querying the [FDA Device Lookup API](https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api) to pull in identifiers, name, manufacturer details and safety information from the FDA API. Entering the correct device specific identifier can trigger a request to the API to fill in specific data to the ONC (a)(14) standard.
 
 ## Related Reading
 

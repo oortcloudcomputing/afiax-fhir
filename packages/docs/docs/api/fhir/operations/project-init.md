@@ -4,7 +4,7 @@ sidebar_position: 8
 
 # Project $init
 
-The `$init` operation creates a new Medplum Project with an admin user in a single API call. Projects provide isolated environments for different applications, organizations, or tenants-each with their own users, access policies, and FHIR resources.
+The `$init` operation creates a new Afiax Project with an admin user in a single API call. Projects provide isolated environments for different applications, organizations, or tenants-each with their own users, access policies, and FHIR resources.
 
 This operation streamlines the onboarding process for multi-tenant platforms, allowing you to programmatically provision new customer environments without manual setup steps.
 
@@ -25,7 +25,7 @@ This operation streamlines the onboarding process for multi-tenant platforms, al
 For example:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Project/$init' \
+curl 'https://fhir.afiax.africa/fhir/R4/Project/$init' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
@@ -74,7 +74,7 @@ In cases where a different user should be the owner, or when the access token is
 can be manually assigned using a parameter: either `owner` for existing users, or `ownerEmail` to create the user.
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Project/$init' \
+curl 'https://fhir.afiax.africa/fhir/R4/Project/$init' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
@@ -84,8 +84,8 @@ curl 'https://api.medplum.com/fhir/R4/Project/$init' \
 
 ## Related
 
-- [Projects Guide](/docs/access/projects) - Understanding Medplum projects and multi-tenancy
+- [Projects Guide](/docs/access/projects) - Understanding Afiax projects and multi-tenancy
 - [Access Control](/docs/access/access-policies) - Configuring access policies for projects
 - [Admin Access](/docs/access/admin) - Administrative access and operations
 - [User Configuration](/docs/access/user-configuration) - Managing users and invitations
-- [Medplum Project Resource](/docs/api/fhir/medplum/project) - Project resource reference
+- [Afiax Project Resource](/docs/api/fhir/medplum/project) - Project resource reference

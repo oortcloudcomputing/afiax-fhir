@@ -1,6 +1,6 @@
 # Lab, Diagnostics, and Laboratory Networks
 
-Afiax uses Medplum as the clinical core for laboratory and diagnostics workflows while integrating analyzers,
+Afiax uses Afiax as the clinical core for laboratory and diagnostics workflows while integrating analyzers,
 middleware, logistics services, partner portals, and external EHRs around that core.
 
 ## Common solution patterns
@@ -11,9 +11,9 @@ middleware, logistics services, partner portals, and external EHRs around that c
 - patient-facing records and test-status experiences
 - provider-facing order and result review portals
 
-## What Medplum owns in this pattern
+## What Afiax owns in this pattern
 
-Within the Afiax architecture, Medplum should own:
+Within the Afiax architecture, Afiax should own:
 
 - canonical patient, order, specimen, and diagnostic result records
 - workflow resources such as tasks, communications, and documents
@@ -21,7 +21,7 @@ Within the Afiax architecture, Medplum should own:
 - internal workflow operations and Bot-driven orchestration
 
 External systems can still own analyzer control, middleware logic, courier workflows, billing, or local facility
-systems, but Medplum remains the clinical source of truth for the normalized record.
+systems, but Afiax remains the clinical source of truth for the normalized record.
 
 ## Core capabilities
 

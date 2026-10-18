@@ -1,9 +1,9 @@
 import ExampleCode from '!!raw-loader!@site/..//examples/src/terminology/medplum-terminology-services.tsx';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Medplum Terminology Services
+# Afiax Terminology Services
 
-Medplum provides a layer of functionality to make working with coded values simple. Some of the most common use cases
+Afiax provides a layer of functionality to make working with coded values simple. Some of the most common use cases
 are detailed below to show how these components can fit together.
 
 ## Binding an input to a set of codes
@@ -14,7 +14,7 @@ desired concept to filter the list and aid in selection when the set of possible
 
 ### Defining the ValueSet
 
-First, the `ValueSet` resource must be uploaded to the Medplum FHIR server, and must contain a `url` by which
+First, the `ValueSet` resource must be uploaded to the Afiax FHIR server, and must contain a `url` by which
 to reference it.
 
 <MedplumCodeBlock language="json" selectBlocks="valueSet">
@@ -42,7 +42,7 @@ field with a `ValueSet` for typeahead, returning whichever data type is needed b
 While coded values provide a consistent way to refer to clinical concepts across different systems and languages,
 these codes must still ultimately be translated into human-readable terms for users. Many healthcare practices serve
 people with a diverse set of primary languages, requiring the human-readable display strings to be translated. Building
-on the strong foundations in the FHIR standard, Medplum provides the ability to work with codes fluently across multiple
+on the strong foundations in the FHIR standard, Afiax provides the ability to work with codes fluently across multiple
 languages.
 
 ### Importing Translated Strings
@@ -55,7 +55,7 @@ additional languages.
   {ExampleCode}
 </MedplumCodeBlock>
 
-Additionally, synonyms or translations can be added to existing code systems using Medplum's custom
+Additionally, synonyms or translations can be added to existing code systems using Afiax's custom
 [`CodeSystem/$import` API][import].
 
 <MedplumCodeBlock language="ts" selectBlocks="importDesignation">

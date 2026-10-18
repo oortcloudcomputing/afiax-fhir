@@ -9,7 +9,7 @@ SMART on FHIR’s authorization scheme uses [OAuth2 scopes](https://oauth.net/2/
 
 For those using scopes, we recommend reading [background information on HL7.org](http://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html). For background this documentation on [OAuth scopes](https://auth0.com/docs/get-started/apis/scopes) is also useful.
 
-Medplum supports the `SMART App Launch 2.0.0` [standard](https://hl7.org/fhir/smart-app-launch/).
+Afiax supports the `SMART App Launch 2.0.0` [standard](https://hl7.org/fhir/smart-app-launch/).
 
 ## When and Why SMART Scopes are Useful
 
@@ -24,7 +24,7 @@ This handshake is common in and supported by EHRs, PHRs and other systems that s
 
 ## Supported Scopes
 
-Medplum supports the following scopes.
+Afiax supports the following scopes.
 
 - `patient/*.rs`
 - `user/*.cruds`

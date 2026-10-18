@@ -2,15 +2,15 @@
 sidebar_position: 5
 ---
 
-# Medplum `$ai` Operation
+# Afiax `$ai` Operation
 
-Medplum's `$ai` operation enables integration with large language models (LLMs) through a FHIR-compliant interface. This operation allows you to leverage AI capabilities for conversational interactions and FHIR function calling within your healthcare applications.
+Afiax's `$ai` operation enables integration with large language models (LLMs) through a FHIR-compliant interface. This operation allows you to leverage AI capabilities for conversational interactions and FHIR function calling within your healthcare applications.
 
 ## Overview
 
 The AI operation provides:
 
-- **Direct OpenAI Integration**: Call OpenAI models (GPT-4, GPT-3.5-turbo, etc.) through Medplum's FHIR API
+- **Direct OpenAI Integration**: Call OpenAI models (GPT-4, GPT-3.5-turbo, etc.) through Afiax's FHIR API
 - **FHIR Function Calling**: Enable AI models to suggest FHIR operations (search, create, update, delete resources)
 - **Streaming Support**: Get real-time streaming responses for conversational interfaces
 - **Conversation History**: Maintain multi-turn conversations with full message history
@@ -19,7 +19,7 @@ The AI operation provides:
 
 Before using the `$ai` operation, you need:
 
-1. **Enable AI Feature**: The `ai` feature must be enabled on your Medplum project
+1. **Enable AI Feature**: The `ai` feature must be enabled on your Afiax project
 2. **OpenAI API Key**: A valid OpenAI API key (starts with `sk-`)
 
 ## Endpoint
@@ -53,7 +53,7 @@ POST [baseUrl]/fhir/R4/$ai
 Here's a basic example without function calling:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/$ai' \
+curl 'https://fhir.afiax.africa/fhir/R4/$ai' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -156,7 +156,7 @@ Define a `fhir_request` tool to allow the AI to interact with FHIR resources:
 **Request**:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/$ai' \
+curl 'https://fhir.afiax.africa/fhir/R4/$ai' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -252,7 +252,7 @@ curl 'https://api.medplum.com/fhir/R4/$ai' \
 For real-time conversational interfaces, you can enable streaming by setting the `Accept` header:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/$ai' \
+curl 'https://fhir.afiax.africa/fhir/R4/$ai' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Accept: text/event-stream" \
@@ -474,5 +474,5 @@ if (toolCallsParam?.valueString) {
 
 - [FHIR Operations Framework](/docs/api/fhir/operations)
 - [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
-- [Medplum Project Features](/docs/access/projects)
-- [AI and Medplum](/docs/ai)
+- [Afiax Project Features](/docs/access/projects)
+- [AI and Afiax](/docs/ai)

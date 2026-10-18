@@ -16,7 +16,7 @@ While some demographic data is straightforward to capture, some data require car
 
 ## User Interface
 
-Medplum provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) that fulfill demographic data collection requirements and can be embedded in your application to fulfill the requirements.
+Afiax provides React components for [Patient demographics](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) that fulfill demographic data collection requirements and can be embedded in your application to fulfill the requirements.
 
 ## Capturing Aliases
 
@@ -51,7 +51,7 @@ The specification supports capturing aliases, and correct usage is beneficial fo
 
 ## Demographic Data
 
-Health record systems must manage common demographic data. It is important not to supply your own codes, but instead use the provided ValueSets as they relate to demographics. **Correct use of value sets is crucial for correct reporting and interoperability.** The following table shows references for common demographic value sets. Medplum supports these Value sets in our UI components, or you can build [ValueSets](https://storybook.medplum.com/?path=/story/medplum-valuesetautocomplete--basic) into your own applications.
+Health record systems must manage common demographic data. It is important not to supply your own codes, but instead use the provided ValueSets as they relate to demographics. **Correct use of value sets is crucial for correct reporting and interoperability.** The following table shows references for common demographic value sets. Afiax supports these Value sets in our UI components, or you can build [ValueSets](https://storybook.medplum.com/?path=/story/medplum-valuesetautocomplete--basic) into your own applications.
 
 | Category  | Name                            | URL                                                               |
 | --------- | ------------------------------- | ----------------------------------------------------------------- |
@@ -78,7 +78,6 @@ The [integration](/docs/integration) section has details on querying the exchang
 - [Sample data](/docs/tutorials/importing-sample-data) see sample demographic data in accordance with USCDI.
 - [US Core Patient Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html)
 - [US Core Patient](https://storybook.medplum.com/?path=/story/medplum-resourceform--us-core-patient) react component on Storybook
-- [ONC Certification for Medplum](/docs/compliance/onc)
 - [(a)(5) User Testing Video](https://youtu.be/NcxFl-GJ9Mc) on Youtube
 
 :::caution

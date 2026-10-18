@@ -4,7 +4,7 @@ sidebar_position: 5.1
 
 # Resource $set-accounts
 
-Medplum implements a custom `$set-accounts` operation to manage account references. **This is the recommended way to manage account references for all resources**.
+Afiax implements a custom `$set-accounts` operation to manage account references. **This is the recommended way to manage account references for all resources**.
 
 ## Use Cases
 

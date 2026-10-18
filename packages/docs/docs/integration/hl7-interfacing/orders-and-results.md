@@ -2,7 +2,7 @@
 
 A common use case for HL7 is to place orders for diagnostics (labs and imaging commonly), and receive diagnostic results.  There are two common message types, the ORM (order entry) and ORU (observation result).  
 
-This guide assumes you have already set up a Medplum [agent](/docs/agent) or otherwise [connected to the legacy healthcare application](/docs/integration/hl7-interfacing/#connecting-to-legacy-systems) (LIS, PACS, EHR, pharmacy or other system) that you want to interface with and are able to receive the feed.
+This guide assumes you have already set up an Afiax [agent](/docs/agent) or otherwise [connected to the legacy healthcare application](/docs/integration/hl7-interfacing/#connecting-to-legacy-systems) (LIS, PACS, EHR, pharmacy or other system) that you want to interface with and are able to receive the feed.
 
 ## Placing Orders
 
@@ -82,6 +82,6 @@ TODO: Create an example Bot parses the `ORU^R01` message type only and ignores o
 
 - [Agent](/docs/agent) enables connectivity at the edge for HL7 feeds and more
 - [Bot setup for HL7](/docs/bots/hl7-into-fhir) a guide for a hello world bot to parse HL7
-- [Demo Lab Bots](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/lab-integration) on Github
-- [Medplum Agent Demo](https://youtu.be/MmE3Dn939B4) on Youtube - 15 min
+- [Demo Lab Bots](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-demo-bots/src/lab-integration) on Github
+- [Afiax Agent Demo](https://youtu.be/MmE3Dn939B4) on Youtube - 15 min
 - [HL7 Bot Demo Video](https://youtu.be/q0SXeb_8H2Q) on Youtube - 2 min

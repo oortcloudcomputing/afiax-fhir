@@ -2,7 +2,7 @@
 
 ADT stands for "Admit, Discharge, Transfer." It is a type of HL7 message used in electronic health records systems to communicate changes in a patient's demographic or visit status. This includes registration, admission, discharge, and transfer information about a patient. 
 
-This guide assumes you have already set up a Medplum [agent](/docs/agent) or aggregator equivalent to connect to the legacy healthcare application that you want to interface with and are able to receive the feed.
+This guide assumes you have already set up an Afiax [agent](/docs/agent) or aggregator equivalent to connect to the legacy healthcare application that you want to interface with and are able to receive the feed.
 
 The following are a subset of the event types for ADT:
 
@@ -44,6 +44,6 @@ TODO: Create an example that throws away all of the message types except for A04
 
 - [Agent](/docs/agent) enables connectivity at the edge for HL7 feeds and more
 - [Bot setup for HL7](/docs/bots/hl7-into-fhir) a guide for a hello world bot to parse HL7
-- [Enterprise Master Patient Index](/blog/empi-implementation) implementations often use ADT as part of the [deduplication architecture](/docs/fhir-datastore/patient-deduplication)
-- [Medplum Agent Demo](https://youtu.be/MmE3Dn939B4) on Youtube - 15 min
+- [Enterprise Master Patient Index](https://www.medplum.com/blog/empi-implementation) implementations often use ADT as part of the [deduplication architecture](/docs/fhir-datastore/patient-deduplication)
+- [Afiax Agent Demo](https://youtu.be/MmE3Dn939B4) on Youtube - 15 min
 - [HL7 Bot Demo Video](https://youtu.be/q0SXeb_8H2Q) on Youtbve - 2 min

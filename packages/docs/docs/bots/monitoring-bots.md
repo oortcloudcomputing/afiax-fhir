@@ -8,9 +8,9 @@ Bots allow for powerful functionality in your app, so it is very important to tr
 
 ## Viewing a Bot's Events
 
-To monitor your bots, navigate to the Bot resource page at https://app.medplum.com/Bot. This page will display all of the bots that are a part of your project. Choose which bot's events you would like to view and click on it or, if you know the bot's `id`, navigate directly to https://app.medplum.com/Bot/:id. This will bring you to the Bot's individual resource page.
+To monitor your bots, navigate to the Bot resource page at https://app.afiax.africa/Bot. This page will display all of the bots that are a part of your project. Choose which bot's events you would like to view and click on it or, if you know the bot's `id`, navigate directly to https://app.afiax.africa/Bot/:id. This will bring you to the Bot's individual resource page.
 
-From this page, navigate to the `Event` tab, or https://app.medplum.com/Bot/:id/event. This tab will display all of the `AuditEvent` resources associated with the current bot. These events represent every time the bot has been triggered. This page displays the outcomes from the bot being run, including anything that is printed to the console as part of the bot's functionality.
+From this page, navigate to the `Event` tab, or https://app.afiax.africa/Bot/:id/event. This tab will display all of the `AuditEvent` resources associated with the current bot. These events represent every time the bot has been triggered. This page displays the outcomes from the bot being run, including anything that is printed to the console as part of the bot's functionality.
 
 On the Event tab, there are four fields: ID, Outcome, Outcome Desc, and Last Updated. 
 

@@ -4,20 +4,20 @@ sidebar_position: 20
 
 # AWS Textract/Comprehend
 
-This documentation explains how Medplum integrates with **AWS Textract** for optical character recognition (OCR) and **AWS Comprehend Medical** for extracting clinical entities from text. This powerful combination allows developers to process and analyze unstructured medical documents, such as scanned PDFs or images, directly within their Medplum projects.
+This documentation explains how Afiax integrates with **AWS Textract** for optical character recognition (OCR) and **AWS Comprehend Medical** for extracting clinical entities from text. This powerful combination allows developers to process and analyze unstructured medical documents, such as scanned PDFs or images, directly within their Afiax projects.
 
 ### Overview
 
-Medplum's integration with AWS Textract and AWS Comprehend is implemented as a custom operation on FHIR `Media` and `DocumentReference` resources. This integration is designed to handle asynchronous processing of documents, making it ideal for large files.
+Afiax's integration with AWS Textract and AWS Comprehend is implemented as a custom operation on FHIR `Media` and `DocumentReference` resources. This integration is designed to handle asynchronous processing of documents, making it ideal for large files.
 
 The workflow is as follows:
 
 1.  A `Media` or `DocumentReference` resource is created, referencing a `Binary` resource that contains the document (e.g., a PDF, JPEG, or PNG).
 2.  A `POST` request is sent to the `$aws-textract` operation on the `Media` or `DocumentReference` resource.
-3.  Medplum sends the document to AWS Textract for text detection. Textract processes the document and returns a job ID.
-4.  Medplum polls Textract using the job ID until the processing is complete.
-5.  Once Textract successfully processes the document, Medplum stores the raw JSON output as a new `Binary` and `Media` resource.
-6.  If the request includes the `comprehend: true` option, Medplum extracts the text from the Textract output and sends it to AWS Comprehend Medical for entity detection.
+3.  Afiax sends the document to AWS Textract for text detection. Textract processes the document and returns a job ID.
+4.  Afiax polls Textract using the job ID until the processing is complete.
+5.  Once Textract successfully processes the document, Afiax stores the raw JSON output as a new `Binary` and `Media` resource.
+6.  If the request includes the `comprehend: true` option, Afiax extracts the text from the Textract output and sends it to AWS Comprehend Medical for entity detection.
 7.  The raw JSON output from AWS Comprehend is also stored as a new `Binary` and `Media` resource.
 8.  The final result of the Textract operation is returned in the API response.
 
@@ -25,7 +25,7 @@ This approach ensures that the original document remains untouched while the pro
 
 ### Prerequisites
 
-To use this feature, your Medplum project must have the `aws-textract` feature flag enabled. This can be configured in your project settings. Additionally, your Medplum server must be configured to use **AWS S3 storage** for binaries, as Textract requires an S3 object location to process documents.
+To use this feature, your Afiax project must have the `aws-textract` feature flag enabled. This can be configured in your project settings. Additionally, your Afiax server must be configured to use **AWS S3 storage** for binaries, as Textract requires an S3 object location to process documents.
 
 ### Usage
 
@@ -62,7 +62,7 @@ The API will return the raw JSON response from AWS Textract. The response will b
 
 A successful response will have a status code of `200 OK`.
 
-Simultaneously, Medplum will have created new `Binary` and `Media` resources for the Textract output. If Comprehend was enabled, additional resources will be created for its output as well. These resources will have a `subject` field that references the original `Media` or `DocumentReference` resource, creating a clear link between the input document and its processed outputs.
+Simultaneously, Afiax will have created new `Binary` and `Media` resources for the Textract output. If Comprehend was enabled, additional resources will be created for its output as well. These resources will have a `subject` field that references the original `Media` or `DocumentReference` resource, creating a clear link between the input document and its processed outputs.
 
 #### Examples
 
@@ -77,7 +77,7 @@ import { Media } from '@medplum/fhirtypes';
 
 /**
  * Example function to send a Media resource to the `$aws-textract` operation.
- * @param medplum The Medplum client instance.
+ * @param medplum The Afiax client instance.
  * @param event The BotEvent containing the Media resource.
  * @returns A string containing all the detected text, separated by newlines.
  */
@@ -109,7 +109,7 @@ import { DocumentReference } from '@medplum/fhirtypes';
 
 /**
  * Example function to send a DocumentReference resource to the `$aws-textract` operation.
- * @param medplum The Medplum client instance.
+ * @param medplum The Afiax client instance.
  * @param docRefId The ID of the DocumentReference resource.
  * @returns A string containing all the detected text, separated by newlines.
  */

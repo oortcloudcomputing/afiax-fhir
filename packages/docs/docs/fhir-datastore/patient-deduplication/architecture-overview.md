@@ -29,7 +29,7 @@ We'll discuss each of these in depth. The most important factors to consider whe
 
 - **Prevalence of duplicates:** Making estimate of your duplication rate, both _within_ and _between_ source systems, will help you determine the complexity needed in your deduplication pipeline. Some applications have rare duplication rates (e.g. < 1%) while others have frequent duplicates (10-50%). Still others have very bi-modal duplication patterns (e.g 99% of records have 0 duplicates, 1% of records have 5+ duplicates).
 
-- **Lifetime of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, and target systems quickly replace them as the source of truth. For example, when migrating from legacy systems into Medplum. In contrast, some source systems are long lived or permanent, as when deduplicating patients from multiple healthcare providers or from Health Information Exchanges (HIEs).
+- **Lifetime of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, and target systems quickly replace them as the source of truth. For example, when migrating from legacy systems into Afiax. In contrast, some source systems are long lived or permanent, as when deduplicating patients from multiple healthcare providers or from Health Information Exchanges (HIEs).
 
 - **Cost of false positives:** No deduplication system will be 100% perfect, and some patients records will be merged incorrectly. Certain architectural choices make it easier or harder to unmerge patient records once merged. The right choice for you will depend on your confidence threshold for performing a merge and on cost of an incorrect merge.
 

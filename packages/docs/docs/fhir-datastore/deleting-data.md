@@ -6,7 +6,7 @@ sidebar_position: 4
 
 # Deleting Data
 
-The management of healthcare information relies heavily on the effective and secure handling of data. A critical aspect of FHIR data store management is the `delete` operation, which ensures the removal of outdated or erroneous records as necessary. This article will provide an overview of the deleting data in Medplum, including the differences between "soft delete" and "hard delete" methods. Understanding these distinctions is essential for making informed decisions when dealing with sensitive healthcare data.
+The management of healthcare information relies heavily on the effective and secure handling of data. A critical aspect of FHIR data store management is the `delete` operation, which ensures the removal of outdated or erroneous records as necessary. This article will provide an overview of the deleting data in Afiax, including the differences between "soft delete" and "hard delete" methods. Understanding these distinctions is essential for making informed decisions when dealing with sensitive healthcare data.
 
 ## Delete Operation
 
@@ -35,7 +35,7 @@ Referential integrity is **not** supported for deletes at this time.
 
 ## Expunge Operation
 
-The Medplum `$expunge` operation performs a "hard" or "physical" delete. This means that the data is permanently removed from the database, including all resource history.
+The Afiax `$expunge` operation performs a "hard" or "physical" delete. This means that the data is permanently removed from the database, including all resource history.
 
 ```
 POST [base]/[resourceType]/[id]/$expunge
@@ -47,7 +47,7 @@ The `$expunge` operation is only available to users with administrator access to
 
 ### Expunge Everything Option
 
-The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported.
+The Afiax `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported.
 
 ```
 POST [base]/[resourceType]/[id]/$expunge?everything=true

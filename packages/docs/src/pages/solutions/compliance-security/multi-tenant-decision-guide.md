@@ -38,11 +38,11 @@
 
 ---
 
-### Question 1.3: Are you self-hosting the Afiax Medplum deployment, or using a managed Afiax cloud environment?
+### Question 1.3: Are you self-hosting the Afiax deployment, or using a managed Afiax cloud environment?
 
 **Pick one:**
 
-- [ ] **A) We're self-hosting** (running the Afiax Medplum deployment in our own environment)
+- [ ] **A) We're self-hosting** (running the Afiax deployment in our own environment)
 - [ ] **B) We're using a managed Afiax cloud environment**
 
 **Why this matters:**
@@ -342,7 +342,7 @@ Based on your answers to Part 1:
 | Your Answer | Technical Approach |
 |-------------|-------------------|
 | 1.1 = A (single org) | No multi-tenancy needed |
-| 1.2 = A (strict isolation) + 1.3 = A (self-hosted) | Separate Medplum Projects per tenant |
+| 1.2 = A (strict isolation) + 1.3 = A (self-hosted) | Separate Afiax Projects per tenant |
 | 1.2 = B or C (some sharing) OR 1.3 = B (cloud) | Single Project with MSO access model |
 
 ### Tenant Resource Type

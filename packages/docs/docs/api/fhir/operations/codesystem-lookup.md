@@ -281,5 +281,5 @@ GET /CodeSystem/$lookup?system=http://loinc.org&code=invalid
 - [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate a code exists in a code system
 - [CodeSystem $subsumes](/docs/api/fhir/operations/codesystem-subsumes) - Check hierarchical relationships between codes
 - [CodeSystem $import](/docs/api/fhir/operations/codesystem-import) - Import codes into a code system
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
 - [FHIR CodeSystem $lookup](https://hl7.org/fhir/R4/codesystem-operation-lookup.html) - FHIR specification for $lookup

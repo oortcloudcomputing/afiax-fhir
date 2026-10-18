@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Users
 
-Medplum supports the standard SCIM `Users` API endpoints.
+Afiax supports the standard SCIM `Users` API endpoints.
 
 ## Schemas
 
@@ -14,7 +14,7 @@ The base `User` schema is `urn:ietf:params:scim:schemas:core:2.0:User`.
 
 ## User Type and Username
 
-Medplum users always have a corresponding FHIR "profile" resource, which can be a `Patient`, `Practitioner`, or `RelatedPerson`. To specify the desired FHIR resource type, you must include a `userType` property with the FHIR resource type.
+Afiax users always have a corresponding FHIR "profile" resource, which can be a `Patient`, `Practitioner`, or `RelatedPerson`. To specify the desired FHIR resource type, you must include a `userType` property with the FHIR resource type.
 
 For example, consider this `Practitioner`:
 
@@ -48,10 +48,10 @@ The SCIM `userName` property will be the system generated FHIR resource ID. This
 
 ## Create a user
 
-Create a user by making an HTTP `POST` request to `https://api.medplum.com/scim/v2/Users`
+Create a user by making an HTTP `POST` request to `https://fhir.afiax.africa/scim/v2/Users`
 
 ```bash
-curl https://api.medplum.com/scim/v2/Users \
+curl https://fhir.afiax.africa/scim/v2/Users \
  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
  -H "Content-Type: application/json" \
  -d '{
@@ -72,19 +72,19 @@ curl https://api.medplum.com/scim/v2/Users \
 
 ## Read a user
 
-Read a user by making an HTTP `GET` request to `https://api.medplum.com/scim/v2/Users/{id}`
+Read a user by making an HTTP `GET` request to `https://fhir.afiax.africa/scim/v2/Users/{id}`
 
 ```bash
-curl https://api.medplum.com/scim/v2/Users/MY_USER_ID \
+curl https://fhir.afiax.africa/scim/v2/Users/MY_USER_ID \
  -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 
 ## Update a user
 
-Update a user by making an HTTP `PUT` request to `https://api.medplum.com/scim/v2/Users/{id}`
+Update a user by making an HTTP `PUT` request to `https://fhir.afiax.africa/scim/v2/Users/{id}`
 
 ```bash
-curl -X PUT https://api.medplum.com/scim/v2/Users \
+curl -X PUT https://fhir.afiax.africa/scim/v2/Users \
  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
  -H "Content-Type: application/json" \
  -d '{
@@ -107,10 +107,10 @@ curl -X PUT https://api.medplum.com/scim/v2/Users \
 
 ## Delete a user
 
-Delete a user by making an HTTP `DELETE` request to `https://api.medplum.com/scim/v2/Users/{id}`
+Delete a user by making an HTTP `DELETE` request to `https://fhir.afiax.africa/scim/v2/Users/{id}`
 
 ```bash
-curl -X DELETE https://api.medplum.com/scim/v2/Users/MY_USER_ID \
+curl -X DELETE https://fhir.afiax.africa/scim/v2/Users/MY_USER_ID \
  -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 
@@ -118,9 +118,9 @@ Note that deleting the user does not delete any of the corresponding FHIR resour
 
 ## Search users
 
-Search for users by making an HTTP `GET` request to `https://api.medplum.com/scim/v2/Users`
+Search for users by making an HTTP `GET` request to `https://fhir.afiax.africa/scim/v2/Users`
 
 ```bash
-curl https://api.medplum.com/scim/v2/Users \
+curl https://fhir.afiax.africa/scim/v2/Users \
  -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```

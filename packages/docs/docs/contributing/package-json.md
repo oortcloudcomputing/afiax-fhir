@@ -4,7 +4,7 @@ sidebar_position: 60
 
 # Working with package.json
 
-The Medplum codebase uses NPM workspaces to manage approximately 50 packages in a single monorepo. This structure provides many benefits but can be confusing when it comes to dependency management. This guide explains best practices for working with dependencies in our monorepo.
+The Afiax codebase uses NPM workspaces to manage approximately 50 packages in a single monorepo. This structure provides many benefits but can be confusing when it comes to dependency management. This guide explains best practices for working with dependencies in our monorepo.
 
 ## Key Concepts
 
@@ -125,7 +125,7 @@ npm run sort-package-json
 
 ## Dependency Update Policy
 
-Medplum automatically upgrades dependencies every Monday:
+Afiax automatically upgrades dependencies every Monday:
 
 1. GitHub Actions run on a cron timer (early Monday morning Pacific Time)
 2. The process:
@@ -174,7 +174,6 @@ Ensure you've run the reinstall script from the root directory:
 
 ## Need Help?
 
-If you have questions about dependency management in the Medplum monorepo, please ask in:
+If you have questions about dependency management in the Afiax monorepo, please ask in:
 
-- Discord: [Medplum community server](https://discord.gg/medplum)
 - Slack: [#eng](https://medplum.slack.com/archives/C051SKJKZ50) channel

@@ -2,15 +2,15 @@
 toc_max_heading_level: 3
 sidebar_position: 0
 ---
-# Migrating to Medplum
+# Migrating to Afiax
 
 Consider the following common scenario:
 
 - You have an existing digital healthcare platform running active operations
-- You decided to adopt a standards based architecture, such as Medplum
+- You decided to adopt a standards based architecture, such as Afiax
 - You want to migrate operations without service interruption or degradation
 
-While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This series of guides outlines the process of migrating data from an existing platform into Medplum.
+While there is some engineering work required to migrate non-FHIR data into Afiax, there are well-known best-practices to manage this process. This series of guides outlines the process of migrating data from an existing platform into Afiax.
 
 It covers:
 - [Planning your migration](/docs/migration/migration-planning)

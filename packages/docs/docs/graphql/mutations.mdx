@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 GraphQL mutations are operations that allow the client to create, update, or delete data on the server. Unlike queries, which are read-only operations and can be executed in parallel, mutations are write operations. For more information about GraphQL mutations, refer to the [GraphQL documentation](https://graphql.org/learn/queries/#mutations).
 
-Medplum implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R4/graphql.html#mutations). For the inputs, you would append the action (Create, Update, or Delete) to the resource type.
+Afiax implements the draft [FHIR GraphQL Mutation spec](https://hl7.org/fhir/R4/graphql.html#mutations). For the inputs, you would append the action (Create, Update, or Delete) to the resource type.
 
 Here are examples of mutations for the `Patient` resource. You can test these mutations at [graphiql.medplum.com](https://graphiql.medplum.com/)
 
@@ -67,7 +67,7 @@ Just as with GraphQL queries, you can alias the newly created resource.
 
 ### Built-in types
 
-Medplum's graphQL schema provides type definitions for complex nested fields (aka "[Backbone Elements](https://www.hl7.org/fhir/R4/backboneelement.html#BackboneElement)"). These can be used to simplify arguments to your custom mutations.
+Afiax's graphQL schema provides type definitions for complex nested fields (aka "[Backbone Elements](https://www.hl7.org/fhir/R4/backboneelement.html#BackboneElement)"). These can be used to simplify arguments to your custom mutations.
 
 This examples demonstrates how to create a mutation that creates a [`Communication`](/docs/api/fhir/resources/communication) resource and takes an array of `CommunicationPayload` types as a parameter:
 

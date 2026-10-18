@@ -33,11 +33,11 @@ This operation is essential for scenarios requiring complete patient data, such 
 
 ### Output
 
-The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made. The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
+The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made. The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Afiax.
 
 #### Resources Included
 
-Medplum's patient `$everything` operation includes:
+Afiax's patient `$everything` operation includes:
 
 1. **Patient Compartment Resources** - All resources defined in the [FHIR R4 Patient Compartment](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)
 
@@ -53,6 +53,5 @@ Medplum's patient `$everything` operation includes:
 
 - [MedplumClient.readPatientEverything](/docs/sdk/core.medplumclient.readpatienteverything) - TypeScript SDK method
 - [Patient $ccda-export](/docs/api/fhir/operations/ccda-export) - Export patient data as C-CDA document
-- [ONC Certification](/docs/compliance/onc) - Compliance requirements for patient data export
 - [FHIR Patient Compartment](https://hl7.org/fhir/R4/compartmentdefinition-patient.html) - FHIR specification for patient-related resources
 - [FHIR $everything Operation](https://hl7.org/fhir/R4/patient-operation-everything.html) - FHIR specification for $everything

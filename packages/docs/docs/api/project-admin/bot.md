@@ -5,7 +5,7 @@ import TabItem from '@theme/TabItem';
 
 ## POST `/admin/projects/:projectId/bot`
 
-Creates a new [Medplum Bot](/docs/). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
+Creates a new [Afiax Bot](/docs/). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
 
 ### Parameters
 
@@ -50,7 +50,7 @@ medplum post admin/projects/:projectId/bot \
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl https://api.medplum.com/admin/projects/:projectId/bot \
+curl https://fhir.afiax.africa/admin/projects/:projectId/bot \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

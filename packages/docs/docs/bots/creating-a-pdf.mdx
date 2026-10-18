@@ -7,14 +7,14 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/bots/creating-a-pdf
 
 # Create a PDF
 
-You can use Medplum Bots to create a PDF file as an attachment.
+You can use Afiax Bots to create a PDF file as an attachment.
 
 There are always two steps:
 
 1. Create the PDF as a FHIR `Binary` resource
 2. Use the `Binary` resource as an attachment or content
 
-To create PDFs, Medplum Bots use [pdfmake](https://pdfmake.github.io/docs/0.1/). pdfmake uses a "Document Definition" model. You create a JSON object that defines paragraphs, styles, tables, etc. Medplum converts the document definition into a FHIR `Binary` resource with the PDF contents.
+To create PDFs, Afiax Bots use [pdfmake](https://pdfmake.github.io/docs/0.1/). pdfmake uses a "Document Definition" model. You create a JSON object that defines paragraphs, styles, tables, etc. Afiax converts the document definition into a FHIR `Binary` resource with the PDF contents.
 
 To learn more about pdfmake, check out the [playground](http://bpampuch.github.io/pdfmake/playground.html) and [examples](https://github.com/bpampuch/pdfmake/tree/master/examples).
 
@@ -28,7 +28,7 @@ This bot creates a PDF as a `Binary` and then creates a `Media` with the PDF as 
 
 ## Custom fonts
 
-Medplum has prebuilt support for the following fonts:
+Afiax has prebuilt support for the following fonts:
 
 - Helvetica
 - Roboto

@@ -95,7 +95,7 @@ As an example, assume the following `ConceptMap` resource exists in the system:
 To translate a code using this ConceptMap, one would make an API request like the following:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ConceptMap/[id]/$translate' \
+curl 'https://fhir.afiax.africa/fhir/R4/ConceptMap/[id]/$translate' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -181,6 +181,6 @@ POST /fhir/R4/ConceptMap/$translate
 
 - [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up code details in source or target systems
 - [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate codes before translation
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
 - [FHIR ConceptMap Resource](https://hl7.org/fhir/R4/conceptmap.html) - FHIR specification for ConceptMap
 - [FHIR $translate Operation](https://hl7.org/fhir/R4/conceptmap-operation-translate.html) - FHIR specification for $translate

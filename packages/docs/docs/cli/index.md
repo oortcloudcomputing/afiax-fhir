@@ -1,10 +1,10 @@
 # Intro
 
-The Medplum CLI (Command Line Interface) is a set of command line tools to quickly deploy Medplum web applications and Medplum bots.
+The Afiax CLI (Command Line Interface) is a set of command line tools to quickly deploy Afiax web applications and Afiax bots.
 
 ## Prerequisites
 
-The Medplum CLI requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 20+
+The Afiax CLI requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) version 20+
 
 ## Installation
 
@@ -47,7 +47,7 @@ If installed as a package dependency, you can use the `medplum` command via `npx
 npx medplum <command> <args>
 ```
 
-By default, the `medplum` command uses the Medplum hosted API at "https://api.medplum.com". If you want to use the `medplum` command against your own self-hosted server, you can use the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
+By default, the `medplum` command uses the Afiax hosted API at "https://fhir.afiax.africa". If you want to use the `medplum` command against your own self-hosted server, you can use the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
 
 ### optional flags for medplum commands
 
@@ -68,7 +68,7 @@ medplum get --base-url https://api.example.com 'Patient/homer-simpson'
 
 #### `login`
 
-The `login` command opens a web browser to a Medplum authentication page.
+The `login` command opens a web browser to an Afiax authentication page.
 
 On successful login, the command writes credentials to disk at `~/.medplum/credentials`.
 
@@ -82,7 +82,7 @@ medplum login
 
 #### `whoami`
 
-The `whoami` command displays whether the client is authenticated, and, if so, the name of the current user and current Medplum project.
+The `whoami` command displays whether the client is authenticated, and, if so, the name of the current user and current Afiax project.
 
 ```bash
 medplum whoami
@@ -90,14 +90,14 @@ medplum whoami
 
 ### RESTful Operations
 
-The `medplum` command can be used as a convenient tool for basic Medplum CRUD and RESTful operations.
+The `medplum` command can be used as a convenient tool for basic Afiax CRUD and RESTful operations.
 
 While all API endpoints are available to any command line HTTP client such as `curl` or `wget`, there are a few advantages to using the `medplum` command:
 
 1. Authentication and credentials - login once using the `login` command, and the `Authorization` header will be set automatically.
-2. URL prefixes - adds the base URL (i.e., "https://api.medplum.com") and FHIR path prefix (i.e., "fhir/R4/").
+2. URL prefixes - adds the base URL (i.e., "https://fhir.afiax.africa") and FHIR path prefix (i.e., "fhir/R4/").
 3. Pretty print - formats the JSON with spaces and newlines.
-4. Medplum extended mode - adds the `X-Medplum` HTTP header for private Medplum fields.
+4. Afiax extended mode - adds the `X-Medplum` HTTP header for private Afiax fields.
 
 #### `get`
 
@@ -251,7 +251,7 @@ The `aws` commands are in beta, and likely to change.
 
 #### list
 
-List your Medplum deployments. This command lists AWS CloudFormation stacks with the `medplum:environment` tag.
+List your Afiax deployments. This command lists AWS CloudFormation stacks with the `medplum:environment` tag.
 
 ```bash
 medplum aws list
@@ -259,7 +259,7 @@ medplum aws list
 
 #### describe
 
-Describe a Medplum deployment. Displays select AWS resources such as ECS Cluster, ECS Service, and S3 buckets from the AWS CloudFormation stack with the corresponding `medplum:environment` tag.
+Describe an Afiax deployment. Displays select AWS resources such as ECS Cluster, ECS Service, and S3 buckets from the AWS CloudFormation stack with the corresponding `medplum:environment` tag.
 
 ```bash
 medplum aws describe <name>
@@ -267,7 +267,7 @@ medplum aws describe <name>
 
 #### update-app
 
-Updates the app S3 bucket in a Medplum deployment to the latest version.
+Updates the app S3 bucket in an Afiax deployment to the latest version.
 
 ```bash
 medplum aws update-app <name>
@@ -275,7 +275,7 @@ medplum aws update-app <name>
 
 #### update-server
 
-Updates the ECS Service in a Medplum deployment to the latest version.
+Updates the ECS Service in an Afiax deployment to the latest version.
 
 ```bash
 medplum aws update-server <name>
@@ -285,7 +285,7 @@ medplum aws update-server <name>
 
 #### Bots Config file
 
-Create a Medplum config file called `medplum.config.json`:
+Create an Afiax config file called `medplum.config.json`:
 
 ```json
 {
@@ -302,7 +302,7 @@ Create a Medplum config file called `medplum.config.json`:
 
 The `name` property is a friendly name you can use to reference the Bot in commands.
 
-The `id` property refers to the Bot ID in your Medplum project.
+The `id` property refers to the Bot ID in your Afiax project.
 
 The `source` property is the file path to the original source. When you "save" the Bot, the contents of this file will be saved to the Bot `code` property. This file can be JavaScript or TypeScript.
 
@@ -352,7 +352,7 @@ npx medplum bot create <bot name> <project id> <source file> <dist file>
 
 #### Bots Example
 
-Create a Medplum config file `medplum.config.json`:
+Create an Afiax config file `medplum.config.json`:
 
 ```json
 {
@@ -380,7 +380,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 ```
 
-You can use the Medplum CLI to save it:
+You can use the Afiax CLI to save it:
 
 ```bash
 npx medplum bot save hello-world
@@ -400,7 +400,7 @@ export async function handler(medplum, input) {
 }
 ```
 
-You can then use the Medplum CLI to deploy it.
+You can then use the Afiax CLI to deploy it.
 
 ```bash
 npx medplum bot deploy hello-world

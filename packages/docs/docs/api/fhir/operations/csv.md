@@ -22,7 +22,7 @@ The `$csv` operation exports FHIR resources as a CSV (Comma-Separated Values) fi
 For example, to export Patient data:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name,birthDate,gender,address' \
+curl 'https://fhir.afiax.africa/fhir/R4/Patient/$csv?_fields=name,birthDate,gender,address' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -o patients.csv
 ```
@@ -74,7 +74,7 @@ The operation returns a CSV file with:
 ### Export All Patients
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name,birthDate,gender,address' \
+curl 'https://fhir.afiax.africa/fhir/R4/Patient/$csv?_fields=name,birthDate,gender,address' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -o all-patients.csv
 ```
@@ -84,7 +84,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name,birthDate,gender
 Export only active patients:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name,birthDate,gender&active=true' \
+curl 'https://fhir.afiax.africa/fhir/R4/Patient/$csv?_fields=name,birthDate,gender&active=true' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -o active-patients.csv
 ```
@@ -94,7 +94,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name,birthDate,gender
 Export vital signs observations:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Observation/$csv?_fields=code,value-quantity,effective-date-time,subject&category=vital-signs' \
+curl 'https://fhir.afiax.africa/fhir/R4/Observation/$csv?_fields=code,value-quantity,effective-date-time,subject&category=vital-signs' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -o vitals.csv
 ```
@@ -102,7 +102,7 @@ curl 'https://api.medplum.com/fhir/R4/Observation/$csv?_fields=code,value-quanti
 ### Export with Custom FHIRPath
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/$csv?_fields=name.family,name.given,telecom.where(system=%27phone%27).value' \
+curl 'https://fhir.afiax.africa/fhir/R4/Patient/$csv?_fields=name.family,name.given,telecom.where(system=%27phone%27).value' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -o patients-custom.csv
 ```

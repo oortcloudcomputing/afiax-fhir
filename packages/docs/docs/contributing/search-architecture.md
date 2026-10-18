@@ -6,14 +6,14 @@ sidebar_position: 205
 
 :::caution
 
-This page documents internal Medplum implementation details, and refers to point-in-time code snapshots that may be
+This page documents internal Afiax implementation details, and refers to point-in-time code snapshots that may be
 different from the current application code, and are subject to change at any time without prior notice.
 
 :::
 
 ## Resource Table Schema
 
-In addition to `id` and `content` columns containing the resource's UUID and raw JSON, each FHIR resource type table in the Medplum DB (e.g. `"Observation"`) contains columns corresponding to the search parameters for that resource type (e.g. `"Observation".subject`). The data types of these columns are mapped from the search parameter type:
+In addition to `id` and `content` columns containing the resource's UUID and raw JSON, each FHIR resource type table in the Afiax DB (e.g. `"Observation"`) contains columns corresponding to the search parameters for that resource type (e.g. `"Observation".subject`). The data types of these columns are mapped from the search parameter type:
 
 | FHIR SearchParameter type | Postgres data type                           |
 | ------------------------- | -------------------------------------------- |
@@ -80,15 +80,15 @@ Each search parameter from the query string corresponds to an element in `Search
 
 The [`Operator`][operator] enum represents a union over FHIR search [modifiers][search-modifiers] and [prefixes][search-prefixes]; combined, these define all logical search relations between parameter and value. Currently, there is zero overlap between parameters that use prefixes and those that allow modifiers; however, if this ever changes, modifications to this abstraction will be required.
 
-[parse-query]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L172
-[search-req]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L7
-[operator]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L39
+[parse-query]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L172
+[search-req]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L7
+[operator]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/core/src/search/search.ts#L39
 [search-modifiers]: http://hl7.org/fhir/R4/valueset-search-modifier-code.html
 [search-prefixes]: http://hl7.org/fhir/R4/search.html#prefix
 
 ## SQL Builder
 
-Medplum's core search logic translates FHIR search requests into a composable set of SQL expressions, from which the DB query is built. The [`SqlBuilder`][sql-builder] class provides basic functionality for constructing the SQL string, but most code uses it only indirectly through classes representing logical parts of the SQL expression, e.g. a [`Condition`][sql-condition]. Queries constructed this way are modular and flexible, allowing the server to easily manipulate the query without resorting to tricky string manipulation.
+Afiax's core search logic translates FHIR search requests into a composable set of SQL expressions, from which the DB query is built. The [`SqlBuilder`][sql-builder] class provides basic functionality for constructing the SQL string, but most code uses it only indirectly through classes representing logical parts of the SQL expression, e.g. a [`Condition`][sql-condition]. Queries constructed this way are modular and flexible, allowing the server to easily manipulate the query without resorting to tricky string manipulation.
 
 The main search parameter processing logic takes places in [`buildSearchFilterExpression()`][build-search-filter-expr], which performs:
 
@@ -97,9 +97,9 @@ The main search parameter processing logic takes places in [`buildSearchFilterEx
    - The `:identifier` modifier is handled as a special case, using the token lookup table
 3. Constructing the correct SQL `WHERE` expression for the search parameter based on its type and modifiers
 
-[sql-builder]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L213
-[sql-condition]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L49
-[build-search-filter-expr]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L494
+[sql-builder]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L213
+[sql-condition]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/sql.ts#L49
+[build-search-filter-expr]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L494
 [filter-param]: http://hl7.org/fhir/R4/search_filter.html
 
 ### Lookup Tables
@@ -119,8 +119,8 @@ Some search parameters require specific matching logic, and a separate lookup ta
 | given_tsv  | `tsvector` |          |
 | family_tsv | `tsvector` |          |
 
-[lookup-table]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/lookups/lookuptable.ts
-[human-name-lookup]: https://github.com/medplum/medplum/blob/ecbfcbb0860e95ef3e7ea3ddc4508b9a18e55ca1/packages/server/src/fhir/lookups/humanname.ts
+[lookup-table]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/lookups/lookuptable.ts
+[human-name-lookup]: https://github.com/oortcloudcomputing/afiax-fhir/blob/ecbfcbb0860e95ef3e7ea3ddc4508b9a18e55ca1/packages/server/src/fhir/lookups/humanname.ts
 
 ### Examples
 
@@ -251,16 +251,16 @@ compartments && ARRAY['4410089e-6a88-4cc8-9cb6-3592ee18191c']
 
 AccessPolicy restrictions are specified using `application/x-fhir-query` expressions (e.g. `Observation?subject=Patient/c9d98310-d47d-4265-a377-4ec9317ceee6`), which are [parsed into SQL expressions][access-sql] the same way as the main search query being performed. Resources matching these criteria are allowed to be shown to the user with that AccessPolicy. These filter expressions are added to the SQL query, [wrapped in a `Disjunction`][access-disjunct] so any matching policy will grant access.
 
-[add-project-filter]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L121
-[access-sql]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1006-L1012
-[access-disjunct]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1021
+[add-project-filter]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/search.ts#L121
+[access-sql]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1006-L1012
+[access-disjunct]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1021
 
 ## Search Indexing
 
 Search parameter values are [extracted from resources via FHIRPath expressions][search-value-extract] defined for each parameter. Most search parameter expressions are simple paths or variations thereof, but some parameters make use of more complex expressions to derive the search value: e.g. `Patient?deceased` (`Patient.deceased.exists() and Patient.deceased != false`). The results of evaluating the expression on the resource is [indexed into the database transactionally][db-index-tx] with the resource content, including any associated lookup tables.
 
-[search-value-extract]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1116
-[db-index-tx]: https://github.com/medplum/medplum/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L615-L619
+[search-value-extract]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L1116
+[db-index-tx]: https://github.com/oortcloudcomputing/afiax-fhir/blob/6ecbcf8fdc209dbf799ebe9df7d726217424f1f3/packages/server/src/fhir/repo.ts#L615-L619
 
 ## Appendix A: FHIR Search Concerns
 

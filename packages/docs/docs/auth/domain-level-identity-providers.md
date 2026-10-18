@@ -5,7 +5,7 @@ tags: [auth]
 
 # Domain-level Identity Providers
 
-A Domain-level Identity Provider (DL-IDP) is a server-level configuration that sets up an external identity provider for all users from a given domain. This identity provider will be used for _all_ Medplum applications the user logs into, **including the Medplum App**. Domain-level providers are primarily used to ensure that all practitioners access Medplum data via your corporate identity solution.
+A Domain-level Identity Provider (DL-IDP) is a server-level configuration that sets up an external identity provider for all users from a given domain. This identity provider will be used for _all_ Afiax applications the user logs into, **including the Afiax App**. Domain-level providers are primarily used to ensure that all practitioners access Afiax data via your corporate identity solution.
 
 Once a DL-IDP is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using the configured provider. Enabling DL-IDPs will apply to _all_ emails at that domain, including dev accounts and name+text@mydomain.com type emails.
 
@@ -13,7 +13,7 @@ This guide demonstrates how to set up a DL-IDP, using Okta as an example provide
 
 :::caution Note
 
-Setting up DL-IDPs on the Medplum Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
+Setting up DL-IDPs on the Afiax Hosted instance requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
 
 :::
 
@@ -21,7 +21,7 @@ Setting up DL-IDPs on the Medplum Hosted instance requires an Enterprise account
 
 ### Okta Setup
 
-Enabling Okta requires configuration on the Okta side and the Medplum side. You will need to be an Okta admin to set up a App Integration on Okta.
+Enabling Okta requires configuration on the Okta side and the Afiax side. You will need to be an Okta admin to set up a App Integration on Okta.
 
 Click on "Create App Integration"
 
@@ -33,7 +33,7 @@ When prompted, choose "**OIDC - OpenID Connect**" and "**Web Application**". Cli
 
 Use the following settings:
 
-- App integration name: Choose your preferred name, or "Medplum"
+- App integration name: Choose your preferred name, or "Afiax"
 - Grant Type
   - 🔲 Client Credentials - unchecked
   - ☑️ Authorization Code - checked
@@ -43,8 +43,8 @@ Use the following settings:
   - 🔲 Allow wildcard - unchecked
   - Callback URL - "\{medplumApiServerBaseUrl\}/auth/external"
     - For example:
-      - Medplum hosted apiServerBaseUrl is "https://api.medplum.com"
-      - So the callback URL is "https://api.medplum.com/auth/external"
+      - Afiax hosted apiServerBaseUrl is "https://fhir.afiax.africa"
+      - So the callback URL is "https://fhir.afiax.africa/auth/external"
 - Sign-out redirect URIs: Leave blank
 - Trusted Origins: Leave blank
 
@@ -55,16 +55,16 @@ Scroll down to the Assignments section:
 - Assignments
   - Controlled access
     - Choose the level appropriate for your organization
-    - We recommend "Allow everyone in your organization to access" as a an account on Medplum is still required to be able to access
+    - We recommend "Allow everyone in your organization to access" as a an account on Afiax is still required to be able to access
   - ☑️ Enable immediate access - checked
 
 Then click "Save".
 
 ![Okta Assignments Page](/img/auth/okta-assignments.png)
 
-On the next page, note the "Client ID" and "Client Secret", take note of those - they will be needed for the Medplum set up.
+On the next page, note the "Client ID" and "Client Secret", take note of those - they will be needed for the Afiax set up.
 
-### Medplum Setup
+### Afiax Setup
 
 To configure Okta as an external authentication provider, you will need 5 pieces of data:
 
@@ -94,6 +94,6 @@ Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) res
 
 :::caution Note
 
-Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
+Configuring a DL-IDP on the Afiax Hosted service requires an Afiax team member, contact us at info@afiax.africa to enable. For those self-hosting, setup below requires super admin privileges.
 
 :::

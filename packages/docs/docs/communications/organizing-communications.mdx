@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 ## Introduction
 
-In a healthcare context, messages are sent all the time and can include many scenarios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Medplum.
+In a healthcare context, messages are sent all the time and can include many scenarios (patient to physician, physician to physician, and more), so ensuring they are well-organized is vital. This guide covers how to model and organize threads using Afiax.
 
 - Representing individual messages
 - Building and structuring threads
@@ -38,7 +38,7 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource is a
 
 Most messaging based workflows track messages through three stages: **sent**, **received**, and **read**.
 
-While FHIR standard doesn't offer specific guidance on representing this lifecycle, Medplum recommends the following model:
+While FHIR standard doesn't offer specific guidance on representing this lifecycle, Afiax recommends the following model:
 
 | Stage    | Representation                          |
 | -------- | --------------------------------------- |

@@ -5,10 +5,10 @@ tags: [integration]
 
 # eFax Integration
 
-Medplum provides a first-party integration with eFax Corporate to send and receive faxes directly from your healthcare application. Faxes are stored as FHIR `Communication` resources, enabling seamless integration with your clinical workflows.
+Afiax provides a first-party integration with eFax Corporate to send and receive faxes directly from your healthcare application. Faxes are stored as FHIR `Communication` resources, enabling seamless integration with your clinical workflows.
 
-:::caution Medplum Team Setup Required
-This integration requires setup by the Medplum team. [Contact us](mailto:info+efax@medplum.com?subject=eFax%20Integration%20for%20Medplum) to enable eFax for your project.
+:::caution Afiax Team Setup Required
+This integration requires setup by the Afiax team. [Contact us](mailto:info@afiax.africa?subject=eFax%20Integration) to enable eFax for your project.
 :::
 
 ## Overview
@@ -21,14 +21,14 @@ The eFax integration allows you to:
 ## Prerequisites
 
 Before using the eFax integration, you must have:
-- The eFax integration enabled on your Medplum project (contact the Medplum team)
+- The eFax integration enabled on your Afiax project (contact the Afiax team)
 - eFax API credentials configured as project secrets
 
 ## Configuration
 
 ### Project Secrets
 
-The following secrets must be configured in your Medplum project:
+The following secrets must be configured in your Afiax project:
 
 | Secret Name | Description |
 |-------------|-------------|
@@ -260,5 +260,5 @@ The following content types are supported for sending faxes:
 
 ## Example Application
 
-See the [medplum-efax-demo](https://github.com/medplum/medplum/tree/main/examples/medplum-efax-demo) example for a complete React application demonstrating the eFax integration.
+See the [medplum-efax-demo](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-efax-demo) example for a complete React application demonstrating the eFax integration.
 

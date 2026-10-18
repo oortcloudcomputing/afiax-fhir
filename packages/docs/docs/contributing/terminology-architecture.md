@@ -6,14 +6,14 @@ sidebar_position: 206
 
 :::caution
 
-This page documents internal Medplum implementation details, and refers to point-in-time code snapshots that may be
+This page documents internal Afiax implementation details, and refers to point-in-time code snapshots that may be
 different from the current application code, and are subject to change at any time without prior notice.
 
 :::
 
 ## Table Schema
 
-Medplum uses a handful of dedicated tables to store terminology data. The foundation of these is `Coding`, which stores
+Afiax uses a handful of dedicated tables to store terminology data. The foundation of these is `Coding`, which stores
 individual codes related to `CodeSystem` resources by their ID:
 
 **Coding**
@@ -98,14 +98,14 @@ flowchart LR
 
 :::note
 
-While FHIR supports specifying hierarchical relationships with either `parent` or `child` properties, Medplum currently
+While FHIR supports specifying hierarchical relationships with either `parent` or `child` properties, Afiax currently
 only supports `parent` for simplicity, since the two are inversely equivalent.
 
 :::
 
 ## Terminology Operations
 
-FHIR specifies a suite of Operation endpoints to interact with terminology information, which Medplum implements on top
+FHIR specifies a suite of Operation endpoints to interact with terminology information, which Afiax implements on top
 of the tables described above.
 
 ### `CodeSystem/$validate-code`
@@ -249,7 +249,7 @@ LIMIT 21;
 
 ### `CodeSystem/$import`
 
-Medplum supports a [non-standard Operation][import-operation] to load codes into the database for large code systems.
+Afiax supports a [non-standard Operation][import-operation] to load codes into the database for large code systems.
 It generates bulk inserts for codes and their properties:
 
 ```sql
@@ -273,4 +273,4 @@ INSERT INTO "Coding_Property" (coding, property, value, target) VALUES
   ON CONFLICT DO NOTHING;
 ```
 
-[import-operation]: https://github.com/medplum/medplum/blob/78cf54ff8bc2fbc3bfecb0c73be1c581179fae2d/packages/server/src/fhir/operations/codesystemimport.ts#L11-L38
+[import-operation]: https://github.com/oortcloudcomputing/afiax-fhir/blob/78cf54ff8bc2fbc3bfecb0c73be1c581179fae2d/packages/server/src/fhir/operations/codesystemimport.ts#L11-L38

@@ -1,6 +1,6 @@
 # Branding and Customization
 
-When building an EHR, you often want to change the logo and name of your platform for clarity or branding. In Medplum, this is simple:
+When building an EHR, you often want to change the logo and name of your platform for clarity or branding. In Afiax, this is simple:
 
 1. Get your Logo ready
 2. Edit your `packages/app/.env` file

@@ -68,7 +68,7 @@ Valid values from the [concept-map-equivalence](http://hl7.org/fhir/R4/valueset-
 ## Example Request
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/ConceptMap/my-concept-map/$import' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/ConceptMap/my-concept-map/$import' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{
@@ -169,5 +169,5 @@ Occurs when calling the instance-level operation (`/ConceptMap/[id]/$import`) wh
 ## Related Documentation
 
 - [ConceptMap $translate](/docs/api/fhir/operations/conceptmap-translate) - Translate codes using ConceptMaps
-- [Terminology](/docs/terminology) - Overview of terminology support in Medplum
+- [Terminology](/docs/terminology) - Overview of terminology support in Afiax
 - [FHIR ConceptMap](http://hl7.org/fhir/R4/conceptmap.html) - FHIR specification

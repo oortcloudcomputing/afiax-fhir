@@ -2,13 +2,13 @@
 sidebar_position: 2
 ---
 
-# Setting Medplum Server Configuration
+# Setting Afiax Server Configuration
 
-There are two primary ways to configure the Medplum server when self-hosting: through a JSON configuration file or by using environment variables. This guide will walk you through both methods.
+There are two primary ways to configure the Afiax server when self-hosting: through a JSON configuration file or by using environment variables. This guide will walk you through both methods.
 
 ## JSON Configuration File
 
-You can provide a path to a JSON file (e.g., `medplum.config.json`) when starting the Medplum server. This file contains all the necessary configuration settings.
+You can provide a path to a JSON file (e.g., `medplum.config.json`) when starting the Afiax server. This file contains all the necessary configuration settings.
 
 ### Example `medplum.config.json`
 
@@ -97,7 +97,7 @@ When both a configuration file and environment variables are present, the enviro
 
 ## AWS Systems Manager (SSM) Parameter Store
 
-When running in AWS, Medplum server can load config settings from AWS Systems Manager (SSM) Parameter Store. This is the recommended approach for AWS deployments as it allows for secure management of secrets and configuration decoupling.
+When running in AWS, Afiax server can load config settings from AWS Systems Manager (SSM) Parameter Store. This is the recommended approach for AWS deployments as it allows for secure management of secrets and configuration decoupling.
 
 ### Naming Convention
 
@@ -110,12 +110,12 @@ For example, if your environment name is "staging", the `baseUrl` parameter name
 
 ### Automated Parameters (CDK)
 
-When you deploy Medplum using the AWS CDK (Cloud Development Kit), the stack automatically creates several parameters in the SSM Parameter Store for you. These include:
+When you deploy Afiax using the AWS CDK (Cloud Development Kit), the stack automatically creates several parameters in the SSM Parameter Store for you. These include:
 
 - `/medplum/{environmentName}/awsRegion`: The AWS region where the stack is deployed.
 - `/medplum/{environmentName}/DatabaseSecrets`: The ARN of the AWS Secrets Manager secret containing the database credentials.
 - `/medplum/{environmentName}/RedisSecrets`: The ARN of the AWS Secrets Manager secret containing the Redis credentials.
-- `/medplum/{environmentName}/botLambdaRoleArn`: The ARN of the IAM role used by Medplum Bots.
+- `/medplum/{environmentName}/botLambdaRoleArn`: The ARN of the IAM role used by Afiax Bots.
 - `/medplum/{environmentName}/databaseProxyEndpoint`: (Optional) The endpoint for the RDS Proxy, if enabled.
 
 These parameters are critical for the server's operation and are managed by the CDK.
@@ -130,6 +130,6 @@ You can add any other configuration setting to the Parameter Store manually. Com
 - `/medplum/{environmentName}/googleClientId`
 - `/medplum/{environmentName}/googleClientSecret`
 
-Medplum supports both "String" and "SecureString" parameter types. "SecureString" is recommended for sensitive values like client secrets or API keys.
+Afiax supports both "String" and "SecureString" parameter types. "SecureString" is recommended for sensitive values like client secrets or API keys.
 
 For more information, refer to the AWS documentation on [creating Systems Manager parameters](https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-create-console.html).

@@ -53,11 +53,11 @@ Given a `QuestionnaireResponse` with an associated `Questionnaire`, e.g.`
 ```
 
 ```http
-GET https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8ebd-bfc67b0ab761/$extract
+GET https://fhir.afiax.africa/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8ebd-bfc67b0ab761/$extract
 ```
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8ebd-bfc67b0ab761/$extract' \
+curl 'https://fhir.afiax.africa/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8ebd-bfc67b0ab761/$extract' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -79,4 +79,4 @@ curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8
 - [FHIR Questionnaire Resource](https://hl7.org/fhir/R4/questionnaire.html) - FHIR specification for Questionnaire
 - [FHIR QuestionnaireResponse Resource](https://hl7.org/fhir/R4/questionnaireresponse.html) - FHIR specification for QuestionnaireResponse
 - [HL7 SDC Implementation Guide](https://build.fhir.org/ig/HL7/sdc/) - Official Structured Data Capture IG
-- [Medplum Questionnaires Guide](/docs/questionnaires) - Building and using questionnaires in Medplum
+- [Afiax Questionnaires Guide](/docs/questionnaires) - Building and using questionnaires in Afiax

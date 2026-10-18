@@ -4,7 +4,7 @@ sidebar_position: 22
 
 # PlanDefinition $apply
 
-Medplum implements the FHIR [`$apply` operation](https://hl7.org/fhir/plandefinition-operation-apply.html) for PlanDefinition resources.
+Afiax implements the FHIR [`$apply` operation](https://hl7.org/fhir/plandefinition-operation-apply.html) for PlanDefinition resources.
 
 The `$apply` operation converts a PlanDefinition into a set of actionable resources for a specific patient. It creates a CarePlan containing a RequestGroup with Tasks based on the actions defined in the PlanDefinition.
 
@@ -24,7 +24,7 @@ The `$apply` operation converts a PlanDefinition into a set of actionable resour
 For example:
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/PlanDefinition/example-id/$apply' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/PlanDefinition/example-id/$apply' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{
@@ -50,7 +50,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/PlanDefinition/example-id/$apply' 
 ### Example with All Parameters
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/PlanDefinition/example-id/$apply' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/PlanDefinition/example-id/$apply' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{
@@ -125,7 +125,7 @@ The `$apply` operation processes the PlanDefinition and:
 
 ### Task Extensions
 
-Medplum supports custom extensions on ActivityDefinitions for Task configuration:
+Afiax supports custom extensions on ActivityDefinitions for Task configuration:
 
 - `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task owner and performerType using FHIRPath expressions
 
@@ -157,6 +157,6 @@ Medplum supports custom extensions on ActivityDefinitions for Task configuration
 
 ## Related Documentation
 
-- [CarePlans](/docs/careplans) - Working with care plans in Medplum
+- [CarePlans](/docs/careplans) - Working with care plans in Afiax
 - [Task Management](/docs/careplans/tasks) - Managing tasks and workflows
 - [FHIR PlanDefinition](https://hl7.org/fhir/plandefinition.html) - FHIR specification

@@ -137,7 +137,7 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 
 ## UI Components
 
-Medplum provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+Afiax provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
 
 ### Signature Required
 

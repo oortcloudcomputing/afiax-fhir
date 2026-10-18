@@ -24,7 +24,7 @@ Additional details are available in the full [`Project` resource schema](/docs/a
 
 ## Project feature flags
 
-Medplum server exposes settings to control access to specific features on a per-Project basis. The available features
+Afiax server exposes settings to control access to specific features on a per-Project basis. The available features
 are:
 
 | Feature                   | Description                                                                                                                      |

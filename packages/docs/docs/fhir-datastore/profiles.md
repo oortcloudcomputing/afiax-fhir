@@ -13,7 +13,7 @@ FHIR provides a broad variety of resources types to cover as many different type
 
 To meet more specific use cases, FHIR allows developers to author [resource profiles][profiling] to layer additional validation rules onto the base specification for a resource type. This is similar to "subclassing" in object oriented programming languages.
 
-Medplum developers can take advantage of FHIR profiles in the following ways:
+Afiax developers can take advantage of FHIR profiles in the following ways:
 
 1. Complying to a certain data quality standard. In the United States,
    the [US Core profiles][us-core] specify a minimum set of required data (called [USCDI][uscdi]) for interoperating with
@@ -33,9 +33,9 @@ server. This helps ensure data quality by preventing data that does not match th
 
 ## Creating Profiles
 
-The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package.
+The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Afiax ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Afiax defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/definitions) package.
 
-FHIR profiles are also stored as [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
+FHIR profiles are also stored as [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Afiax project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
 
 ### Manual Profile Creation
 
@@ -83,7 +83,7 @@ This FSH definition creates a Patient profile that:
 
 #### FSH Project Structure
 
-A typical FSH project for Medplum profiles might look like:
+A typical FSH project for Afiax profiles might look like:
 
 ```text
 ├── src/
@@ -95,18 +95,18 @@ A typical FSH project for Medplum profiles might look like:
 └── package.json
 ```
 
-You can find a complete example of this structure in the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles), which includes working FSH definitions for Patient and HealthcareService profiles along with custom vocabularies.
+You can find a complete example of this structure in the [Afiax FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles), which includes working FSH definitions for Patient and HealthcareService profiles along with custom vocabularies.
 
-#### Setting Up FSH with Medplum
+#### Setting Up FSH with Afiax
 
-To use FSH for creating Medplum profiles:
+To use FSH for creating Afiax profiles:
 
 1. **Install Prerequisites**:
    ```bash
    npm install -g fsh-sushi
    ```
 
-For a complete working example, see the [Medplum FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles) which demonstrates FSH profile creation with Patient and HealthcareService examples.
+For a complete working example, see the [Afiax FSH Profiles repository](https://github.com/medplum/medplum-fsh-profiles) which demonstrates FSH profile creation with Patient and HealthcareService examples.
 
 2. **Create SUSHI Configuration** (`sushi-config.yaml`):
    ```yaml
@@ -162,11 +162,11 @@ Description: "Healthcare service profile for service management with required ca
 * category 1..1 MS
 ```
 
-#### Converting FSH to Medplum
+#### Converting FSH to Afiax
 
-After building your FSH profiles with SUSHI, the generated `StructureDefinition` resources can be uploaded directly to your Medplum project. The generated resources include both `snapshot` and `differential` elements - Medplum's server tooling uses the `snapshot` for validation, while `differential` can be safely removed to reduce resource size.
+After building your FSH profiles with SUSHI, the generated `StructureDefinition` resources can be uploaded directly to your Afiax project. The generated resources include both `snapshot` and `differential` elements - Afiax's server tooling uses the `snapshot` for validation, while `differential` can be safely removed to reduce resource size.
 
-To upload the generated profiles to Medplum:
+To upload the generated profiles to Afiax:
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
@@ -306,7 +306,7 @@ to satisfy the field presence requirement, while also denoting why the data is m
 
 Updating FHIR profiles is different than updating other resources in FHIR. The process is more similar to a database migration, and the profiled resources will need to be revalidated once the update is complete. This revalidation does not happen automatically, but will be checked the next time the resource is written to.
 
-This section offers some best practices to make updating profiles as smooth and painless as possible when using Medplum.
+This section offers some best practices to make updating profiles as smooth and painless as possible when using Afiax.
 
 When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an updated `url` field. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
 
@@ -325,7 +325,7 @@ When using FSH, the profile update process becomes more streamlined:
 1. **Update the FSH definition** with your changes
 2. **Increment the version** in your `sushi-config.yaml`
 3. **Rebuild the profiles** using SUSHI
-4. **Upload the new StructureDefinition** to Medplum
+4. **Upload the new StructureDefinition** to Afiax
 5. **Migrate existing resources** to the new profile version
 
 For example, updating the FSH patient profile to require a phone number:

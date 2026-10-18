@@ -4,11 +4,11 @@ sidebar_position: 20
 
 # External Lambda Functions
 
-When running Medplum in AWS, Medplum uses AWS Lambdas to execute bot logic.
+When running Afiax in AWS, Afiax uses AWS Lambdas to execute bot logic.
 
-By default, Medplum manages the full AWS Lambda life cycle of create, update, deploy, and execute using a predefined AWS Lambda naming convention.
+By default, Afiax manages the full AWS Lambda life cycle of create, update, deploy, and execute using a predefined AWS Lambda naming convention.
 
-In a self hosted environment, you may want use your own AWS Lambda life cycle, your own naming conventions, or a third party management tool such as [Serverless Framework](https://www.serverless.com/) or [SST](https://sst.dev/). Medplum calls these "external functions".
+In a self hosted environment, you may want use your own AWS Lambda life cycle, your own naming conventions, or a third party management tool such as [Serverless Framework](https://www.serverless.com/) or [SST](https://sst.dev/). Afiax calls these "external functions".
 
 This document describes how to enable and use external functions.
 
@@ -42,7 +42,7 @@ For example, consider this Bot:
 
 ## Deploy the bot
 
-When using external functions, the Medplum server is no longer involved with deploying the AWS Lambda. The `$deploy` endpoint is effectively a no-op.
+When using external functions, the Afiax server is no longer involved with deploying the AWS Lambda. The `$deploy` endpoint is effectively a no-op.
 
 ## Execute the bot
 

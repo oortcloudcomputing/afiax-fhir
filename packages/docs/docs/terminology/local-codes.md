@@ -99,7 +99,7 @@ If the code system includes a hierarchy or other properties, you can use those t
 
 ## Importing Larger Systems
 
-If the number of codes in the code system is too large to fit in a single resource, Medplum server supports a
+If the number of codes in the code system is too large to fit in a single resource, Afiax server supports a
 proprietary [`$import` operation](/docs/api/fhir/operations/codesystem-import) that allows Super Admin users to load
 codes and their metadata into the database. Although codes imported this way will not appear in the `CodeSystem`
 resource, they are available for use as normal. To use this method, create the `CodeSystem` as normal, but set

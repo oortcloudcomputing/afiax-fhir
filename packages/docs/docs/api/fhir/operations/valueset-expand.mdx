@@ -50,7 +50,7 @@ The result of the expansion as a `ValueSet` resource. The results of the expansi
 Query all values for a ValueSet:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
@@ -90,7 +90,7 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%
 Filter by search string:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender&filter=f' \
+curl 'https://fhir.afiax.africa/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender&filter=f' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
@@ -122,6 +122,6 @@ The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a `v
 
 - [ValueSet $validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate codes against expanded value sets
 - [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up details about individual codes
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
-- [React Components](/docs/react) - Medplum React components including code inputs
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
+- [React Components](/docs/react) - Afiax React components including code inputs
 - [FHIR ValueSet $expand](https://hl7.org/fhir/R4/valueset-operation-expand.html) - FHIR specification for $expand

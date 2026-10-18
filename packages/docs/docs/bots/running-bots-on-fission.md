@@ -1,22 +1,22 @@
 # Running Bots on Fission
 
-Medplum Bots provide powerful automation capabilities within your Medplum environment. While Medplum offers a built-in execution environment for bots, this page details how to deploy and manage your Medplum Bots using Fission, an open-source, Kubernetes-native serverless framework. This approach can be beneficial for organizations seeking advanced scalability, custom runtime environments, or deeper integration with existing Kubernetes infrastructure.
+Afiax Bots provide powerful automation capabilities within your Afiax environment. While Afiax offers a built-in execution environment for bots, this page details how to deploy and manage your Afiax Bots using Fission, an open-source, Kubernetes-native serverless framework. This approach can be beneficial for organizations seeking advanced scalability, custom runtime environments, or deeper integration with existing Kubernetes infrastructure.
 
-## What are Medplum Bots?
+## What are Afiax Bots?
 
-Medplum bots are JavaScript code snippets that automate workflows within Medplum by reacting to changes in healthcare data (FHIR resources) and performing operations like data validation, notifications, or integrations. They are a core component of building dynamic and responsive healthcare applications on Medplum.
+Afiax bots are JavaScript code snippets that automate workflows within Afiax by reacting to changes in healthcare data (FHIR resources) and performing operations like data validation, notifications, or integrations. They are a core component of building dynamic and responsive healthcare applications on Afiax.
 
 ## What is Fission?
 
 Fission.io is an open-source, Kubernetes-native serverless framework that allows developers to deploy and run short-lived functions in any language, triggered by various events, without having to manage the underlying container infrastructure. It seamlessly integrates with Kubernetes, leveraging its orchestration capabilities for efficient function execution and scaling.
 
-This guide focuses on setting up the necessary infrastructure to run Medplum Bots as Fission functions. It covers the configuration, deployment, and management of these serverless functions, enabling them to respond to events originating from your Medplum instance.
+This guide focuses on setting up the necessary infrastructure to run Afiax Bots as Fission functions. It covers the configuration, deployment, and management of these serverless functions, enabling them to respond to events originating from your Afiax instance.
 
 ## Fission Router Configuration
 
-To enable your Medplum application to communicate with your Fission functions, you must correctly configure the Fission Router's address. The `routerHost` and `routerPort` settings within your `FissionConfig` dictate how your application establishes a connection to the Fission Router.
+To enable your Afiax application to communicate with your Fission functions, you must correctly configure the Fission Router's address. The `routerHost` and `routerPort` settings within your `FissionConfig` dictate how your application establishes a connection to the Fission Router.
 
-These settings specify the network address (hostname or IP address) and the port through which the Fission Router can be accessed. The optimal configuration depends on where your Medplum application is deployed relative to your Fission cluster.
+These settings specify the network address (hostname or IP address) and the port through which the Fission Router can be accessed. The optimal configuration depends on where your Afiax application is deployed relative to your Fission cluster.
 
 - **For applications running outside the Kubernetes cluster** (e.g., local development machine, external client):
   - `routerHost`: This should be the external IP address of a Kubernetes Node where Fission is running, or `localhost` / `127.0.0.1` if you are using a local Kubernetes setup like Docker Desktop.
@@ -26,9 +26,9 @@ These settings specify the network address (hostname or IP address) and the port
   - `routerHost`: This should be the internal ClusterIP service name of the Fission Router. Kubernetes DNS will automatically resolve this name within the cluster. The standard format is `router.fission.svc.cluster.local`.
   - `routerPort`: This will typically be the standard HTTP port `80`, as the internal ClusterIP service usually exposes the router on its default HTTP port.
 
-## Medplum Server Configuration for Fission
+## Afiax Server Configuration for Fission
 
-Add your Fission router configuration to your Medplum server configuration.
+Add your Fission router configuration to your Afiax server configuration.
 
 For example, when running a local development setup with Fission in a Docker Desktop Kubernetes cluster, add the following to `medplum.config.json`:
 
@@ -56,7 +56,7 @@ When using AWS Parameter Store, you can add a single `fission` parameter with th
 
 ## Local Development Setup for Fission
 
-To run a pre-configured Medplum + Fission environment, you can follow the instructions in https://github.com/medplum/medplum/tree/main/examples/medplum-local-k8s/README.md
+To run a pre-configured Afiax + Fission environment, you can follow the instructions in https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-local-k8s/README.md
 
 Otherwise, to get started with Fission for local development or testing, follow these steps to install it on your Kubernetes cluster. For detailed and up-to-date installation instructions, always refer to the official Fission documentation: [https://fission.io/docs/installation/](https://fission.io/docs/installation/)
 
@@ -90,21 +90,21 @@ This setup will install Fission with NodePort services for its components, makin
 
 ## Working with Dependencies in Fission Bots
 
-Medplum Bots often rely on external npm packages. When running your bots on Fission, Medplum handles the packaging and deployment of your bot code along with its `package.json` file. This allows Fission to install the necessary dependencies during the build process.
+Afiax Bots often rely on external npm packages. When running your bots on Fission, Afiax handles the packaging and deployment of your bot code along with its `package.json` file. This allows Fission to install the necessary dependencies during the build process.
 
 Refer to the official Fission documentation for the most current information on managing dependencies: [https://fission.io/docs/usage/languages/nodejs/\#working-with-dependencies](https://fission.io/docs/usage/languages/nodejs/#working-with-dependencies)
 
 Here's a general workflow for preparing your bot:
 
 1.  **Create a Node.js Environment in Fission:**
-    First, establish a Fission environment that includes the necessary runtime and builder images for Node.js. Medplum will use this environment to deploy and execute your Bot.
+    First, establish a Fission environment that includes the necessary runtime and builder images for Node.js. Afiax will use this environment to deploy and execute your Bot.
 
     ```bash
     fission environment create --name nodejs --image ghcr.io/fission/node-env --builder ghcr.io/fission/node-builder
     ```
 
-2.  **Prepare your Medplum Bot Code:**
-    Create your Medplum Bot's source file
+2.  **Prepare your Afiax Bot Code:**
+    Create your Afiax Bot's source file
 
     ```ts
     import { BotEvent, MedplumClient } from '@medplum/core';
@@ -119,28 +119,28 @@ Here's a general workflow for preparing your bot:
     }
     ```
 
-    See [Bot Basics - Editing a Bot](/docs/bots/bot-basics#editing-a-bot) for more details on writing Medplum Bot code.
+    See [Bot Basics - Editing a Bot](/docs/bots/bot-basics#editing-a-bot) for more details on writing Afiax Bot code.
 
-3.  **Deploying your Bot with Medplum:**
-    Unlike direct Fission deployment, **Medplum handles the packaging, Fission package creation, and Fission function creation automatically** when you deploy your bot. You simply define your bot code within Medplum, and Medplum's internal processes will manage the Fission-specific deployment steps.
+3.  **Deploying your Bot with Afiax:**
+    Unlike direct Fission deployment, **Afiax handles the packaging, Fission package creation, and Fission function creation automatically** when you deploy your bot. You simply define your bot code within Afiax, and Afiax's internal processes will manage the Fission-specific deployment steps.
 
     See [Bot Basics - Deploying a Bot](/docs/bots/bot-basics#deploying-a-bot) for more details on deploying your bot.
 
 4.  **Check Fission Build Status (for debugging):**
-    After deploying your bot through Medplum, you can still monitor the Fission build status of the underlying package to ensure all dependencies are correctly installed and the function is ready. You'll need to know the name of the Fission package created by Medplum (which typically incorporates your bot's ID).
+    After deploying your bot through Afiax, you can still monitor the Fission build status of the underlying package to ensure all dependencies are correctly installed and the function is ready. You'll need to know the name of the Fission package created by Afiax (which typically incorporates your bot's ID).
 
     ```bash
-    # You might need to inspect Medplum logs or Fission resources to find the exact package name.
+    # You might need to inspect Afiax logs or Fission resources to find the exact package name.
     fission package info --name <medplum-generated-fission-package-name>
     ```
 
 5.  **Test Your Fission Function (for debugging):**
-    Once the package build is complete, you can test your Fission function directly. For Medplum Bots, you'd typically send a POST request with FHIR data to the bot's Fission endpoint.
+    Once the package build is complete, you can test your Fission function directly. For Afiax Bots, you'd typically send a POST request with FHIR data to the bot's Fission endpoint.
 
     ```bash
     curl -X POST -H "Content-Type: application/json" \
       -d '{ "resourceType": "Patient", "id": "123", "name": [{ "given": ["John"], "family": "Doe" }] }' \
-      "https://api.medplum.com/fhir/R4/Bot/<your-bot-id>/\$execute"
+      "https://fhir.afiax.africa/fhir/R4/Bot/<your-bot-id>/\$execute"
     ```
 
     See [Bot Basics - Executing a Bot](/docs/bots/bot-basics#executing-a-bot) for more details on executing your bot.

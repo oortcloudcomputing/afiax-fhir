@@ -3,7 +3,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Binary Security Context
 
-FHIR Binary resources require special attention when implementing access controls in Medplum. Unlike other FHIR resources, Binary resources cannot use standard compartment-based access policies and must rely on the `securityContext` element for proper access control.
+FHIR Binary resources require special attention when implementing access controls in Afiax. Unlike other FHIR resources, Binary resources cannot use standard compartment-based access policies and must rely on the `securityContext` element for proper access control.
 
 **Critical Point**: Binary resources without a `securityContext` fall back to project-level access controls, potentially exposing sensitive data to any authenticated user with Binary resource permissions.
 
@@ -74,7 +74,7 @@ curl -X POST \
   -H "Content-Type: application/pdf" \
   -H "X-Security-Context: Patient/homer-simpson" \
   --data-binary "@patient-report.pdf" \
-  https://api.medplum.com/fhir/R4/Binary
+  https://fhir.afiax.africa/fhir/R4/Binary
 ```
 
 ```bash
@@ -83,7 +83,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/pdf" \
   --data-binary "@patient-report.pdf" \
-  https://api.medplum.com/fhir/R4/Binary
+  https://fhir.afiax.africa/fhir/R4/Binary
 # This creates a Binary without securityContext!
 ```
 
@@ -110,9 +110,9 @@ Benefits of using `createMedia`:
 - Media resource inherits compartment-based access controls
 - Provides better metadata and searchability than standalone Binary
 
-### 3. Medplum React Components
+### 3. Afiax React Components
 
-Medplum React components that handle file uploads automatically use secure patterns:
+Afiax React components that handle file uploads automatically use secure patterns:
 
 #### AttachmentButton Component
 

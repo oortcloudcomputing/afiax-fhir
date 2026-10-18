@@ -2,16 +2,16 @@
 sidebar_position: 202
 ---
 
-# Monitoring Your Self-Hosted Medplum Instance
+# Monitoring Your Self-Hosted Afiax Instance
 
-When running a self-hosted Medplum instance, proper monitoring is essential for maintaining system health and performance. This guide covers the key metrics Medplum recommends self-hosting users to track and what information they surface about your deployment. 
+When running a self-hosted Afiax instance, proper monitoring is essential for maintaining system health and performance. This guide covers the key metrics Afiax recommends self-hosting users to track and what information they surface about your deployment. 
 
 ## Overview
 
 Monitoring metrics are organized by layer in your stack, from highest-level user impact down to infrastructure details. The higher-level metrics are generally more useful for spotting issues, while lower-level metrics provide supporting information for diagnosis.
 
 **Metric Sources:**
-- **Medplum server metrics**: Available across all deployment environments
+- **Afiax server metrics**: Available across all deployment environments
 - **Load balancer metrics**: Generally availability from cloud load balancers, e.g. AWS ALB
 - **Database metrics**: Standard PostgreSQL metrics available from any Postgres installation
 - **Cache metrics**: Standard Redis metrics available from any Redis installation
@@ -19,7 +19,7 @@ Monitoring metrics are organized by layer in your stack, from highest-level user
 
 ## Server-Level Metrics
 
-These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior. Specifically, these are OpenTelemetry metrics, and the exact names of those metrics are included below; see [our OTel doc](./opentelemetry.md) for a configuration guide and more details. 
+These metrics come directly from the Afiax server and provide the most comprehensive view of application behavior. Specifically, these are OpenTelemetry metrics, and the exact names of those metrics are included below; see [our OTel doc](./opentelemetry.md) for a configuration guide and more details. 
 
 ### Connection Health
 **Round-Trip Time (RTT)** tracks network latency between the server and PostgreSQL (`medplum.db.healthcheckRTT`), as well as the server and Redis (`medplum.redis.healthcheckRTT`). Spikes indicate connectivity issues or performance bottlenecks that can slow down the entire application.
@@ -120,7 +120,7 @@ Start with conservative (low) thresholds and adjust upward to reduce false posit
 ## Monitoring Best Practices
 
 1. **Focus on user impact first**: Load balancer metrics typically provide the best indication of user experience
-2. **Use server metrics for rich diagnostics**: Medplum server metrics offer the most detailed view of application behavior  
+2. **Use server metrics for rich diagnostics**: Afiax server metrics offer the most detailed view of application behavior  
 3. **Treat infrastructure metrics as supporting information**: Database and container metrics help diagnose root causes but are often too noisy for primary alerting
 4. **Consider your deployment differences**: Metric availability and thresholds may vary based on your cloud provider and container orchestration platform
 5. **Establish baselines**: Understand normal patterns for your workload before setting alert thresholds

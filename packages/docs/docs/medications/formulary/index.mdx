@@ -25,7 +25,7 @@ This guide covers the basics of how to use the [`MedicationKnowledge`](/docs/api
 This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formulary](https://build.fhir.org/ig/HL7/davinci-pdex-formulary/index.html) implementation guide, which was authored by industry leaders, including Humana, Cigna, and Optum.
 
 :::tip Sample Data
-You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
+You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Afiax Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
 :::
 
 :::caution A note on the Medication resource
@@ -77,7 +77,7 @@ In contrast, using generic term types (`SCD`, `GPCK`, `SCDG`) indicates that phy
 
 :::tip Prescribable vs. Dispensable Medications
 
-While most Medplum applications will include _either_ generic _or_ branded versions of a medication, some advanced implementations may include both. This is especially common with providers that own their own pharmacy.
+While most Afiax applications will include _either_ generic _or_ branded versions of a medication, some advanced implementations may include both. This is especially common with providers that own their own pharmacy.
 
 In these implementations, generic codes would be used by physicians to _prescribe_ the medication, whereas pharmacies branded medications would be used to _dispense_ the medication. See [Medication Relationships](#medication-relationships) for details on how to represent the link between branded and generic [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resources.
 

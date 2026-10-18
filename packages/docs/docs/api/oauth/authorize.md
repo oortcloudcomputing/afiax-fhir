@@ -24,19 +24,19 @@ The Client ID. Must be a client that you already registered. .
 
 #### `redirect_uri` (Required)
 
-The URL where the authentication server redirects the browser after Medplum authorizes the user.
+The URL where the authentication server redirects the browser after Afiax authorizes the user.
 A redirect uniform resource identifier (URI) must have the following attributes:
 
 - It must be an absolute URI.
 - You must have pre-registered the URI with a client.
-- The `redirect_uri` parameter must **match exactly** to the pre-registered uri on the Medplum Server (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3)
+- The `redirect_uri` parameter must **match exactly** to the pre-registered uri on the Afiax Server (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3)
 - It can't include a fragment component.
   See [OAuth 2.0 - Redirection Endpoint](https://tools.ietf.org/html/rfc6749#section-3.1.2).
-  Medplum requires that your redirect URI use HTTPS, except for `http://localhost`, which you can set as a callback URL for testing purposes.
+  Afiax requires that your redirect URI use HTTPS, except for `http://localhost`, which you can set as a callback URL for testing purposes.
 
 #### `state` (Optional but recommended)
 
-When your app adds a _state_ parameter to a request, Medplum returns its value to your app when the `/oauth2/authorize` endpoint redirects your user.
+When your app adds a _state_ parameter to a request, Afiax returns its value to your app when the `/oauth2/authorize` endpoint redirects your user.
 Add this value to your requests to guard against [CSRF](https://en.wikipedia.org/wiki/Cross-site_request_forgery) attacks.
 You can't set the value of a `state` parameter to a URL-encoded JSON string. To pass a string that matches this format in a `state` parameter, encode the string to Base64, then decode it in your app.
 
@@ -56,7 +56,7 @@ Required only when you specify a `code_challenge_method` parameter.
 
 #### `nonce`
 
-A random value that you can add to the request. The nonce value that you provide is included in the ID token that Medplum issues. You can use a `nonce` value to guard against replay attacks.
+A random value that you can add to the request. The nonce value that you provide is included in the ID token that Afiax issues. You can use a `nonce` value to guard against replay attacks.
 
 #### `prompt` (Optional)
 
@@ -74,7 +74,7 @@ If this parameter is not specified, the authorization server will prompt the use
 #### Sample Request
 
 ```
-GET https://api.medplum.com/oauth2/authorize?
+GET https://fhir.afiax.africa/oauth2/authorize?
     response_type=code&
     client_id=492e4ec3-fb66-4b45-b529-599c708ec530&
     redirect_uri=https://YOUR_APP/redirect_uri&
@@ -84,7 +84,7 @@ GET https://api.medplum.com/oauth2/authorize?
 
 #### Sample response
 
-The Medplum authentication server redirects back to your app with the authorization code and state. The code and state must be returned in the query string parameters and not in the fragment. A query string is the part of a web request that appears after a '?' character; the string can contain one or more parameters separated by '&' characters. A fragment is the part of a web request that appears after a '#' character to specify a subsection of a document.
+The Afiax authentication server redirects back to your app with the authorization code and state. The code and state must be returned in the query string parameters and not in the fragment. A query string is the part of a web request that appears after a '?' character; the string can contain one or more parameters separated by '&' characters. A fragment is the part of a web request that appears after a '#' character to specify a subsection of a document.
 
 **Note**
 The response returns a one time use code that is valid for five minutes.
@@ -99,7 +99,7 @@ Location: https://YOUR_APP/redirect_uri?code=AUTHORIZATION_CODE&state=STATE
 #### Sample Request
 
 ```
-GET https://api.medplum.com/oauth2/authorize?
+GET https://fhir.afiax.africa/oauth2/authorize?
     response_type=code&
     client_id=492e4ec3-fb66-4b45-b529-599c708ec530&
     redirect_uri=https://YOUR_APP/redirect_uri&
@@ -123,7 +123,7 @@ Location: https://YOUR_APP/redirect_uri?code=AUTHORIZATION_CODE&state=STATE
 #### Sample Request
 
 ```
-GET https://api.medplum.com/oauth2/authorize?
+GET https://fhir.afiax.africa/oauth2/authorize?
     response_type=token&
     client_id=492e4ec3-fb66-4b45-b529-599c708ec530&
     redirect_uri=https://YOUR_APP/redirect_uri&
@@ -133,7 +133,7 @@ GET https://api.medplum.com/oauth2/authorize?
 
 #### Sample Response
 
-The Medplum authorization server redirects back to your app with access token. Because `openid` scope was not requested, Medplum doesn't return an ID token. Also, Medplum doesn't return a refresh token in this flow. Medplum returns the access token and state in the fragment and not in the query string.
+The Afiax authorization server redirects back to your app with access token. Because `openid` scope was not requested, Afiax doesn't return an ID token. Also, Afiax doesn't return a refresh token in this flow. Afiax returns the access token and state in the fragment and not in the query string.
 
 ```
 HTTP/1.1 302 Found
@@ -145,7 +145,7 @@ Location: https://YOUR_APP/redirect_uri#access_token=ACCESS_TOKEN&token_type=bea
 #### Sample Request
 
 ```
-GET https://api.medplum.com/oauth2/authorize?
+GET https://fhir.afiax.africa/oauth2/authorize?
     response_type=token&
     client_id=492e4ec3-fb66-4b45-b529-599c708ec530&
     redirect_uri=https://YOUR_APP/redirect_uri&
@@ -177,7 +177,7 @@ Found Location: https://client_redirect_uri?error=invalid_request
 
 ##### `unauthorized_client`
 
-If the client requests `code` or `token` in `response_type` but doesn't have permission for these requests, the Medplum authorization server returns `unauthorized_client` to client's `redirect_uri`, as follows:
+If the client requests `code` or `token` in `response_type` but doesn't have permission for these requests, the Afiax authorization server returns `unauthorized_client` to client's `redirect_uri`, as follows:
 
 ```
 HTTP 1.1 302
@@ -186,7 +186,7 @@ Found Location: https://client_redirect_uri?error=unauthorized_client
 
 ##### `invalid_scope`
 
-If the client requests scope that is unknown, malformed, or not valid, the Medplum authorization server returns `invalid_scope` to the client's `redirect_uri`, as follows:
+If the client requests scope that is unknown, malformed, or not valid, the Afiax authorization server returns `invalid_scope` to the client's `redirect_uri`, as follows:
 
 ```
 HTTP 1.1 302
@@ -204,7 +204,7 @@ Found Location: https://client_redirect_uri?error=server_error
 
 ##### timeout
 
-When Medplum authenticates through federation to third-party IdPs, Medplum might experience connection issues such as the following:
+When Afiax authenticates through federation to third-party IdPs, Afiax might experience connection issues such as the following:
 
 - If a connection timeout occurs while requesting token from the IdP, the authentication server redirects the error to the client's `redirect_uri` as follows:
 
@@ -244,7 +244,7 @@ When Medplum authenticates through federation to third-party IdPs, Medplum might
 
 ##### connection error
 
-- When Medplum encounters an exception in the communication protocol while it makes a connection to an external IdP, the authentication server redirects the error to the client's `redirect_uri` with either of the following messages:
+- When Afiax encounters an exception in the communication protocol while it makes a connection to an external IdP, the authentication server redirects the error to the client's `redirect_uri` with either of the following messages:
   ```
   HTTP 1.1 302
   Found Location: https://client_redirect_uri?error=invalid_request&

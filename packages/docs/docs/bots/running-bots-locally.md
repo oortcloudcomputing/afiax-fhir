@@ -1,6 +1,6 @@
 # Running Bots Locally
 
-To set up the Medplum [`Bot`](/docs/api/fhir/medplum/bot) framework locally, Medplum offers VM Context [`Bots`](/docs/api/fhir/medplum/bot). VM Context allows bots to spin up a local thread inside your server, rather than using an isolated lambda.
+To set up the Afiax [`Bot`](/docs/api/fhir/medplum/bot) framework locally, Afiax offers VM Context [`Bots`](/docs/api/fhir/medplum/bot). VM Context allows bots to spin up a local thread inside your server, rather than using an isolated lambda.
 
 Before enabling VM Context [Bots](/docs/api/fhir/medplum/bot), you must first enable bots on your project. To do so, follow thse steps:
 

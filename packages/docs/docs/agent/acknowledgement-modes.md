@@ -4,9 +4,9 @@ sidebar_position: 20
 
 # Acknowledgement Modes
 
-HL7 Acknowledgement Modes define the handshaking protocol between systems exchanging messages over protocols like MLLP. The **Medplum Agent** supports both **Original** and **Enhanced** modes, allowing you to configure connections for optimal throughput and reliability.
+HL7 Acknowledgement Modes define the handshaking protocol between systems exchanging messages over protocols like MLLP. The **Afiax Agent** supports both **Original** and **Enhanced** modes, allowing you to configure connections for optimal throughput and reliability.
 
-Support for Enhanced Acknowledgement Mode was added in **Medplum Server version 3.1.9** and **Medplum Agent version 4.1.8**.
+Support for Enhanced Acknowledgement Mode was added in **Afiax Server version 3.1.9** and **Afiax Agent version 4.1.8**.
 
 ## Overview of HL7 Acknowledgements (ACKs)
 
@@ -53,7 +53,7 @@ This single-step, blocking approach makes the connection inherently **single-thr
 
 #### Step 1: Accept Acknowledgement (The Fast Response)
 
-Immediately upon receipt, the receiving system (or Medplum Agent) performs quick structural checks and **commits the message to safe, durable storage** (like a queue or database). It then sends a commitment confirmation back to the Sender.
+Immediately upon receipt, the receiving system (or Afiax Agent) performs quick structural checks and **commits the message to safe, durable storage** (like a queue or database). It then sends a commitment confirmation back to the Sender.
 
 This step is designed to be extremely fast, quickly unblocking the connection.
 
@@ -69,7 +69,7 @@ Once the Accept ACK (**CA**) is sent, the MLLP connection is free to immediately
 
 ### Performance
 
-By unblocking the connection after the quick **CA** response, the Enhanced Mode achieves significantly higher throughput. Implementations using Enhanced Mode with the Medplum Agent have demonstrated performance improvements, moving from single-digit rates to over **300-400 messages per second** in high-volume production environments.
+By unblocking the connection after the quick **CA** response, the Enhanced Mode achieves significantly higher throughput. Implementations using Enhanced Mode with the Afiax Agent have demonstrated performance improvements, moving from single-digit rates to over **300-400 messages per second** in high-volume production environments.
 
 ### MSH Configuration for Enhanced Mode
 
@@ -89,18 +89,18 @@ Common values for these fields include:
 
 ### Compatibility Caution
 
-Enhanced Mode is not universally supported across all legacy HL7 systems. It is vital to confirm with the external system vendor (the Sender or the Receiver) that they explicitly support the two-step handshaking process before configuring the Medplum Agent to use Enhanced Acknowledgement Mode.
+Enhanced Mode is not universally supported across all legacy HL7 systems. It is vital to confirm with the external system vendor (the Sender or the Receiver) that they explicitly support the two-step handshaking process before configuring the Afiax Agent to use Enhanced Acknowledgement Mode.
 
 ## AA Mode (Simplified Enhanced Mode)
 
-**AA Mode** is a specialized variant of Enhanced Acknowledgement Mode that provides enhanced throughput benefits without requiring the remote system to support or be configured for the full two-step acknowledgement handshake. This mode was introduced in **Medplum Agent version 5.0.11**.
+**AA Mode** is a specialized variant of Enhanced Acknowledgement Mode that provides enhanced throughput benefits without requiring the remote system to support or be configured for the full two-step acknowledgement handshake. This mode was introduced in **Afiax Agent version 5.0.11**.
 
 ### How AA Mode Works
 
-In AA Mode, the Medplum Agent immediately sends an **Application Accept (AA)** acknowledgement upon receipt of a message, rather than the Commit Accept (CA) used in standard Enhanced Mode. Since AA is a standard application-level ACK code that all HL7 systems understand, the remote system does not need any special configuration to work with this mode.
+In AA Mode, the Afiax Agent immediately sends an **Application Accept (AA)** acknowledgement upon receipt of a message, rather than the Commit Accept (CA) used in standard Enhanced Mode. Since AA is a standard application-level ACK code that all HL7 systems understand, the remote system does not need any special configuration to work with this mode.
 
 1. **Sender** transmits Message A.
-2. **Medplum Agent** immediately sends an **AA** (Application Accept) acknowledgement.
+2. **Afiax Agent** immediately sends an **AA** (Application Accept) acknowledgement.
 3. **Connection is unblocked** — Sender can immediately transmit Message B.
 4. Message A is processed asynchronously in the background.
 

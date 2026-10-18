@@ -17,9 +17,9 @@ For example:
 }
 ```
 
-## Custom Menu on the Medplum App Sidebar
+## Custom Menu on the Afiax App Sidebar
 
-The Medplum App has a sidebar that displays a list of resources.
+The Afiax App has a sidebar that displays a list of resources.
 
 You can add a custom menu to the sidebar by setting the `UserConfiguration.menu` field. Notice that the target is a FHIR path query that can include filters, sorting, paging, etc.
 

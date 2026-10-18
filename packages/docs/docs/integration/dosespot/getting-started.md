@@ -4,15 +4,15 @@ sidebar_position: 1
 
 # Getting Started with DoseSpot
 
-This guide explains how to get the **DoseSpot eRx interface iframed into Medplum** and **sync the relevant resources between Medplum and DoseSpot**. It is all integrated into the [Provider App](https://provider.medplum.com) already, but these instructions will show you how to use the hooks and bots in your own application.
+This guide explains how to get the **DoseSpot eRx interface iframed into Afiax** and **sync the relevant resources between Afiax and DoseSpot**. It is all integrated into the [Provider App](https://provider.medplum.com) already, but these instructions will show you how to use the hooks and bots in your own application.
 
 :::info
-This is a [premium](/pricing) tier 3rd party integration feature. Please contact us at [support@medplum.com](mailto:support@medplum.com) to get access.
+This is a [premium](/pricing) tier 3rd party integration feature. Please contact us at [support@afiax.africa](mailto:support@afiax.africa) to get access.
 :::
 
 ## Authentication
 
-To use any of the hooks or Bots, you will first need to add your DoseSpot clinician id as an [identifier](/docs/fhir-basics#naming-data-identifiers) to each User's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). Please contact Medplum support to get your DoseSpot clinician id.
+To use any of the hooks or Bots, you will first need to add your DoseSpot clinician id as an [identifier](/docs/fhir-basics#naming-data-identifiers) to each User's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). Please contact Afiax support to get your DoseSpot clinician id.
 
 ```typescript
 {
@@ -34,7 +34,7 @@ To use any of the hooks or Bots, you will first need to add your DoseSpot clinic
 ```
 ## Syncing Patient and Displaying the DoseSpot Iframe
 
-To embed the DoseSpot eRx interface into Medplum and sync a patient's data to DoseSpot, you should use the [useDoseSpotIFrame](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/packages/dosespot-react/src/useDoseSpotIFrame.ts#L12) hook, called with *a specific patient*. It will handle the SSO into DoseSpot, returning a URL that can be embedded in an iframe and sync the patient by doing the following:
+To embed the DoseSpot eRx interface into Afiax and sync a patient's data to DoseSpot, you should use the [useDoseSpotIFrame](https://github.com/oortcloudcomputing/afiax-fhir/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/packages/dosespot-react/src/useDoseSpotIFrame.ts#L12) hook, called with *a specific patient*. It will handle the SSO into DoseSpot, returning a URL that can be embedded in an iframe and sync the patient by doing the following:
 
 **1. Syncs Patient -> DoseSpot**: If the patient has not yet been synced with DoseSpot, it will add an identifier with the system `http://dosespot.com/patient-id` to the [Patient](/docs/api/fhir/resources/patient) resource (if not already present). The patient must include a valid:
 - email address
@@ -287,7 +287,7 @@ export function DoseSpotTab(): JSX.Element {
 }
 ```
 
-See a more thorough implementation example from the Provider App's [DoseSpotTab.tsx](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/patient/DoseSpotTab.tsx).
+See a more thorough implementation example from the Provider App's [DoseSpotTab.tsx](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-provider/src/pages/patient/DoseSpotTab.tsx).
 
 | `useDoseSpotIFrame({ patientId })` | `useDoseSpotIFrame({})` |
 | ------------------------------- | ---------------------------------------- |
@@ -297,9 +297,9 @@ See a more thorough implementation example from the Provider App's [DoseSpotTab.
 
 ### Syncing Active Prescriptions - `DoseSpot Prescription Sync Bot`
 
-Prescriptions that were prescribed in DoseSpot can be synced back to Medplum by using the **DoseSpot Prescription Sync Bot**.
+Prescriptions that were prescribed in DoseSpot can be synced back to Afiax by using the **DoseSpot Prescription Sync Bot**.
 
-The Bot will create or update MedicationRequest resources in Medplum for the specified date range and patient.
+The Bot will create or update MedicationRequest resources in Afiax for the specified date range and patient.
 
 Example of executing the bot:
 
@@ -316,7 +316,7 @@ Example of executing the bot:
     //raw: true //returns raw DoseSpot prescription data instead of creating and returning MedicationRequest resources
   }) as MedicationRequest[];
 ```
-For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
+For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/oortcloudcomputing/afiax-fhir/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
   <summary>Example of the MedicationRequest resource that could be created or updated by the bot</summary>
@@ -393,7 +393,7 @@ For a more thorough example implementing this bot, see the Provider App's [DoseS
 MedicationRequests that represent active prescriptions from DoseSpot capture status information in three different fields:
 
 #### 1. `MedicationRequest.status` 
-Medplum's interpretation of the prescription status, mapped to [MedicationRequest.status](https://www.hl7.org/fhir/medicationrequest-definitions.html#MedicationRequest.status) codes.
+Afiax's interpretation of the prescription status, mapped to [MedicationRequest.status](https://www.hl7.org/fhir/medicationrequest-definitions.html#MedicationRequest.status) codes.
 
 <details>
   <summary>See the full list of status codes</summary>
@@ -457,9 +457,9 @@ DoseSpot's more granular transmission status for this specific Rx Order.
 
 ### Syncing Med History - `DoseSpot Medication History Bot`
 
-This bot gives you the ability to sync prescription history from SureScripts back to Medplum. This includes medication history from other providers that SureScripts has access to.
+This bot gives you the ability to sync prescription history from SureScripts back to Afiax. This includes medication history from other providers that SureScripts has access to.
 
-The Bot will create or update MedicationRequest resources in Medplum for the specified date range and patient.
+The Bot will create or update MedicationRequest resources in Afiax for the specified date range and patient.
 
 <details>
   <summary>Please note that when testing with the DoseSpot sandbox, you must use this patient:</summary>
@@ -522,7 +522,7 @@ const medicationRequests = await medplum.execute(DOSESPOT_MEDICATION_HISTORY_BOT
   //raw: true //returns raw DoseSpot prescription data instead of creating and returning MedicationRequest resources
 }) as MedicationRequest[];
 ```
-For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
+For a more thorough example implementing this bot, see the Provider App's [DoseSpotAdvancedOptions](https://github.com/oortcloudcomputing/afiax-fhir/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/examples/medplum-provider/src/pages/patient/DoseSpotAdvancedOptions.tsx#L13-L61).
 
 <details>
   <summary>Example of a MedicationRequest resource that could be created the bot</summary>
@@ -626,7 +626,7 @@ flowchart TD
   Prescriptions -- "DoseSpot Prescription Sync Bot" --> MR1["MedicationRequest []"]
   MedHistory -- "DoseSpot Medication History Bot" --> MR2["MedicationRequest []"]
 
-  subgraph Medplum [Medplum]
+  subgraph Afiax [Afiax]
     MR1
     MR2
   end
@@ -634,7 +634,7 @@ flowchart TD
 
 ### Distinguishing Between Different MedicationRequests
 
-When working with DoseSpot integration, it's important to understand the different types of [MedicationRequests](/docs/api/fhir/resources/medicationrequest) that will be in your Medplum project.
+When working with DoseSpot integration, it's important to understand the different types of [MedicationRequests](/docs/api/fhir/resources/medicationrequest) that will be in your Afiax project.
 
 - **`MedicationRequest?intent=plan`** - Self-reported medications. These are used for drug-drug interaction (DDI) checks in DoseSpot. You create these.
 
@@ -652,7 +652,7 @@ To set a default pharmacy for patients in a clinic, we expose a bot that can add
 
 #### Basic Example
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+curl -X POST 'https://fhir.afiax.africa/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -662,7 +662,7 @@ curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
 
 #### With Specific Patients
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+curl -X POST 'https://fhir.afiax.africa/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -709,7 +709,7 @@ To enroll a prescriber in DoseSpot, you can use the **DoseSpot Enroll Prescriber
 ### Prerequisites
 
 Before enrolling a prescriber, ensure:
-- The Practitioner resource exists in Medplum
+- The Practitioner resource exists in Afiax
 - The Practitioner has a corresponding ProjectMembership
 - The Practitioner has required information (name, NPI, contact information, etc.)
 - The ProjectMembership does not already have a DoseSpot identifier (the bot will prevent duplicate enrollment)
@@ -837,9 +837,9 @@ The `DoseSpotClinicianRoleType` enum includes the following values:
 
 ## Processing DoseSpot Notifications
 
-You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
+You can use the [useDoseSpotNotifications](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
 
-See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
+See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
 
 ## Practitioner AccessPolicy 
 

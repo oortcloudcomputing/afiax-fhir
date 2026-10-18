@@ -24,7 +24,7 @@ For more background reading, see [What is Amazon Athena?](https://docs.aws.amazo
 
 ### Prerequisites
 
-First, you must enable access logs so that AWS Application Load Balancer logs are saved to an AWS S3 bucket. Medplum makes this easy using the CDK config file. Add the following lines to your CDK config file:
+First, you must enable access logs so that AWS Application Load Balancer logs are saved to an AWS S3 bucket. Afiax makes this easy using the CDK config file. Add the following lines to your CDK config file:
 
 ```json
   "loadBalancerLoggingEnabled": true,
@@ -32,7 +32,7 @@ First, you must enable access logs so that AWS Application Load Balancer logs ar
   "loadBalancerLoggingPrefix": "elb-staging",
 ```
 
-And then deploy the CDK changes. See [Medplum Config Settings](./aws-cdk-settings) and [Install on AWS](./install-on-aws) for more details.
+And then deploy the CDK changes. See [Afiax Config Settings](./aws-cdk-settings) and [Install on AWS](./install-on-aws) for more details.
 
 Next, if you do not have a "default" Athena database, follow [Creating databases in Athena](https://docs.aws.amazon.com/athena/latest/ug/creating-databases.html).
 
@@ -194,13 +194,13 @@ GROUP BY
     client_ip;
 ```
 
-## Athena for Medplum Bot logs
+## Athena for Afiax Bot logs
 
 ### Creating the table
 
-Medplum Bots automatically write input to S3 on every invocation.
+Afiax Bots automatically write input to S3 on every invocation.
 
-Medplum Bot logs have a known structure whose partition scheme you can specify in advance, you can reduce query runtime and automate partition management by using the Athena partition projection feature. Partition projection automatically adds new partitions as new data is added.
+Afiax Bot logs have a known structure whose partition scheme you can specify in advance, you can reduce query runtime and automate partition management by using the Athena partition projection feature. Partition projection automatically adds new partitions as new data is added.
 
 ```sql
 CREATE EXTERNAL TABLE my_bot_logs (

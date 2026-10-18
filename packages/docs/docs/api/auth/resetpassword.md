@@ -10,7 +10,7 @@ Initiates a password reset for a user. If successful, sends a password reset ema
 Check out [custom emails](/docs/user-management/custom-emails) for directions to create a custom reset password flow.
 
 :::info
-To see an example, check out the the code for the Medplum app's reset password page in [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx).
+To see an example, check out the the code for the Afiax app's reset password page in [`ResetPasswordPage.tsx`](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/app/src/ResetPasswordPage.tsx).
 :::
 
 :::warning
@@ -23,7 +23,7 @@ Please note that you may need to specify _projectId_ if your User is project sco
 |-------|------|----------|-------------|
 | email | string | Yes | User's email address (3-72 characters) |
 | projectId | string | No | Project ID for project-scoped users. See [project scoped users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) Omit for system-level users |
-| sendEmail | boolean | No | Whether to send Medplum labeled reset email (defaults to true) |
+| sendEmail | boolean | No | Whether to send Afiax labeled reset email (defaults to true) |
 | redirectUri | string | No | URI to redirect after password reset |
 | recaptchaSiteKey | string | No | reCAPTCHA site key for verification |
 | recaptchaToken | string | No | reCAPTCHA token for verification |

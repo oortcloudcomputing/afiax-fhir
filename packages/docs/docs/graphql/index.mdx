@@ -5,16 +5,16 @@ import TabItem from '@theme/TabItem';
 
 # GraphQL
 
-Medplum supports the [FHIR GraphQL API](https://hl7.org/fhir/r4/graphql.html) for creating, updating and searching FHIR resources.
+Afiax supports the [FHIR GraphQL API](https://hl7.org/fhir/r4/graphql.html) for creating, updating and searching FHIR resources.
 
 Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
 
 The GraphQL API also allows you to request specific elements, rather than full resources, which can be more efficient in bandwidth constrained settings.
 
-To experiment with the API, you can use Medplum's interactive GraphQL environment at [graphiql.medplum.com](https://graphiql.medplum.com/). You can log in with your Medplum credentials, and run these example queries in the GraphiQL IDE.
+To experiment with the API, you can use Afiax's interactive GraphQL environment at [graphiql.medplum.com](https://graphiql.medplum.com/). You can log in with your Afiax credentials, and run these example queries in the GraphiQL IDE.
 
 :::note Schema Introspection
-Schema introspection is supported on Medplum, but for security and performance reasons, it is disabled by default. To enable it, you will need to enable the `introspectionEnabled` flag in your server config.
+Schema introspection is supported on Afiax, but for security and performance reasons, it is disabled by default. To enable it, you will need to enable the `introspectionEnabled` flag in your server config.
 :::
 
 ## How to perform basic GraphQL queries

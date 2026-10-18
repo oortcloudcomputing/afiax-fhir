@@ -22,7 +22,7 @@ To specify which patient you want to export a C-CDA for, construct the URL as fo
 
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/<PATIENT_ID>/$ccda-export' \
+curl 'https://fhir.afiax.africa/fhir/R4/Patient/<PATIENT_ID>/$ccda-export' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
 ```
 
@@ -30,6 +30,5 @@ curl 'https://api.medplum.com/fhir/R4/Patient/<PATIENT_ID>/$ccda-export' \
 
 - [C-CDA Integration Guide](/docs/integration/c-cda) - Detailed guide on working with C-CDA documents
 - [Patient $everything](/docs/api/fhir/operations/patient-everything) - Export all patient data in FHIR format
-- [ONC Certification](/docs/compliance/onc) - Compliance requirements for patient data export
 - [FHIR Patient Resource](https://hl7.org/fhir/R4/patient.html) - FHIR specification for Patient
 - [HL7 C-CDA Specification](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=492) - Official C-CDA implementation guide

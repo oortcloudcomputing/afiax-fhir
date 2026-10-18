@@ -22,13 +22,13 @@ If you want to run bots locally, you should use a VM Context. For more details s
 - How to set up a repository to host the source code for your Bots.
 - Write a new `Bot` in TypeScript.
 - Create a new `Bot` resource and link it to your TypeScript file.
-- Use the [Medplum Command Line Interface (CLI)](https://github.com/medplum/medplum/tree/main/packages/cli) to create and deploy your Bot to production.
+- Use the [Afiax Command Line Interface (CLI)](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli) to create and deploy your Bot to production.
 
 ## Setting up your Repository
 
 The first thing we'll do is set up a Git repository to host your Bot code. While you can set up bots in any git repository, we provide a [template Git repository](https://github.com/medplum/medplum-demo-bots) to help you get started.
 
-The Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Version 20+ is required.
+The Afiax Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Version 20+ is required.
 
 Clone the repo and install the dependencies
 
@@ -40,11 +40,11 @@ npm install
 
 ## Setting up your Permissions
 
-Because Bots contain important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Medplum uses the [client credentials workflow](/docs/auth/client-credentials) authenticate the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
+Because Bots contain important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Afiax uses the [client credentials workflow](/docs/auth/client-credentials) authenticate the [Afiax CLI](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli).
 
-First, you should create a Client Application on the Medplum Server by following [these directions](/docs/auth/client-credentials).
+First, you should create a Client Application on the Afiax Server by following [these directions](/docs/auth/client-credentials).
 
-The [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) looks for two environment variables when authenticating: `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.
+The [Afiax CLI](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli) looks for two environment variables when authenticating: `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.
 
 You can set these on the command line using the `export` command in bash.
 
@@ -73,7 +73,7 @@ MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
 
 :::
 
-If you are self-hosting Medplum, set `MEDPLUM_BASE_URL` to the base URL of your Medplum server as an environment variable or in your .env file.
+If you are self-hosting Afiax, set `MEDPLUM_BASE_URL` to the base URL of your Afiax server as an environment variable or in your .env file.
 
 ```bash
 export MEDPLUM_BASE_URL=https://api.example.com/
@@ -152,7 +152,7 @@ ls dist
 
 Next step is to create the bot.
 
-Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`.
+Navigate to the [Project Admin panel](https://app.afiax.africa/admin/project) and copy the ID of your project. That will be your `project-id`.
 
 Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `bot create` command. In our example
 
@@ -164,11 +164,11 @@ Running this command does the following:
 
 1. Creates the Bot resource
 2. Creates a ProjectMembership resource that connects it to a project
-3. Saves the bot to the associated project in the Medplum database
+3. Saves the bot to the associated project in the Afiax database
 4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
 
 :::caution Note
-If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
+If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/oortcloudcomputing/afiax-fhir/issues/new) or [**contact support**](mailto:support@afiax.africa)
 :::
 
 After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this:
@@ -189,14 +189,14 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 
 | Parameter | Description                                                                                                                                                                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`    | Name of the bot used in the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) (below). **Note**: This name can be whatever your want. It does not have to match the filename of the bot code, nor anything in the Medplum App |
-| `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
-| `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
+| `name`    | Name of the bot used in the [Afiax CLI](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli) (below). **Note**: This name can be whatever your want. It does not have to match the filename of the bot code, nor anything in the Afiax App |
+| `id`      | The Bot Resource `id`. Can be found by navigating to [app.afiax.africa/Bot](https://app.afiax.africa/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
+| `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Afiax only supports single-file Bots.                                                                                                                        |
 | `dist`    | This is the location of the transpiled javascript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
 
 ## Deploying your Bot
 
-Now that your Bot is written and compiled, the [resource](/docs/api/fhir/medplum/bot) is created, and your credentials are set, we can finally deploy our Bot to production using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
+Now that your Bot is written and compiled, the [resource](/docs/api/fhir/medplum/bot) is created, and your credentials are set, we can finally deploy our Bot to production using the [Afiax CLI](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli).
 
 To deploy our bot, we will use the `bot deploy` command.
 
@@ -220,10 +220,10 @@ npx medplum bot deploy *staging*
 Running this command does two things:
 
 1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
-2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
+2. Deploys your compiled Javascript code as an AWS Lambda function with your Afiax deployment.
 
 :::caution Note
-There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
+There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/oortcloudcomputing/afiax-fhir/issues/new) or [**contact support**](mailto:support@afiax.africa)
 
 ```
 Deploy error: {
@@ -236,9 +236,9 @@ issue: [ { severity: 'error', code: 'invalid', details: [Object] } ]
 
 ## Deploying to Staging vs. Production
 
-A common usage pattern is to set up two Medplum Projects for an application: A `staging` project for development and integration testing, and a `production` project to power workflows.
+A common usage pattern is to set up two Afiax Projects for an application: A `staging` project for development and integration testing, and a `production` project to power workflows.
 
-The same Bot source code can be deployed to multiple Medplum projects by creating two separate entries in `medplum.config.json` with different names, pointing to the same source/compiled files.
+The same Bot source code can be deployed to multiple Afiax projects by creating two separate entries in `medplum.config.json` with different names, pointing to the same source/compiled files.
 
 ```js
 {
@@ -285,7 +285,7 @@ This pattern is especially powerful when deploying Bots **as part of a CI pipeli
 
 Bots can be run at a very high volume - for example as part of an ADT feed or when triggered by high-frequency messages. This can result in thousands of invocations per day, which can be overwhelming to track. In these cases, it may make sense to fine-tune the level of logging for your Bots.
 
-There are two ways to control Bot logging in Medplum: the type of event logged (i.e., success, failure, etc.) and where the event gets logged to.
+There are two ways to control Bot logging in Afiax: the type of event logged (i.e., success, failure, etc.) and where the event gets logged to.
 
 ### Logging Triggers
 
@@ -302,10 +302,10 @@ You can choose to only log certain events using the `Bot.auditEventTrigger` fiel
 
 Logging can also be limited by setting the destination that your Bot logs to. This is done using the `Bot.auditEventDestination` field. This element can be set to either `resource` or `log`.
 
-By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Medplum's API and will be visible in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
+By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Afiax's API and will be visible in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
 
 Setting `auditEventDestination` to `log` will only output an `AuditEvent` in your existing enterprise logging infrastructure, such as [AWS Athena](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog), or others. This can make testing and debugging more difficult, but is quicker and useful for high-volume operations as it will fill up or slow down your main database.
 
 ## Conclusion
 
-As your Bots become more complex, integrating them into your software development workflow becomes crucial. Using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) allows you do integrate Bots into your regular code review process and deploy as part of your CI/CD pipelines.
+As your Bots become more complex, integrating them into your software development workflow becomes crucial. Using the [Afiax CLI](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/packages/cli) allows you do integrate Bots into your regular code review process and deploy as part of your CI/CD pipelines.

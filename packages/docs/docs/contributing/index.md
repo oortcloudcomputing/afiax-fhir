@@ -2,77 +2,60 @@
 sidebar_position: 1
 ---
 
-# Contributing to Medplum
+# Contributing to Afiax
 
-Medplum is an open-source project, and we love both code and non-code contributions! People with any level of experience
-can make an important impact on the project: you don't need to be a professional developer! You might have just:
+This section is for anyone who wants to change Afiax: fix a bug, add a feature, or improve these docs. You don't need to be an expert. Each page walks you through one task from start to finish.
 
-- **Ten minutes** to write a GitHub issue describing a bug you found or request for a feature you could use
-- **One hour** to learn and participate in one of our webinars
-- **Four hours** to author a case study showcasing how you've used Medplum
+If you want to *use* Afiax rather than change it, start with the [App](/docs/app) or [API](/docs/api) docs instead.
 
-This section provides instructions on how to get started contributing to the Medplum project.
-If you're looking to _use_ Medplum, check out the [App](./app) or [API](./api) docs instead.
+## Where to start
 
-## Join our online community
+Follow these pages in order the first time:
 
-We have several online venues where Medplum community members and team members convene, offering various ways
-to get involved with the project:
+1. **[Local development setup](/docs/contributing/local-dev-setup)**: get a copy of the code onto your computer.
+2. **[Run the stack](/docs/contributing/run-the-stack)**: check your hardware, install the tools, then start the Afiax server and web app locally.
+3. **[Testing](/docs/contributing/testing)**: run the automated tests before you open a pull request.
 
-1. Star the [Medplum Github repository](https://github.com/medplum/medplum)
-2. Join our [Discord channel](https://discord.gg/medplum) - and introduce yourself
-3. Subscribe to [Medplum on LinkedIn](https://www.linkedin.com/company/medplum)
-4. Follow [Medplum on Twitter](https://twitter.com/Medplum1)
-5. Subscribe to our [Youtube channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA)
+## How we work
 
-### Spread the word and participate
+| Topic | Rule |
+| --- | --- |
+| Repository | [oortcloudcomputing/afiax-fhir](https://github.com/oortcloudcomputing/afiax-fhir) |
+| Active branch | `kenya`. Branch from it, and open pull requests back into it. |
+| Commit messages | [Conventional Commits](https://www.conventionalcommits.org/), for example `feat(kenya): ...`, `fix(server): ...` or `docs(kenya): ...` |
+| Patient data | **Never** commit, paste or screenshot real patient data. Use synthetic test data only. |
+| Secrets | Never commit passwords, tokens or keys. They live in Vault (see the platform-engineering repo). |
+| Regulated areas | If your change touches hosting, access control, audit, diagnosis coding, reporting or claims, read [Compliance](/docs/compliance) first, and say so in the pull request. |
 
-Help us reach and engage people passionate about building amazing healthcare solutions!
+## Reporting a bug or suggesting a feature
 
-1. Let us know your thoughts on [Github Discussions](https://github.com/medplum/medplum/discussions)
-2. Share our [blog posts](/blog)
-3. Share code, posts, videos or other content in relevant online forums for example [dev.to](https://dev.to/),
-   [/r/healthIT](https://www.reddit.com/r/healthIT/), [/r/selfhosted](https://www.reddit.com/r/selfhosted/),
-   or [Hacker News](https://news.ycombinator.com)
-4. Write content for your own blog or website, and [tell us about it](mailto:hello@medplum.com)
+Open an issue in the [GitHub issue tracker](https://github.com/oortcloudcomputing/afiax-fhir/issues/new). Include:
 
-## Making a contribution
+- what you did (steps someone else can repeat)
+- what you expected to happen
+- what actually happened, with any error message.
 
-There are several ways to make your first contribution to the Medplum project! The following instructions
-should help you get started.
+For security problems, **do not** open a public issue. Email [security@afiax.africa](mailto:security@afiax.africa) instead (see [Security](/security)).
 
-### Reporting a bug or discussing a feature idea
+## Improving the documentation
 
-If you found a technical bug on Medplum or have ideas for features we should implement, the [GitHub issue tracker](https://github.com/medplum/medplum/issues)
-is the best place to share your ideas.
-[Open a new issue](https://github.com/medplum/medplum/issues/new) describing the changes you'd like to see, and one of
-our team members will respond.
+These docs are built from Markdown files in [`packages/docs/docs`](https://github.com/oortcloudcomputing/afiax-fhir/tree/kenya/packages/docs/docs). Every page has an **Edit this page** link at the bottom.
 
-### Writing documentation or blog content
+When you write or change a page:
 
-Did you learn how to do something using Medplum but it wasn't obvious on first try? Please contribute to our documentation!
+- **Write for a beginner.** Say what the reader will end up with, list the prerequisites, number the steps, give commands they can copy, show what success looks like, and add a short troubleshooting section.
+- **Use Afiax in prose.** Keep `@medplum/*`, `MedplumClient`, `MEDPLUM_*` and other code identifiers exactly as they are. See [Platform foundation](/docs/architecture/platform-foundation) for the full naming rule.
+- **Never copy Medplum Inc.'s company claims** (certifications, customers, usage figures) into Afiax pages.
 
-Our documentation is hosted on [medplum.com/docs](/docs), but it is built from [Markdown](https://www.markdownguide.org/)
-files that live in our [Github repository](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
+## Fixing a bug or building a feature
 
-For relatively small changes, you can edit files directly from your web browser on [github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
-without needing to clone the repository.
+1. For anything bigger than a small fix, open an issue first so the approach can be agreed.
+2. Create a branch from `kenya`, make your change, and add or update tests.
+3. Run the tests and the linter (see [Testing](/docs/contributing/testing)).
+4. Open a pull request into `kenya` that describes what changed and why.
 
-### Fixing a bug or implementing a new feature
+:::note Legal note
 
-If you find a bug on Medplum and open a GitHub Pull Request that fixes it, we'll review it as soon as possible.
-
-Before starting implementation of a new feature, open an issue first to discuss your plans and to ensure it fits into
-our roadmap and plans for the app. If for some reason we don't accept your PR, you're welcome to [fork our repository](https://github.com/medplum/medplum/fork)
-and implement it in your own version.
-
-**Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
-
-:::note Legal Note
-
-By submitting content to this project, you agree to adopt the [Developer Certificate of Origin (DCO)](https://developercertificate.org/) for your contributions.
-
-All conversations and communities on Medplum are expected to follow GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines)
-and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies).
+Afiax is built on the Medplum open-source project and is licensed under the Apache License 2.0. By contributing, you agree that your contribution is made under the same licence and that you have the right to submit it (see the [Developer Certificate of Origin](/docs/contributing/dco)).
 
 :::

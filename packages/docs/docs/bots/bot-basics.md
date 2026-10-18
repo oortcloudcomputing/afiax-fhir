@@ -5,12 +5,12 @@ toc_max_heading_level: 2
 
 # Bot Basics
 
-Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
+Bots are an advanced Afiax feature that enable complex workflows. An **Afiax Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to an [**Afiax client**](../sdk) , which itself can invoke FHIR operations.
 
-**Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
+**Afiax Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
 
-Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
+Bots are disabled by default for accounts. Contact info@afiax.africa if you'd like to learn more.
 
 :::note Bots in Local Development
 
@@ -30,13 +30,13 @@ Consider some of these Bot use cases:
 
 These capabilities would normally require writing custom code, HTTP servers, webhooks, and managing credentials for a separate service.
 
-By using Bots, the entire logic is self contained and managed in one place. Like all FHIR resources in Medplum, the [Bot resource](https://app.medplum.com/Bot) is versioned with full history tracking, so you can see exactly what changed over time.
+By using Bots, the entire logic is self contained and managed in one place. Like all FHIR resources in Afiax, the [Bot resource](https://app.afiax.africa/Bot) is versioned with full history tracking, so you can see exactly what changed over time.
 
 ## Creating a Bot
 
 :::caution Note
 
-Bots are disabled by default. Contact your info@medplum.com if you'd like to learn more.
+Bots are disabled by default. Contact your info@afiax.africa if you'd like to learn more.
 
 :::
 
@@ -46,7 +46,7 @@ Bots are restricted to Project administrators. If you do not have access, contac
 
 :::
 
-To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and click "Create new Bot".
+To create a Bot, navigate to the [Project Admin panel](https://app.afiax.africa/admin/project) and click "Create new Bot".
 
 ![Create a Bot](/img/app/bots/create_bot.png)
 
@@ -60,7 +60,7 @@ Click "Create Bot" to save the Bot, and you will see an acknowledgement that the
 
 ## Editing a Bot
 
-You can see all Bots in your account on the Bot resource page: [https://app.medplum.com/Bot](https://app.medplum.com/Bot)
+You can see all Bots in your account on the Bot resource page: [https://app.afiax.africa/Bot](https://app.afiax.africa/Bot)
 
 Click on your new Bot and navigate to the **Editor** tab. This presents a code editing window where you can write your
 Javascript code.
@@ -106,7 +106,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 ```
 
-When you are done editing, click "Save" to save your Bot code to Medplum.
+When you are done editing, click "Save" to save your Bot code to Afiax.
 
 ### Understanding the code
 
@@ -118,7 +118,7 @@ import { Patient } from '@medplum/fhirtypes';
 const patient = event.input as Patient;
 ```
 
-This first line casts the contents of event.input of type `Patient`. This allows the rest of the bot code to take advantage of TypeScript's strong type system, along with IDE autocomplete and ESLint verification. Medplum provides type definitions for all FHIR resources in the `@medplum/fhirtypes` package.
+This first line casts the contents of event.input of type `Patient`. This allows the rest of the bot code to take advantage of TypeScript's strong type system, along with IDE autocomplete and ESLint verification. Afiax provides type definitions for all FHIR resources in the `@medplum/fhirtypes` package.
 
 ```ts
 const firstName = patient.name?.[0]?.given?.[0];
@@ -133,21 +133,21 @@ Because these properties may be undefined, we make heavy use of the Javascript [
 
 ## Deploying a Bot
 
-Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy it to run in production.
+Clicking "Save" in the **Editor** tab persists your Bot code to the Afiax database, but _doesn't_ deploy it to run in production.
 To deploy your bot, click the "Deploy" button.
 
 ![Deploy Button](/img/app/bots/deploy_button.png)
 
 This works well for initial prototyping, but as you get closer to a production implementation [deploying from the command line](/docs/bots/bots-in-production#deploying-your-bot) potentially as part of a CI/CD can be preferred.
 
-**Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
+**Afiax Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 ### Creating and Deploying Bot from your IDE instead of Editor tab
 
 Alternatively, you can also write the code for a Bot and deploy from within your IDE.
 
-- [Create a Bot](https://app.medplum.com/admin/project) on Medplum and note its `id`. (All Bots in your account can be found [here](https://app.medplum.com/Bot))
+- [Create a Bot](https://app.afiax.africa/admin/project) on Afiax and note its `id`. (All Bots in your account can be found [here](https://app.afiax.africa/Bot))
 - Create a new typescript file (e.g. `my-bot.ts`) and copy the contents of `examples/hello-patient.ts` into your new file.
 - With the `id` of the Bot `id` in hand, add a section to `medplum.config.json` like so
 
@@ -187,7 +187,7 @@ In the output panel at the bottom right you will see the string "true", indicati
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Bot/<BOT_ID>/$execute' \
   --header 'Content-Type: <CONTENT_TYPE>' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
   --data '<INPUT_DATA>'
@@ -231,7 +231,7 @@ Let's connect our bot to [`Patient`](/docs/api/fhir/resources/patient) resources
 Bots can be run as a cron job. [Click Here](/docs/bots/bot-cron-job) to learn more.
 :::
 
-First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
+First, go to the [Subscription](https://app.afiax.africa/Subscription) resources page.
 
 Then click on the "New..."
 
@@ -267,24 +267,24 @@ Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYP
 
 Finally, scroll down and click "OK".
 
-**Congratulations!** Now you have an active Subscription. ([View all Subscriptions](https://app.medplum.com/Subscription))
+**Congratulations!** Now you have an active Subscription. ([View all Subscriptions](https://app.afiax.africa/Subscription))
 
-We can test our new subscription by creating a new `Patient`. First, go to the [Patient resources](https://app.medplum.com/Patient) using the top-left menu and clicking "Patient"
+We can test our new subscription by creating a new `Patient`. First, go to the [Patient resources](https://app.afiax.africa/Patient) using the top-left menu and clicking "Patient"
 
 <img src='/img/app/bots/patient_sidebar.png' alt='Patient Sidebar' style={{'max-width': '40%'}}/>
 
-Next, click on the "New..." [button](https://app.medplum.com/Patient/new)
+Next, click on the "New..." [button](https://app.afiax.africa/Patient/new)
 ![New Patient Button](/img/app/bots/new_patient_button.png)
 
 Enter a sample name such as given "Jane" family "Doe". Then Scroll down and click "OK"
 
 ![Create new Patient](/img/app/bots/NewPatient.gif)
 
-Now, let's go back to our [`Subscription`](https://app.medplum.com/Subscription). On the Timeline, you should see an `AuditEvent` with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello Jane Doe" logged as part of the `AuditEvent`.
+Now, let's go back to our [`Subscription`](https://app.afiax.africa/Subscription). On the Timeline, you should see an `AuditEvent` with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello Jane Doe" logged as part of the `AuditEvent`.
 
 <img src='/img/app/bots/auditevent.png' alt='Audit Event' style={{'max-width': '60%'}}/>
 
-If you want to see all `AuditEvents` sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=outcomeDesc,_lastUpdated,entity&_offset=0&_sort=-_lastUpdated).
+If you want to see all `AuditEvents` sorted by most recent, you can use [this link](https://app.afiax.africa/AuditEvent?_count=20&_fields=outcomeDesc,_lastUpdated,entity&_offset=0&_sort=-_lastUpdated).
 
 ![All Audit Event](/img/app/bots/all_audit_events.png)
 
@@ -292,9 +292,9 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
 
-## Medplum Lambda Bots Size Limits
+## Afiax Lambda Bots Size Limits
 
-Medplum Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
+Afiax Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
 
 - **Maximum compressed size**: 50 MB
 

@@ -6,7 +6,7 @@ sidebar_position: 10
 
 The United States Core Data for Interoperability (USCDI) is a standardized set of health data classes and constituent data elements for nationwide, interoperable health information exchange.
 
-From a developer perspective, it's important to understand the data classes because an [ONC certified](/docs/compliance/onc) electronic health record is required to expose well formed data via API in order to be compliant.
+From a developer perspective, it's important to understand the data classes because an ONC certified electronic health record is required to expose well formed data via API in order to be compliant.
 
 The USCDI guides are generally very helpful, as they provide guidance on how to represent common things like "Smoking Status", "Consultation Note" - they have a [helpful overview](https://www.healthit.gov/isa/united-states-core-data-interoperability-uscdi) available online. The [US Core Profiles](https://hl7.org/fhir/us/core/STU5.0.1/profiles.html) is also very useful.
 
@@ -18,7 +18,7 @@ At a high level, if you have:
 
 An implementation will be compliant and interoperability ready.
 
-Medplum supports: US Core 6.1.0 / USCDI v3
+Afiax supports: US Core 6.1.0 / USCDI v3
 
 ## Summary Table
 
@@ -48,4 +48,4 @@ We find the following table useful to summarize common data elements found in an
 
 ## Sample Data
 
-The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification. [Download and import](/docs/tutorials/importing-sample-data.md) instructions sample data into your Medplum project.
+The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification. [Download and import](/docs/tutorials/importing-sample-data.md) instructions sample data into your Afiax project.

@@ -21,7 +21,7 @@ The `$cancel` operation allows you to cancel a running asynchronous job. This is
 For example:
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/AsyncJob/job-id/$cancel' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/AsyncJob/job-id/$cancel' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
@@ -124,15 +124,15 @@ AsyncJobs are created by various long-running operations:
 
 ```bash
 # Start a bulk export
-curl -X GET 'https://api.medplum.com/fhir/R4/$export' \
+curl -X GET 'https://fhir.afiax.africa/fhir/R4/$export' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -H "Prefer: respond-async"
 
 # Response includes Content-Location header
-# Content-Location: https://api.medplum.com/fhir/R4/AsyncJob/abc123
+# Content-Location: https://fhir.afiax.africa/fhir/R4/AsyncJob/abc123
 
 # Cancel the export if needed
-curl -X POST 'https://api.medplum.com/fhir/R4/AsyncJob/abc123/$cancel' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/AsyncJob/abc123/$cancel' \
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 

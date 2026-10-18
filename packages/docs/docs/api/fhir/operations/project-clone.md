@@ -4,7 +4,7 @@ sidebar_position: 32
 
 # Project $clone
 
-The `$clone` operation creates a complete copy of a Medplum project, including all its resources. This is useful for creating test environments, project templates, or migrating projects.
+The `$clone` operation creates a complete copy of an Afiax project, including all its resources. This is useful for creating test environments, project templates, or migrating projects.
 
 ## Use Cases
 
@@ -13,7 +13,7 @@ The `$clone` operation creates a complete copy of a Medplum project, including a
 - **Cloning Specific Resources**: Selectively clone bots, questionnaires, or other resources
 
 :::caution Self-Hosted Deployments Only
-This operation requires super admin privileges, which are only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need to clone a project, please contact [Medplum support](/contact).
+This operation requires super admin privileges, which are only available on self-hosted Afiax deployments. If you are using Afiax's cloud-hosted service and need to clone a project, please contact [Afiax support](/contact).
 :::
 
 ## Invocation

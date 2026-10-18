@@ -7,11 +7,11 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # HL7 to FHIR
 
-HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Medplum provides a [HL7 Interfacing engine](/docs/integration/hl7-interfacing) that supports consumption and production of HL7 feeds, and the [Medplum Agent](/docs/agent) supports connecting to systems on-premises.
+HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Afiax provides a [HL7 Interfacing engine](/docs/integration/hl7-interfacing) that supports consumption and production of HL7 feeds, and the [Afiax Agent](/docs/agent) supports connecting to systems on-premises.
 
 ## This guide will show you
 
-- How to integrate Medplum with an HL7 feed bi-directionally, receiving messages and sending back confirmation messages.
+- How to integrate Afiax with an HL7 feed bi-directionally, receiving messages and sending back confirmation messages.
 - How to convert those HL7 messages into FHIR objects
 
 ## The Workflow
@@ -27,20 +27,20 @@ When we this implementation is complete we will:
 
 ### Account and Policy Setup
 
-- Make sure you have an account on Medplum, if not, [register](https://app.medplum.com/register).
-- Create a [ClientApplication](https://app.medplum.com/admin/project) on Medplum called "ADT Bot Client Application".
-- (Optional) Create a very restrictive [AccessPolicy](https://app.medplum.com/AccessPolicy) called "ADT Bot Policy", make it so that the policy only allows readwrite on the Patient object.
-- (Optional) In the [ProjectAdmin dashboard](https://app.medplum.com/admin/project) apply the "ADT Bot Policy" policy to the `ClientApplication` by clicking `Access`.
+- Make sure you have an account on Afiax, if not, [register](https://app.afiax.africa/register).
+- Create a [ClientApplication](https://app.afiax.africa/admin/project) on Afiax called "ADT Bot Client Application".
+- (Optional) Create a very restrictive [AccessPolicy](https://app.afiax.africa/AccessPolicy) called "ADT Bot Policy", make it so that the policy only allows readwrite on the Patient object.
+- (Optional) In the [ProjectAdmin dashboard](https://app.afiax.africa/admin/project) apply the "ADT Bot Policy" policy to the `ClientApplication` by clicking `Access`.
 
 ### Bot Setup
 
-- Linking the ADT feed to Medplum is done through [Medplum Bots](https://app.medplum.com/Bot).
+- Linking the ADT feed to Afiax is done through [Afiax Bots](https://app.afiax.africa/Bot).
 - At a high level, each Bot exposes an endpoint and HL7 messages are posted over HTTPS to that endpoint.
 - The HL7 message is parsed and then converted to a corresponding FHIR object.
-- (Optional) If needed, you can link a [Subscription](https://app.medplum.com/Subscription) to the FHIR objects that the Bot creates to notify downstream applications that new data is available.
+- (Optional) If needed, you can link a [Subscription](https://app.afiax.africa/Subscription) to the FHIR objects that the Bot creates to notify downstream applications that new data is available.
 
 - Make the bot that will listen for HL7 messages
-  - First, [create a bot](https://app.medplum.com/admin/project) called ADT Handler Bot and save it
+  - First, [create a bot](https://app.afiax.africa/admin/project) called ADT Handler Bot and save it
   - Paste the code below into the Bot you created and save. You can also find this bot and a corresponding test in the [Sample Bots Github Repository](https://github.com/medplum/medplum-demo-bots/).
 
 <MedplumCodeBlock language="ts">{ExampleCode}</MedplumCodeBlock>
@@ -49,10 +49,10 @@ Functionally, the code above will create a new patient with the `mrnNumber` prov
 
 ### Testing your Bot
 
-You'll need your bot id (see [bot list](https://app.medplum.com/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl. Note the content type.
+You'll need your bot id (see [bot list](https://app.afiax.africa/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl. Note the content type.
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Bot/<bot-id>/$execute' \
 --header 'Content-Type: x-application/hl7-v2+er7' \
 --header 'Authorization: Bearer <access_token>' \
 --data-raw 'MSH|^~\&|Primary||CL|PDMT|20200312081842|168866|ADT^A28|203598|T|2.3|||||||||||
@@ -72,7 +72,7 @@ MSH|^~\\&|CL|PDMT|Primary||2022-05-10T16:19:50.244Z||ACK|1652199590244|P|2.5.1\r
 Alternatively, you can submit the HL7 message type to the bot as a file using the following command.
 
 ```bash
-curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
+curl -x POST 'https://fhir.afiax.africa/fhir/R4/Bot/<bot-id>/$execute' \
   --header 'Content-Type: x-application/hl7-v2+er7' \
   --header 'Authorization: Bearer <access_token>' \
   --data-binary "@/path/to/filename"

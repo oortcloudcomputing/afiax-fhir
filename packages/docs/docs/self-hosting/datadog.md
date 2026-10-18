@@ -6,7 +6,7 @@ sidebar_position: 1000
 
 This page describes how to add the Datadog agent to your ECS Fargate tasks. Adding Datadog allows you to collect metrics from all containers.
 
-First, make sure you go through all steps in [Install on AWS](/docs/self-hosting/install-on-aws). You should have a Medplum CDK JSON config file and a running cluster.
+First, make sure you go through all steps in [Install on AWS](/docs/self-hosting/install-on-aws). You should have an Afiax CDK JSON config file and a running cluster.
 
 To add Datadog to the ECS Fargate tasks, use the `additionalContainers` JSON property. For example:
 
@@ -32,7 +32,7 @@ To add Datadog to the ECS Fargate tasks, use the `additionalContainers` JSON pro
 
 All three of the environment variables are required to successfully run the Datadog agent.
 
-After you modify your Medplum CDK JSON config file, apply the changes using the CDK command line tools.
+After you modify your Afiax CDK JSON config file, apply the changes using the CDK command line tools.
 
 Run `diff` to see changes:
 

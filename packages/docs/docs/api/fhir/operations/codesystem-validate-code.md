@@ -45,7 +45,7 @@ The operation returns a `Parameters` resource containing the validation result.
 **Request**:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/CodeSystem/$validate-code' \
+curl 'https://fhir.afiax.africa/fhir/R4/CodeSystem/$validate-code' \
   --get \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d 'url=http://snomed.info/sct' \
@@ -69,5 +69,5 @@ curl 'https://api.medplum.com/fhir/R4/CodeSystem/$validate-code' \
 - [ValueSet $validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate codes against value sets
 - [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Get detailed information about a code
 - [CodeSystem $subsumes](/docs/api/fhir/operations/codesystem-subsumes) - Check hierarchical relationships
-- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [Afiax Terminology Guide](/docs/terminology) - Overview of terminology services
 - [FHIR CodeSystem $validate-code](https://hl7.org/fhir/R4/codesystem-operation-validate-code.html) - FHIR specification

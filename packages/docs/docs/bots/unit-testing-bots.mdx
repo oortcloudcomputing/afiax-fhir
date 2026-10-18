@@ -12,11 +12,11 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 Unit testing your Bot code is crucial to ensuring accurate data and workflows. This guide will go over the most common unit testing patterns.
 
-Medplum provides the [`MockClient`](https://github.com/medplum/medplum/blob/main/packages/mock/src/client.ts#L68) class to help unit test Bots on your local machine. You can also see a reference implementation of simple bots _with tests_ in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo.
+Afiax provides the [`MockClient`](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/packages/mock/src/client.ts#L68) class to help unit test Bots on your local machine. You can also see a reference implementation of simple bots _with tests_ in our [Afiax Demo Bots](https://github.com/medplum/medplum-demo-bots) repo.
 
 ## Set up your test framework
 
-The first step is to set up your test framework in your Bots package. Medplum Bots will should work with any typescript/javascript test runner, and the Medplum team has tested our bots with [jest](https://jestjs.io/) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package.
+The first step is to set up your test framework in your Bots package. Afiax Bots will should work with any typescript/javascript test runner, and the Afiax team has tested our bots with [jest](https://jestjs.io/) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package.
 
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
@@ -24,7 +24,7 @@ Next you'll want to index the FHIR schema definitions. To keep the client small,
   {ExampleCode}
 </MedplumCodeBlock>
 
-Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
+Our [Afiax Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
 
 ## Write your test file
 
@@ -40,7 +40,7 @@ import { handler } from './my-bot';
 
 Most bot unit tests follow a common pattern:
 
-1. Create a Medplum `MockClient`
+1. Create an Afiax `MockClient`
 2. Create mock resources
 3. Invoke the handler function
 4. Query mock resources and assert test your test criteria
@@ -49,7 +49,7 @@ The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/ma
 
 ### Create a `MockClient`
 
-The Medplum `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
+The Afiax `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-client">
   {ExampleCode}
@@ -74,7 +74,7 @@ The MockClient does not yet perfectly replicate all functionality of the `Medplu
 - **Websocket subscriptions**
 - **Project admin calls** (new project, invite user, create client application, etc.)
 
-The Medplum team is working on bringing these features to parity as soon as possible. For related discussion, see [related GitHub issue](https://github.com/medplum/medplum/issues/6889). 
+The Afiax team is working on bringing these features to parity as soon as possible. For related discussion, see [related GitHub issue](https://github.com/medplum/medplum/issues/6889). 
 
 :::
 
@@ -82,7 +82,7 @@ The Medplum team is working on bringing these features to parity as soon as poss
 
 Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance.
 
-The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
+The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) from [Afiax Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
   <summary>Example: Create Resources</summary>
@@ -95,9 +95,9 @@ The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main
 
 Creating individual test resources can be time consuming and tedious, so the `MockClient` also offers the ability to use batch requests to set up sample data. See the [FHIR Batch Requests guide](/docs/fhir-datastore/fhir-batch-requests) for more details on batch requests.
 
-The `MockClient` offers the `executeBatch` helper function to easily execute batch requests and works in the same way that the standard Medplum Client does.
+The `MockClient` offers the `executeBatch` helper function to easily execute batch requests and works in the same way that the standard Afiax Client does.
 
-The below example is from the [find matching patients bot tests](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts). Additionally, you can view the [patient data here](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/deduplication/patient-data.json).
+The below example is from the [find matching patients bot tests](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/deduplication/find-matching-patients.test.ts). Additionally, you can view the [patient data here](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/examples/medplum-demo-bots/src/deduplication/patient-data.json).
 
 <details>
   <summary>Example: Creating a large set of patient data with a batch request</summary>
@@ -110,11 +110,11 @@ In this example we create the `MockClient`, then the test data by calling `execu
 
 Once you have created your data, you can write your tests. The above example uses test contexts, a feature of the [Vitest test framework](https://vitest.dev/guide/test-context.html#test-context). It allows you to pass in the MockClient `medplum` as part of your test context. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
 
-#### Using the Medplum CLI
+#### Using the Afiax CLI
 
-If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Afiax CLI to easily convert this data into test data.
 
-The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
+The Afiax CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
   <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
@@ -141,7 +141,7 @@ After setting up your mock resources, you can invoke your bot by calling your bo
 
 ### Query the results
 
-Most of the time, Bots will create or modify resources on the Medplum server. To test your bot, you can use your `MockClient` to query the state of resources on the server, just as you would with a `MedplumClient` in production.
+Most of the time, Bots will create or modify resources on the Afiax server. To test your bot, you can use your `MockClient` to query the state of resources on the server, just as you would with a `MedplumClient` in production.
 
 To check the bot's response, simply check the return value of your `handler` function.
 
@@ -166,11 +166,11 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 
 :::
 
-### Using the Medplum CLI
+### Using the Afiax CLI
 
-If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Afiax CLI to easily convert this data into test data.
 
-The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
+The Afiax CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
 <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>

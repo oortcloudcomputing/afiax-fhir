@@ -10,9 +10,9 @@ This guide will perform a complete production-ready installation in your AWS env
 
 This is a complex multi step process, and requires high proficiency with AWS, Node.js, and command line tools.
 
-Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
+Afiax strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
+If you have any questions, please [contact us](mailto:info@afiax.africa).
 
 :::
 
@@ -22,7 +22,7 @@ If you are new to AWS CDK, we strongly recommend reading [Getting started with t
 
 :::
 
-At a high level, the process of installing Medplum on AWS includes:
+At a high level, the process of installing Afiax on AWS includes:
 
 1. Prerequisites
    1. Setting up IAM permissions
@@ -30,19 +30,19 @@ At a high level, the process of installing Medplum on AWS includes:
    3. Configuring your domain
 2. Creating a config repo
    1. Setting up CDK
-   2. Setting up Medplum CDK
-   3. Running the Medplum init tool
+   2. Setting up Afiax CDK
+   3. Running the Afiax init tool
 3. Deploying the CDK stack
    1. Bootstrapping
    2. Synth
    3. Deploy
-4. Deploying the Medplum app
-   1. Building the Medplum app with your config
-   2. Deploying the Medplum app to AWS
+4. Deploying the Afiax app
+   1. Building the Afiax app with your config
+   2. Deploying the Afiax app to AWS
 
 The resulting AWS configuration will look like the following:
 
-![Medplum AWS Architecture](./medplum-aws-architecture.png)
+![Afiax AWS Architecture](./medplum-aws-architecture.png)
 _Diagram current as of 7/21/2025_
 
 <p>Use this video guide as you follow the instructions:</p>
@@ -64,7 +64,7 @@ If you have not already done so, follow [these instructions](https://docs.aws.am
 
 ### AWS Account Number
 
-The Medplum `aws init` command will ask for your AWS Account Number.
+The Afiax `aws init` command will ask for your AWS Account Number.
 
 If the AWS CLI and credentials are configured, then the tool will automatically identify your AWS Account Number.
 
@@ -95,7 +95,7 @@ You will need permission to access the following AWS services:
 
 ### Configure your name servers
 
-Medplum strongly recommends configuring your domain to use [Amazon's Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/MigratingDNS.html) as your custom DNS name server. This will make it much easier to set up SSL certificates for the [Medplum App](/docs/app) and [Medplum Binary Storage](/docs/fhir-datastore/binary-data).
+Afiax strongly recommends configuring your domain to use [Amazon's Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/MigratingDNS.html) as your custom DNS name server. This will make it much easier to set up SSL certificates for the [Afiax App](/docs/app) and [Afiax Binary Storage](/docs/fhir-datastore/binary-data).
 
 If you choose not to go this route, you will be responsible for setting up your own SSL certificates.
 
@@ -113,7 +113,7 @@ Throughout this document, instructions will refer to an "environment name". This
 2. As the base of CloudFormation stack names (i.e., `MedplumDemo`)
 3. AWS Parameter Store keys (i.e., `/medplum/demo/...`)
 
-If you plan to deploy multiple Medplum clusters, you may want to consider a naming strategy.
+If you plan to deploy multiple Afiax clusters, you may want to consider a naming strategy.
 
 For example:
 
@@ -125,13 +125,13 @@ For example:
 | alice    | `medplum.alice.config.json`   | `MedplumAlice`            | `/medplum/alice/...`   |
 | bob      | `medplum.bob.config.json`     | `MedplumBob`              | `/medplum/bob/...`     |
 
-Medplum configuration files and environment names are quite flexible, but it is always recommended to be consistent and stay organized.
+Afiax configuration files and environment names are quite flexible, but it is always recommended to be consistent and stay organized.
 
 ## Setup a config repo
 
 ### Create your config repo
 
-Medplum recommends creating a separate git repository and npm project to manage your CDK infra-as-code. This repository will only contain JSON configuration files.
+Afiax recommends creating a separate git repository and npm project to manage your CDK infra-as-code. This repository will only contain JSON configuration files.
 
 ```bash
 mkdir my-medplum-cdk-config
@@ -139,7 +139,7 @@ cd my-medplum-cdk-config
 npm init -y
 ```
 
-Medplum recommends pushing this git repository to your source control provider such as GitHub or GitLab.
+Afiax recommends pushing this git repository to your source control provider such as GitHub or GitLab.
 
 ### Add CDK dependencies
 
@@ -149,9 +149,9 @@ If you have not already done so, add the common AWS CDK dependencies. This inclu
 npm i aws-cdk-lib cdk constructs
 ```
 
-### Add Medplum dependencies
+### Add Afiax dependencies
 
-Add the Medplum CDK and CLI dependencies. This includes the Medplum CDK construct.
+Add the Afiax CDK and CLI dependencies. This includes the Afiax CDK construct.
 
 ```bash
 npm i @medplum/cdk @medplum/cli
@@ -169,7 +169,7 @@ Create a new file called `cdk.json` with the following contents:
 
 ### Run the init tool
 
-Most AWS resources are automatically created using CDK, but some either cannot or are not recommended. Use the `medplum aws init` command to setup those resources and build the Medplum CDK config file.
+Most AWS resources are automatically created using CDK, but some either cannot or are not recommended. Use the `medplum aws init` command to setup those resources and build the Afiax CDK config file.
 
 ```bash
 npx medplum aws init
@@ -179,7 +179,7 @@ Then follow the prompts.
 
 Upon completion, the tool will:
 
-1. Generate a Medplum CDK config file (i.e., medplum.demo.config.json)
+1. Generate an Afiax CDK config file (i.e., medplum.demo.config.json)
 2. Optionally generate an AWS CloudFront signing key
 3. Optionally request SSL certificates from AWS Certificate Manager
 4. Optionally write server config settings to AWS Parameter Store
@@ -269,7 +269,7 @@ See this [Github issue](https://github.com/medplum/medplum/issues/2901) for more
 
 :::
 
-The Medplum CLI includes a command to update the bucket policy automatically:
+The Afiax CLI includes a command to update the bucket policy automatically:
 
 ```bash
 npx medplum aws update-bucket-policies [env name]
@@ -295,7 +295,7 @@ Historically this step required building from source. You can now deploy the app
 
 :::
 
-Use the Medplum CLI to deploy the app:
+Use the Afiax CLI to deploy the app:
 
 ```bash
 npx medplum aws deploy-app [env name]
@@ -311,19 +311,19 @@ npx medplum aws deploy-app demo
 
 ### Bot Lambda Layer
 
-**Optional:** If you intend to use Medplum Bots, you will need an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-concepts.html#gettingstarted-concepts-layer).
+**Optional:** If you intend to use Afiax Bots, you will need an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-concepts.html#gettingstarted-concepts-layer).
 
 At present, the bot layer must be built from source. See [Clone the repo](/docs/contributing/local-dev-setup#clone-the-repo).
 
-After you successfully clone the Medplum repo, you can use the `deploy-bot-layer.sh` script to build and deploy the Lambda Layer:
+After you successfully clone the Afiax repo, you can use the `deploy-bot-layer.sh` script to build and deploy the Lambda Layer:
 
 ```bash
-git clone https://github.com/medplum/medplum.git medplum
+git clone https://github.com/oortcloudcomputing/afiax-fhir.git medplum
 cd medplum
 ./scripts/deploy-bot-layer.sh
 ```
 
-See the [Medplum Bot Layer](/docs/bots/bot-lambda-layer) guide to learn more.
+See the [Afiax Bot Layer](/docs/bots/bot-lambda-layer) guide to learn more.
 
 ## Ongoing
 
@@ -345,7 +345,7 @@ npx cdk deploy -c config=medplum.[env name].config.json
 
 ### Upgrade the app
 
-Use the Medplum CLI to upgrade the app. This will upgrade your app to the latest version.
+Use the Afiax CLI to upgrade the app. This will upgrade your app to the latest version.
 
 ```bash
 npx medplum aws update-app [env name]
@@ -359,7 +359,7 @@ npx medplum aws update-app demo
 
 ### Upgrade the server
 
-Use the Medplum CLI to upgrade the server. This will upgrade your server to the latest version.
+Use the Afiax CLI to upgrade the server. This will upgrade your server to the latest version.
 
 ```bash
 npx medplum aws update-server [env name]
@@ -373,7 +373,7 @@ npx medplum aws update-server demo
 
 ### Update the Server Config
 
-Use the Medplum CLI to update the [server configuration settings](/docs/self-hosting/server-config).
+Use the Afiax CLI to update the [server configuration settings](/docs/self-hosting/server-config).
 
 First, create a new configuration file called `medplum.[env name].server.json` to store the server config settings.
 

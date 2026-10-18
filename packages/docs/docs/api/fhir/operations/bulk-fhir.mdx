@@ -7,7 +7,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Bulk FHIR API
 
-Medplum supports the [Bulk FHIR API 2.0.0](https://hl7.org/fhir/uv/bulkdata/STU2/). The Bulk FHIR API uses [Backend Services Authorization](https://www.hl7.org/fhir/smart-app-launch/backend-services.html).
+Afiax supports the [Bulk FHIR API 2.0.0](https://hl7.org/fhir/uv/bulkdata/STU2/). The Bulk FHIR API uses [Backend Services Authorization](https://www.hl7.org/fhir/smart-app-launch/backend-services.html).
 
 ## Use Cases
 
@@ -51,13 +51,13 @@ To specify which patients need to be included in the export, construct a [Group]
 To start the process of exporting the resources, make an HTTP `GET` request for `/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson`. This initiates a Bulk Data Export transaction and return links to download URLs for requested resources.
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson' \
+curl 'https://fhir.afiax.africa/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
 ```
 
-| Resource in Medplum App                | Usage in Bulk FHIR                                                       |
+| Resource in Afiax App                | Usage in Bulk FHIR                                                       |
 | -------------------------------------- | ------------------------------------------------------------------------ |
-| [Group](https://app.medplum.com/Group) | All patients you want to include must be included as Group.member.entity |
+| [Group](https://app.afiax.africa/Group) | All patients you want to include must be included as Group.member.entity |
 
 ## System Level Export
 
@@ -70,5 +70,4 @@ An export can also be performed for all resources in a Project by making a `GET`
 ## Related Reading
 
 - [Reporting and Analytics](/docs/analytics) overview
-- [ONC Certification](/docs/compliance/onc) compliance docs
 - [Standardized API for patient and population services](https://www.healthit.gov/test-method/standardized-api-patient-and-population-services) on HealthIT.gov

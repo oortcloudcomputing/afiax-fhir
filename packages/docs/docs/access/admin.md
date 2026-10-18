@@ -1,8 +1,8 @@
 # Admin Users
 
-Certain operations require Medplum [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication) to have administrative privileges. Users can be granted admin rights on a per-project basis: a given user can be an admin for one project, but not another.
+Certain operations require Afiax [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication) to have administrative privileges. Users can be granted admin rights on a per-project basis: a given user can be an admin for one project, but not another.
 
-Medplum distinguishes between two different types of admin user: **project admin** and **super admin**.
+Afiax distinguishes between two different types of admin user: **project admin** and **super admin**.
 
 ## Project Admin
 
@@ -15,7 +15,7 @@ Project Admins have the following privileges:
 - **Invite / remove users** - See our [User Management Guide](/docs/user-management) for mor information
 - **Create Bots** - See our guide on [Bots](/docs/bots/bot-basics) to learn how to create and write Bots
 - **Write the `meta.account` element** - Every resource has a `meta.account` property that can be used for advanced access control scenarios. See our guide on [access policies](/docs/access/access-policies) for more information.
-- **View Administrative Resources** - The following Medplum resource types are only accessible to project admin [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication):
+- **View Administrative Resources** - The following Afiax resource types are only accessible to project admin [Users](/docs/api/fhir/medplum/user), [`Bots`](/docs/api/fhir/medplum/bot), or [`ClientApplications`](/docs/api/fhir/medplum/clientapplication):
   - [`Project`](/docs/api/fhir/medplum/project) - used to adjust [Project settings](/docs/access/projects#settings)
   - [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) - used to manage user registration and privileges (see: [User Management Guide](/docs/user-management))
   - [`UserSecurityRequest`](/docs/api/fhir/medplum/usersecurityrequest) - used to [send custom emails](/docs/user-management/custom-emails#password-change-request-bot)

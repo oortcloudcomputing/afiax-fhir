@@ -4,7 +4,7 @@ sidebar_position: 50
 
 # Testing
 
-Medplum strongly believes in the importance of testing.
+Afiax strongly believes in the importance of testing.
 
 We use the following tools for testing:
 

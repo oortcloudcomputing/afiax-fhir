@@ -10,8 +10,8 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Bot $execute
 
-The `$execute` operation runs a Medplum Bot on-demand, allowing you to trigger server-side automation logic via API calls. Bots can process 
-incoming data, integrate with external systems, and return custom responses-making this operation the primary way to leverage Medplum's 
+The `$execute` operation runs an Afiax Bot on-demand, allowing you to trigger server-side automation logic via API calls. Bots can process 
+incoming data, integrate with external systems, and return custom responses-making this operation the primary way to leverage Afiax's 
 automation capabilities.
 
 Whether you're processing HL7v2 messages from legacy systems, responding to webhooks, or building custom API endpoints, `$execute` provides 
@@ -26,7 +26,7 @@ the flexibility to handle virtually any healthcare integration scenario.
 - **External System Integration**: Connect to third-party APIs and synchronize data with your FHIR resources
 
 :::tip
-If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
+If you're not familiar with Afiax Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
 :::
 
 ## Invoke a bot by ID
@@ -67,7 +67,7 @@ medplum post 'Bot/[id]/$execute' '{ "foo": "bar" }'
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/[id]/$execute' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -103,7 +103,7 @@ medplum get 'Bot/[id]/$execute?foo=bar'
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute?foo=bar' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/[id]/$execute?foo=bar' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -112,9 +112,9 @@ curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute?foo=bar' \
 
 ## Invoke a bot by identifier
 
-Sometimes you may not know the Medplum Bot ID in advance. In that case, you can invoke a Bot by `Identifier`.
+Sometimes you may not know the Afiax Bot ID in advance. In that case, you can invoke a Bot by `Identifier`.
 
-This is also useful when the same conceptual bot exists in multiple Medplum projects. Each bot will have a different ID, but they can all have the same identifier.
+This is also useful when the same conceptual bot exists in multiple Afiax projects. Each bot will have a different ID, but they can all have the same identifier.
 
 ### Using POST
 
@@ -144,7 +144,7 @@ medplum post 'Bot/[id]/$execute?identifier=https://example.com/bots|1234' '{ "fo
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -181,7 +181,7 @@ medplum get 'Bot/$execute?identifier=https://example.com/bots|1234'
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -190,7 +190,7 @@ curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.co
 
 ## Content Types
 
-Medplum Bots support a variety of input content types. Specify the input content type using the standard `Content-Type` HTTP header, or as an optional parameter to `MedplumClient.executeBot()`.
+Afiax Bots support a variety of input content types. Specify the input content type using the standard `Content-Type` HTTP header, or as an optional parameter to `MedplumClient.executeBot()`.
 
 | Content-Type                         | typeof `event.input`                      | Description                                                                                                                                                         |
 | ------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -228,7 +228,7 @@ medplum post 'Bot/[id]/$execute' '{ "foo": "bar" }' --prefer-async
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute' \
+curl 'https://fhir.afiax.africa/fhir/R4/Bot/[id]/$execute' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -245,7 +245,7 @@ When using async execution, the server returns a `202 Accepted` response with a 
 
 ```http
 HTTP/1.1 202 Accepted
-Content-Location: https://api.medplum.com/fhir/R4/job/[job-id]/status
+Content-Location: https://fhir.afiax.africa/fhir/R4/job/[job-id]/status
 ```
 
 You can poll this URL to check the status of your bot execution. In general, for long running jobs it's best to poll no more frequently than 1 second.
@@ -276,7 +276,7 @@ medplum get 'job/[job-id]/status'
 
 ```bash
 # Check job status
-curl 'https://api.medplum.com/fhir/R4/job/[job-id]/status' \
+curl 'https://fhir.afiax.africa/fhir/R4/job/[job-id]/status' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -315,7 +315,7 @@ When the bot execution fails:
 ## Related
 
 - [Bot $deploy](/docs/api/fhir/operations/bot-deploy) - Deploy bot code before execution
-- [Bot Basics](/docs/bots/bot-basics) - Introduction to Medplum Bots
+- [Bot Basics](/docs/bots/bot-basics) - Introduction to Afiax Bots
 - [Bots In Production](/docs/bots/bots-in-production) - Best practices for production bot deployments
 - [HL7 Interfacing](/docs/integration/hl7-interfacing) - Processing HL7v2 messages with bots
 - [Consuming Webhooks](/docs/bots/consuming-webhooks) - Handle incoming webhooks with bots

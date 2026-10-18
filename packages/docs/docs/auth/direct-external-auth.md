@@ -5,21 +5,21 @@ tags: [auth]
 
 # Direct External Authentication
 
-Medplum supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Medplum API directly.
+Afiax supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Afiax API directly.
 
 :::caution Self-Hosted Deployments Only
 
-This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](/contact).
+This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Afiax deployments. If you are using Afiax's cloud-hosted service and need this capability, please contact [Afiax support](/contact).
 
 :::
 
 ## Overview
 
-When a user presents a JWT issued by a configured external auth provider, Medplum can:
+When a user presents a JWT issued by a configured external auth provider, Afiax can:
 
 1. Validate the token against the IDP's userinfo endpoint
 2. Identify the user from claims in the token
-3. Return Medplum auth credentials for subsequent API access
+3. Return Afiax auth credentials for subsequent API access
 
 There are two ways to identify the user from the token:
 
@@ -32,7 +32,7 @@ If both `fhirUser` and `sub` are present, the `fhirUser` claim takes precedence.
 
 ## Server Configuration
 
-Add external auth providers to your Medplum server configuration:
+Add external auth providers to your Afiax server configuration:
 
 ```json
 {
@@ -58,11 +58,11 @@ The `fhirUser` claim contains a FHIR resource reference identifying the user's p
 - **Search string**: `Practitioner?identifier=1234567890`
 - **Absolute URL**: `https://idp.example.com/fhir/Practitioner?identifier=1234567890`
 
-Some IDPs place custom claims inside an `ext` block. Medplum also checks `ext.fhirUser` for compatibility.
+Some IDPs place custom claims inside an `ext` block. Afiax also checks `ext.fhirUser` for compatibility.
 
 ### How it works
 
-1. Medplum extracts the `fhirUser` claim from the JWT
+1. Afiax extracts the `fhirUser` claim from the JWT
 2. Validates the token against the IDP's userinfo endpoint
 3. Searches for the FHIR profile resource matching the claim
 4. Finds the `ProjectMembership` associated with that profile
@@ -70,7 +70,7 @@ Some IDPs place custom claims inside an `ext` block. Medplum also checks `ext.fh
 
 ## Using the `sub` Claim
 
-The `sub` (subject) claim is a standard JWT claim (RFC 7519) present in virtually all JWTs. When no `fhirUser` claim is present, Medplum uses the `sub` claim to look up a `ProjectMembership` by its `externalId` field.
+The `sub` (subject) claim is a standard JWT claim (RFC 7519) present in virtually all JWTs. When no `fhirUser` claim is present, Afiax uses the `sub` claim to look up a `ProjectMembership` by its `externalId` field.
 
 ### Setup
 
@@ -101,7 +101,7 @@ To find a user's `sub` value, decode the JWT from your IDP or check the IDP's us
 
 ### How it works
 
-1. Medplum parses the JWT and finds no `fhirUser` claim
+1. Afiax parses the JWT and finds no `fhirUser` claim
 2. Extracts the `sub` claim
 3. Validates the token against the IDP's userinfo endpoint
 4. Searches for a `ProjectMembership` where `externalId` matches the `sub` value
@@ -115,16 +115,16 @@ The `externalId` must be unique across all project memberships. If multiple memb
 
 ## Making Requests
 
-Once configured, make requests to the Medplum FHIR API using the external IDP token directly:
+Once configured, make requests to the Afiax FHIR API using the external IDP token directly:
 
 ```bash
 curl 'https://${baseUrl}/oauth2/userinfo' \
   -H 'Authorization: Bearer ${externalAccessToken}'
 ```
 
-A successful response returns the user's profile information and Medplum login credentials. Subsequent requests to the FHIR API can use the returned Medplum access token.
+A successful response returns the user's profile information and Afiax login credentials. Subsequent requests to the FHIR API can use the returned Afiax access token.
 
-Medplum caches external auth results in Redis for 1 hour to minimize calls to the IDP's userinfo endpoint.
+Afiax caches external auth results in Redis for 1 hour to minimize calls to the IDP's userinfo endpoint.
 
 ## Comparison with Token Exchange
 
@@ -132,7 +132,7 @@ Medplum caches external auth results in Redis for 1 hour to minimize calls to th
 | :--- | :--- | :--- |
 | **Endpoint** | `/oauth2/userinfo` | `/oauth2/token` |
 | **Configuration** | Server-level `externalAuthProviders` | Per-`ClientApplication` identity provider |
-| **Token format** | Uses external JWT directly | Exchanges for Medplum access token |
+| **Token format** | Uses external JWT directly | Exchanges for Afiax access token |
 | **User lookup** | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag) |
 
-Choose **Direct External Auth** when you want to use external JWTs directly without an explicit token exchange step. Choose **Token Exchange** when you need a standard Medplum access token or when the auth flow is scoped to a specific `ClientApplication`.
+Choose **Direct External Auth** when you want to use external JWTs directly without an explicit token exchange step. Choose **Token Exchange** when you need a standard Afiax access token or when the auth flow is scoped to a specific `ClientApplication`.

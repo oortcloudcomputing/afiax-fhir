@@ -4,7 +4,7 @@ sidebar_position: 29
 
 # Custom Operations
 
-Medplum supports custom FHIR operations implemented via Bots. This allows you to define your own operations with custom business logic while following FHIR operation semantics.
+Afiax supports custom FHIR operations implemented via Bots. This allows you to define your own operations with custom business logic while following FHIR operation semantics.
 
 ## Overview
 

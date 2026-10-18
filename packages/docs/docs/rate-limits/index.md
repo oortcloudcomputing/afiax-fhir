@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Rate Limits
 
-The Medplum API uses a number of safeguards against bursts of incoming traffic to help maximize its stability. Users who
+The Afiax API uses a number of safeguards against bursts of incoming traffic to help maximize its stability. Users who
 send many requests in quick succession may receive HTTP error responses with status code `429 Too Many Requests`.
 
 ## Total Requests Rate Limit
@@ -20,7 +20,7 @@ Rate limits can be increased for paid plans. Please [contact us](mailto:info+rat
 
 ## FHIR Interaction Load Rate Limit
 
-In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore are weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
+In addition to limits on the number of requests that can be made to the Afiax server, there is a limit on the total load of the interactions made to the Afiax server. Different interactions with the datastore are weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
 
 The quota is calculated as the sum of each user's interactions in a given minute, where each interaction is weighted by its impact on the data store. Here are the weights used to calculate the quota:
 
@@ -50,7 +50,7 @@ You can configure rate limits at the **Server**, **Project**, and **User** level
 
 To view or update the Project-level limits:
 
-1.  Navigate to the **Project Admin** page in the Medplum App.
+1.  Navigate to the **Project Admin** page in the Afiax App.
 2.  Edit the `Project` resource.
 3.  Update the `systemSettings` field:
 

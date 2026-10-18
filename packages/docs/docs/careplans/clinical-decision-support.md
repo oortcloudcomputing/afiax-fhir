@@ -6,12 +6,12 @@ sidebar_position: 6
 
 # Clinical Decision Support
 
-Medplum enables building and delivering custom clinical decision support tools for a variety of applications. This guide focuses on the regulated ONC Criteria for Clinical Decision support which is criteria (a)(9) of the HTI criteria on predictive CDS.
+Afiax enables building and delivering custom clinical decision support tools for a variety of applications. This guide focuses on the regulated ONC Criteria for Clinical Decision support which is criteria (a)(9) of the HTI criteria on predictive CDS.
 
-The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations, and how to enable said CDS on Medplum.
+The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations, and how to enable said CDS on Afiax.
 
 :::warning
-Medplum is not currently certified for (a)(9) but is pursuing certification. Contact us at info@medplum.com for details.
+ONC (a)(9) is a US certification criterion. Afiax is not ONC-certified, because it targets Kenyan regulation (see [Compliance](/docs/compliance)). The features below are still available.
 :::
 
 ## Predictive
@@ -20,13 +20,13 @@ Predictive clinical decision support technology is "intended to support decision
 
 Large language model-based clinical decision support tools, as well as tools that use algorithms for risk assessment or triage, fall in the predictive clinical decision support category.
 
-Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
+Afiax enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
 
 The following sections describe best practices to prepare for a predictive clinical decision support certification.
 
 ### Training Data
 
-Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/user-management#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
+Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of an Afiax implementation, be prepared to keep all of your training data in an [Afiax project](/docs/user-management#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
 
 ### Code Systems
 
@@ -46,7 +46,7 @@ Electronic health records that support predictive clinical decision support will
 Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieval of context-aware knowledge using the HL7 Infobutton.
 
 :::warning
-Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) React components serve as common launch points for Infobutton implementations.
+Afiax is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) React components serve as common launch points for Infobutton implementations.
 :::
 
 To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile React component highlights the data elements.
@@ -60,15 +60,14 @@ To support the linked referential clinical decision support the system should be
 
 ## Evidence Based
 
-Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Medplum.
+Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Afiax.
 
-Medplum supports a [Smart-App-Launch react component](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) which serves as a launch point for evidence-based implementations.
+Afiax supports a [Smart-App-Launch react component](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) which serves as a launch point for evidence-based implementations.
 
 [DoseSpot](https://www.dosespot.com/) is a common provider for evidence based medication administration and supports recording and retrieving allergies, listing potential interactions for a specific prescription, listing drug interactions on a patient record, checking for known interactions at prescription creation time.
 
 ## Related Reading
 
-- [ONC Certification](/docs/compliance/onc)
 - [Smart App Launch](/docs/integration/smart-app-launch) in Integrations
 - [(a)(9) Clinical decision support (CDS)](https://www.healthit.gov/test-method/clinical-decision-support-cds)
 - [HL7 Infobutton Implementation Guide](https://www.hl7.org/documentcenter/public/standards/dstu/V3IG_INFOBUTTON_DSTU_R4_2013JAN.pdf)

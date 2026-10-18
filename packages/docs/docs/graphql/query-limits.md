@@ -11,7 +11,7 @@ performed to validate the query are detailed below.
 ## Max Depth
 
 The amount of processing and data included in the query response is related to the maximum depth of nested fields
-within the query. Medplum server counts the _field depth_ of the query, that is the deepest nested field — crossing but
+within the query. Afiax server counts the _field depth_ of the query, that is the deepest nested field — crossing but
 not explicitly counting fragment expansions. For example:
 
 ```gql

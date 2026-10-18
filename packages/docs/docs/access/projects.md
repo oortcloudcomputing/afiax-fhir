@@ -5,13 +5,13 @@ tags: [auth]
 
 # Projects
 
-Medplum [`Projects`](/docs/api/fhir/medplum/project) are the primary mechanism of access control. [`Projects`](/docs/api/fhir/medplum/project) are isolated containers of FHIR resources that are administered separately, and which can have different settings.
+Afiax [`Projects`](/docs/api/fhir/medplum/project) are the primary mechanism of access control. [`Projects`](/docs/api/fhir/medplum/project) are isolated containers of FHIR resources that are administered separately, and which can have different settings.
 
-A common requirement for development teams is to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
+A common requirement for development teams is to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging, before deploying workflow changes to production. A common Afiax usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
 
 ## Isolation Model
 
-Medplum [`Projects`](/docs/api/fhir/medplum/project) create a hard boundary between FHIR resources, and resources within one project cannot reference resources in another.
+Afiax [`Projects`](/docs/api/fhir/medplum/project) create a hard boundary between FHIR resources, and resources within one project cannot reference resources in another.
 
 Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own user administration. A user can be a member of one, or multiple [`Projects`](/docs/api/fhir/medplum/project), with different privileges in each. See our [User Administration Guide](/docs/user-management) for more information.
 
@@ -21,24 +21,24 @@ Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own u
 
 Sometimes it is useful to share a common set of resources with multiple projects.
 
-Medplum super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
+Afiax super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
 
 When a project is linked, all resources from the linked project appear alongside the target project's resources in search results and queries.
 
 ### Common Use Cases
 
-- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Medplum UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
+- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Afiax UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
 - Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clincal domain
-- Sharing common data sets (e.g. Medplum Payor Directory, Medplum Lab Directory)
+- Sharing common data sets (e.g. Afiax Payor Directory, Afiax Lab Directory)
 - Sharing [Bots](/docs/bots)
 
-Certain Medplum features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
+Certain Afiax features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
 
 ### Viewing Linked Projects
 
-You can see linked Projects in the Medplum App by:
+You can see linked Projects in the Afiax App by:
 
-- Navigating to [app.medplum.com/Project](https://app.medplum.com/Project)
+- Navigating to [app.afiax.africa/Project](https://app.afiax.africa/Project)
 - Selecting your Project
 - Selecting the "Details" tab
 
@@ -51,7 +51,7 @@ When working with linked projects:
 
 ## The SuperAdmin `Project` {#superadmin}
 
-The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
+The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Afiax server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
 
 The SuperAdmin has the following privileges:
 
@@ -74,9 +74,9 @@ To switch to the SuperAdmin project or check if you are already in it, you can u
 
 ## Creating a Project
 
-#### Medplum App
+#### Afiax App
 
-- Visit the https://app.medplum.com/register or visit https://app.medplum.com/signin and click the "Register" link
+- Visit the https://app.afiax.africa/register or visit https://app.afiax.africa/signin and click the "Register" link
 - Sign in with an existing user, or enter the details for a new user account
 - Enter your project name
 

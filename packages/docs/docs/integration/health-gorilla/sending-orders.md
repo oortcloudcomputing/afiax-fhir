@@ -10,7 +10,7 @@ The high-level workflow for sending laboratory & imaging orders is:
 
 1. Present the provider with the appropriate lab order form (CPOE)
 2. Create the appropriate FHIR resources based on that information
-3. Execute the appropriate Medplum Bot to send the order to the performing lab.
+3. Execute the appropriate Afiax Bot to send the order to the performing lab.
 
 ## Key Concepts
 
@@ -28,7 +28,7 @@ The following concepts form the foundation of laboratory ordering:
 
 ## Creating an Order Form in React
 
-Medplum provides a "headless UX" approach through specialized React components for building laboratory order forms.
+Afiax provides a "headless UX" approach through specialized React components for building laboratory order forms.
 
 ### Core Components
 
@@ -298,7 +298,7 @@ Orders progress through several states:
 1. `draft`
    - Initial state from the order form
    - Order has not yet been sent to the Health Gorilla
-   - All updates and changes are allowed in Medplum
+   - All updates and changes are allowed in Afiax
 
 2. `active`
    - Order has been transmitted to Health Gorilla and the performing lab
@@ -325,7 +325,7 @@ Orders progress through several states:
 
 ::: caution
 
-Important: Once an order becomes `active`, it cannot be modified in the lab's system, even if updated in Medplum.
+Important: Once an order becomes `active`, it cannot be modified in the lab's system, even if updated in Afiax.
 
 :::
 

@@ -10,18 +10,18 @@ This page helps you choose the correct authentication method for your applicatio
 For **user-facing applications (web or mobile apps)**, use [_browser-based authentication_](#browser-based-authentication). 
 
 :::caution Patient Login
-The Medplum App (https://app.medplum.com) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Medplum SDK.
+The Afiax App (https://app.afiax.africa) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Afiax SDK.
 :::
 
 For applications running in a **trusted, back-end environment**, use [_server-side authentication_](#server-side-authentication). 
 
 ## Browser-based Authentication
 
-This category is for user-facing applications that connect directly to Medplum. These applications run in untrusted environments (browsers, native apps) and use **identity providers** to authenticate a user. 
+This category is for user-facing applications that connect directly to Afiax. These applications run in untrusted environments (browsers, native apps) and use **identity providers** to authenticate a user. 
 
 | Method | **Choose to...** |
 | :--- | :--- | 
-| [Medplum as IDP](./medplum-as-idp.md) | (default) **Get going fast**, and don't have external compliance requirements. |
+| [Afiax as IDP](./medplum-as-idp.md) | (default) **Get going fast**, and don't have external compliance requirements. |
 | [External IDP](./external-identity-providers.mdx) | Connect to an external IDP, like [Google Auth](./google-auth.md), Auth0, or AWS Cognito. | 
 | [Domain-level IDP](./domain-level-identity-providers.md) | Use your enterprise, domain-level **corporate identity solution.** |
 

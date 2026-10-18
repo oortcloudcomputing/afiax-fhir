@@ -4,7 +4,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 # Structured Data Capture
 
 After receiving a questionnaire response, many use cases require the response to be transformed into structured data,
-i.e. other FHIR resources such as `Patient` or `Observation`. Medplum provides an implementation of the draft
+i.e. other FHIR resources such as `Patient` or `Observation`. Afiax provides an implementation of the draft
 [Structured Data Capture IG v4][sdc-ig], which can automatically parse responses to a specially-annotated Questionnaire
 into any FHIR resource(s) necessary.
 
@@ -18,7 +18,7 @@ containing the parsed resources, which can then be uploaded to the server.
 
 ## Annotating the Questionnaire
 
-Medplum implements [template-based extraction][extract-template], which requires the Questionnaire resource to contain
+Afiax implements [template-based extraction][extract-template], which requires the Questionnaire resource to contain
 template resources and the rules for populating the templates from a QuestionnaireResponse. The template resources
 (e.g. `Observation` or other resource types) are placed in `Questionnaire.contained` and given and internal reference
 `id`; a corresponding [`templateExtract` extension][extract-ext] on the `Questionnaire` or one of its descendant items
@@ -441,7 +441,7 @@ parsed into resources.
   {ExampleCode}
 </MedplumCodeBlock>
 
-Alternatively, the questionnaire and response can be passed in directly, in case they are not stored on the Medplum
+Alternatively, the questionnaire and response can be passed in directly, in case they are not stored on the Afiax
 server:
 
 <MedplumCodeBlock language="ts" selectBlocks="post">
@@ -473,7 +473,7 @@ in a transaction [`Bundle`][bundle]:
 }
 ```
 
-This can be uploaded via the [Batch API][batch] to save the generated resources to the Medplum server.
+This can be uploaded via the [Batch API][batch] to save the generated resources to the Afiax server.
 
 [bundle]: /docs/api/fhir/resources/bundle
 

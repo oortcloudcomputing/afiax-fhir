@@ -10,9 +10,9 @@ As your project grows, you may need to upgrade your RDS database instance size. 
 
 This is a complex, multi-step process, and requires high proficiency with AWS, Node.js, and command line tools.
 
-Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
+Afiax strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
+If you have any questions, please [contact us](mailto:info@afiax.africa).
 
 :::
 
@@ -30,7 +30,7 @@ This document assumes that you have already created an RDS database instance. If
 
 To perform a zero downtime upgrade, your cluster will need more than one database instance.
 
-Check the `rdsInstances` value in your Medplum CDK config file. If the value is missing or `1`, then you first need to increase the value to `2` or more.
+Check the `rdsInstances` value in your Afiax CDK config file. If the value is missing or `1`, then you first need to increase the value to `2` or more.
 
 Then run CDK `diff` and `deploy` to apply the change.
 
@@ -42,7 +42,7 @@ The next step is to upgrade the reader instances.
 
 :::warning
 
-In previous versions of CDK (and therefore previous versions of Medplum), the reader and writer instances were automatically upgraded in sequence.
+In previous versions of CDK (and therefore previous versions of Afiax), the reader and writer instances were automatically upgraded in sequence.
 
 That is no longer the case. Reader and writer instances must be upgraded separately and in the correct order.
 
@@ -50,7 +50,7 @@ See [Migrating from instanceProps](https://docs.aws.amazon.com/cdk/api/v2/docs/a
 
 :::
 
-The Medplum CDK config file supports an optional `rdsReaderInstanceType` config setting. If this value is set, then the reader instances will be upgraded to this instance type.
+The Afiax CDK config file supports an optional `rdsReaderInstanceType` config setting. If this value is set, then the reader instances will be upgraded to this instance type.
 
 First, add or update your `rdsReaderInstanceType` config setting to the target instance type.
 
@@ -58,7 +58,7 @@ Then run CDK `diff` and `deploy` to apply the change.
 
 ## Step 3: Upgrade the writer instances
 
-The next step is to upgrade the writer instance. In the Medplum CDK config file, it will appear as if we are updating the writer instance. In practice, CDK and CloudFormation will automatically swap the writer instance with one of the reader instances, and then upgrade the old writer instance.
+The next step is to upgrade the writer instance. In the Afiax CDK config file, it will appear as if we are updating the writer instance. In practice, CDK and CloudFormation will automatically swap the writer instance with one of the reader instances, and then upgrade the old writer instance.
 
 Update your `rdsInstanceType` config setting to the target instance type.
 

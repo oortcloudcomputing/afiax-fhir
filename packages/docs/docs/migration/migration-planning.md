@@ -33,7 +33,7 @@ Similar to Parallel Adoption, Phased Adoption runs both systems in parallel, but
 - High engineering cost to build and maintain active-active synchronization
 - Prolonged migration period
 
-In most cases, Medplum recommends Phased Adoption. While there is some additional engineering cost, it is the safest option, and lowest risk to business operations.
+In most cases, Afiax recommends Phased Adoption. While there is some additional engineering cost, it is the safest option, and lowest risk to business operations.
 
 
 ### Big Bang Adoption
@@ -49,6 +49,6 @@ A Big Bang transition is when an organization switches from the existing system 
 - Most risky option
 - High penalty for failure
 
-In general, Medplum only recommends the Big Bang strategy for small or early stage projects without significant operational complexity. Medplum does not recommend the Big Bang strategy for large organizations with significant active operations due to the high risk factors.
+In general, Afiax only recommends the Big Bang strategy for small or early stage projects without significant operational complexity. Afiax does not recommend the Big Bang strategy for large organizations with significant active operations due to the high risk factors.
 
 Next, we'll talk about the best **sequence for migrating your data.**

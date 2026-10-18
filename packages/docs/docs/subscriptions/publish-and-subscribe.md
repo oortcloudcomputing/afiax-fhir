@@ -24,15 +24,15 @@ This tutorial will walk through an common clinical example, to demonstrate both 
 
 ## Prerequisites
 
-You will need to have a `ClientApplication` and `ClientSecret` in order to get this sample to work via the API. You can find your [ClientApplication](https://app.medplum.com/ClientApplication)s on Medplum.
+You will need to have a `ClientApplication` and `ClientSecret` in order to get this sample to work via the API. You can find your [ClientApplication](https://app.afiax.africa/ClientApplication)s on Afiax.
 
-If you just want to set up the FHIR notifications, you can drive the full workflow through the [Medplum](https://app.medplum.com) webapp by editing the objects from the web application.
+If you just want to set up the FHIR notifications, you can drive the full workflow through the [Afiax](https://app.afiax.africa) webapp by editing the objects from the web application.
 
 ## Setting up the "Subscription"
 
 In this example, we will set up the system to send a FHIR Subscription (webhook) to another application every time there is a change to a ServiceRequest.
 
-To set up your [Subscription](https://app.medplum.com/Subscription) page in Medplum and [create a new](https://app.medplum.com/Subscription/new) subscription.
+To set up your [Subscription](https://app.afiax.africa/Subscription) page in Afiax and [create a new](https://app.afiax.africa/Subscription/new) subscription.
 
 - Make sure to set the `status` of the Subscription to "active" to ensure that the webhook is running
 - The `Criteria` section in the setup is what determines the triggering event for notifications. For example you put "ServiceRequest" in the `Criteria` section, all changes to ServiceRequests will generate a notification.
@@ -44,13 +44,13 @@ The `Criteria` of a subscription cannot be set to an [`AuditEvent`](/docs/api/fh
 
 :::
 
-You can find more instructions on setting up a subscription in the [Medplum Bots documentation](/docs/bots/bot-basics#executing-automatically-using-a-subscription).
+You can find more instructions on setting up a subscription in the [Afiax Bots documentation](/docs/bots/bot-basics#executing-automatically-using-a-subscription).
 
 :::tip AuditEvent Storage
 For high-volume subscriptions, you can configure `AuditEvent` resources to be logged only (instead of saved to the database) using the [`subscription-audit-event-destination` extension](/docs/subscriptions/subscription-extensions#auditevent-destination). This can help reduce database load while still allowing you to monitor subscription activity through your server logs.
 :::
 
-Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data. If you have set up your webhook correctly you should see events when you [create a new](https://app.medplum.com/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.medplum.com/ServiceRequest). You will also see [AuditEvents](https://app.medplum.com/AuditEvent) created for the Subscription (unless configured for log-only destination).
+Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data. If you have set up your webhook correctly you should see events when you [create a new](https://app.afiax.africa/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.afiax.africa/ServiceRequest). You will also see [AuditEvents](https://app.afiax.africa/AuditEvent) created for the Subscription (unless configured for log-only destination).
 
 You can use any endpoint you like, and there are free services like [Pipedream](https://pipedream.com/) that you can use to set up an endpoint for testing purposes.
 
@@ -62,9 +62,9 @@ This section shows how to create a ServiceRequest for a lab test needs that belo
 {ExampleCode}
 </MedplumCodeBlock>
 
-Using this code snippet ServiceRequest was created and linked to a Patient. You should be able to see [Patient](https://app.medplum.com/Patient) created here and the [ServiceRequest](https://app.medplum.com/ServiceRequest) created here.
+Using this code snippet ServiceRequest was created and linked to a Patient. You should be able to see [Patient](https://app.afiax.africa/Patient) created here and the [ServiceRequest](https://app.afiax.africa/ServiceRequest) created here.
 
-Because the [ServiceRequest](https://app.medplum.com/ServiceRequest) was created, the [Subscription](https://app.medplum.com/Subscription)
+Because the [ServiceRequest](https://app.afiax.africa/ServiceRequest) was created, the [Subscription](https://app.afiax.africa/Subscription)
 that was created in the previous section will trigger a web request to the provided endpoint.
 
 ## Updating the status of the ServiceRequest as it moves through the workflow

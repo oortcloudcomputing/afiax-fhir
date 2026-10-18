@@ -4,7 +4,7 @@ sidebar_position: 23
 
 # Parameters $ai
 
-The `$ai` operation provides an interface for calling AI language models (like OpenAI's GPT) through Medplum. This operation supports both standard request/response and streaming modes.
+The `$ai` operation provides an interface for calling AI language models (like OpenAI's GPT) through Afiax. This operation supports both standard request/response and streaming modes.
 
 ## Use Cases
 
@@ -15,7 +15,7 @@ The `$ai` operation provides an interface for calling AI language models (like O
 
 ## Prerequisites
 
-The AI feature must be enabled for your project. Contact your Medplum administrator or ensure `ai` is included in your project's features list.
+The AI feature must be enabled for your project. Contact your Afiax administrator or ensure `ai` is included in your project's features list.
 
 ## Invoke the `$ai` operation
 
@@ -26,7 +26,7 @@ The AI feature must be enabled for your project. Contact your Medplum administra
 For example:
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Parameters/$ai' \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{
@@ -134,7 +134,7 @@ The `tools` parameter enables function calling capabilities:
 The operation supports Server-Sent Events (SSE) streaming for real-time responses. To enable streaming, set the `Accept` header to `text/event-stream`:
 
 ```bash
-curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
+curl -X POST 'https://fhir.afiax.africa/fhir/R4/Parameters/$ai' \
   -H "Content-Type: application/fhir+json" \
   -H "Accept: text/event-stream" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
@@ -200,5 +200,5 @@ Tool calls are not supported in streaming mode.
 
 ## Related Documentation
 
-- [Medplum AI Documentation](/docs/ai) - Overview of AI capabilities in Medplum
+- [Afiax AI Documentation](/docs/ai) - Overview of AI capabilities in Afiax
 - [Bots](/docs/bots) - Create server-side automation with AI capabilities

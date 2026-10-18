@@ -17,7 +17,7 @@ The examples below use the [CLI optional flags](/docs/cli#optional-flags-for-med
 
 ## Setting up your credentials
 
-Medplum CLI stores credentials to be used in a future period without needing it to be entered in every command. By using the `profile` command, this helps with the ability to work with multiple FHIR servers.
+Afiax CLI stores credentials to be used in a future period without needing it to be entered in every command. By using the `profile` command, this helps with the ability to work with multiple FHIR servers.
 
 ### Setting a Profile
 
@@ -234,7 +234,7 @@ medplum bulk export -p bcda-sandbox -e Group/all
 
 ## Next Steps
 
-The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](/docs/bots) to enable your event driven or [cron-based](/docs/bots/bot-cron-job) workflow.
+The Afiax CLI uses Afiax [TypescriptSDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](/docs/bots) to enable your event driven or [cron-based](/docs/bots/bot-cron-job) workflow.
 
 ## Related Resources
 

@@ -10,11 +10,11 @@ import TabItem from '@theme/TabItem';
 
 # User Management Guide
 
-This guide walks through how to **create and manage users** via the Medplum App and via API. Medplum supports multiple authentication options, but always maintains a representation of the user identities, and gives developers control over which authentication method to use for an identity, as well as what access controls are applied.
+This guide walks through how to **create and manage users** via the Afiax App and via API. Afiax supports multiple authentication options, but always maintains a representation of the user identities, and gives developers control over which authentication method to use for an identity, as well as what access controls are applied.
 
 ## Background: User Model
 
-Medplum has several resources that represent user identities. The following resources are fundamental to building a correctly functioning application. This table describes how identities are represented in the system, and provides links to the administrative settings in the [Medplum App](https://app.medplum.com).
+Afiax has several resources that represent user identities. The following resources are fundamental to building a correctly functioning application. This table describes how identities are represented in the system, and provides links to the administrative settings in the [Afiax App](https://app.afiax.africa).
 
 ```mermaid
 
@@ -47,11 +47,11 @@ graph TD
 
 ```
 
-| Resource                                                        | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
+| Resource                                                        | Description                                                                                                                                                                                                                       | Afiax App                                                                                                              |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | [`User`](/docs/api/fhir/medplum/user)                           | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
-| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. See the [Projects guide](/docs/access/projects)                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
-| [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
+| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#afiax-projects) is an isolated set of resources. See the [Projects guide](/docs/access/projects)                                                                                           | [Project Admin](https://app.afiax.africa/admin/project)                                                                   |
+| [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.afiax.africa/admin/invite), [Users (Admins only)](https://app.afiax.africa/admin/users) |
 
 ### Users
 
@@ -71,28 +71,28 @@ _Within_ each project, a project member is represented by a specific FHIR resour
 
 A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/access/access-policies) can access the profile of the current user ([read more](/docs/access/access-policies#patient-access))
 
-| Resource                                                  | Description                                                                                                                             | Medplum App                                            |
+| Resource                                                  | Description                                                                                                                             | Afiax App                                            |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [`Patient`](/docs/api/fhir/resources/patient)             | Patient is a fundamental FHIR resource and linking it to an identity allows the simple use case of granting access to personal records. | [Patients](https://app.medplum.com/Patient)            |
-| [`Practitioner`](/docs/api/fhir/resources/practitioner)   | Practitioners are staff members of a healthcare organization and generally have access to multiple patients' data.                      | [Practitioner](https://app.medplum.com/Practitioner)   |
-| [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) | RelatedPerson is a family member or caregiver of a patient, who may be granted access to a small number of patient records              | [RelatedPerson](https://app.medplum.com/RelatedPerson) |
+| [`Patient`](/docs/api/fhir/resources/patient)             | Patient is a fundamental FHIR resource and linking it to an identity allows the simple use case of granting access to personal records. | [Patients](https://app.afiax.africa/Patient)            |
+| [`Practitioner`](/docs/api/fhir/resources/practitioner)   | Practitioners are staff members of a healthcare organization and generally have access to multiple patients' data.                      | [Practitioner](https://app.afiax.africa/Practitioner)   |
+| [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) | RelatedPerson is a family member or caregiver of a patient, who may be granted access to a small number of patient records              | [RelatedPerson](https://app.afiax.africa/RelatedPerson) |
 
-There are several `ProjectMembership.profile` resources that are related to programmatic access, which serve as modifiers to the ProjectMembership resource (i.e. `ProjectMembership.profile`) and do not represent people, but rather applications that access data. This table describes the programmatic access profiles with links on where to set them up in the Medplum App.
+There are several `ProjectMembership.profile` resources that are related to programmatic access, which serve as modifiers to the ProjectMembership resource (i.e. `ProjectMembership.profile`) and do not represent people, but rather applications that access data. This table describes the programmatic access profiles with links on where to set them up in the Afiax App.
 
-| Resource          | Description                                            | Medplum App                                                  |
+| Resource          | Description                                            | Afiax App                                                  |
 | ----------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
-| ClientApplication | API Keys that allow programmatic access to resources   | [Client Applications](https://app.medplum.com/admin/clients) |
-| Bot               | Event driven [custom functions](/docs/bots/bot-basics) | [Bots](https://app.medplum.com/Bot)                          |
+| ClientApplication | API Keys that allow programmatic access to resources   | [Client Applications](https://app.afiax.africa/admin/clients) |
+| Bot               | Event driven [custom functions](/docs/bots/bot-basics) | [Bots](https://app.afiax.africa/Bot)                          |
 
 ## Creating a new Project
 
 ### UI
 
-The simplest way to create a project is to visit https://app.medplum.com/register and fill out the new project registration form.
+The simplest way to create a project is to visit https://app.afiax.africa/register and fill out the new project registration form.
 
 :::caution Note
 
-If you are self-hosting, replace `app.medplum.com` with `app.your-base-url.com`
+If you are self-hosting, replace `app.afiax.africa` with `app.your-base-url.com`
 
 :::
 
@@ -148,13 +148,13 @@ With is `ClientApplication`, you can create a `Project` resource and invite the 
   </TabItem>
 </Tabs>
 
-## User Administration via Medplum App
+## User Administration via Afiax App
 
-Users in Medplum can be members of multiple projects, so cannot be edited directly. You'll need to invite a user to a project in order to grant access. If the user does not exist, it will be created when invited.
+Users in Afiax can be members of multiple projects, so cannot be edited directly. You'll need to invite a user to a project in order to grant access. If the user does not exist, it will be created when invited.
 
 ### Creating Memberships
 
-Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
+Only administrators can invite users, and can do so on the [Invite](https://app.afiax.africa/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
 
 1. Create a `User` if one does not already exist
 2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
@@ -180,7 +180,7 @@ This is the preferred method for removing user access for several reasons:
 
 ### Removing Memberships
 
-To remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
+To remove users from the existing project navigate to your [Project settings](https://app.afiax.africa/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
 
 We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reconstructed for some reason.
 
@@ -274,7 +274,7 @@ Refer to our [search documentation](/docs/search/basic-search) for more details 
 
 ### Promote Existing User to Admin
 
-If you are already an admin, you can promote other existing users to an admin as well. To do so navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
+If you are already an admin, you can promote other existing users to an admin as well. To do so navigate to the [Project Admin panel](https://app.afiax.africa/admin/project) and go to the Users tab. From here, select the `User` you want to make an admin.
 
 Check the box under the `Admin` label, and then save the user. This user will now be an admin on your project.
 
@@ -306,7 +306,7 @@ It is important to spread the original `ProjectMembership` to ensure that you ar
 
 ## Invite via API
 
-Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite). Like inviting via the [Medplum App](https://app.medplum.com), this can only be done by [project admins](/docs/access/admin#project-admin).
+Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite). Like inviting via the [Afiax App](https://app.afiax.africa), this can only be done by [project admins](/docs/access/admin#project-admin).
 
 Prepare JSON payload:
 
@@ -366,7 +366,7 @@ The following diagram shows an overview of the process. Endpoints are provided t
 
 [Click to Enlarge](/img/auth/auth-flow.png)
 
-There are four major stages in the login flow: **Domain**, **Credentials**, **Profile**, **Scope**. The table below describes the authentication actions the Medplum server performs at each stage, along with the associated endpoints.
+There are four major stages in the login flow: **Domain**, **Credentials**, **Profile**, **Scope**. The table below describes the authentication actions the Afiax server performs at each stage, along with the associated endpoints.
 
 | Stage       | Description                                                                                                                                                             | Involved endpoints                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -380,7 +380,7 @@ There are four major stages in the login flow: **Domain**, **Credentials**, **Pr
 - See [authentication functions](./sdk/core.medplumclient) in the TypeScript SDK
 - [User profile](./sdk/core.medplumclient.getprofile) in the TypeScript SDK
 - [OAuth endpoints](./api/oauth) reference
-- [Medplum resources](./api/fhir/medplum) related to authentication and authorization
+- [Afiax resources](./api/fhir/medplum) related to authentication and authorization
 - [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component
 - [Sign in form](https://storybook.medplum.com/?path=/docs/medplum-signinform--basic) react component
 - [Auth Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) on Github

@@ -5,34 +5,55 @@ toc_max_heading_level: 4
 
 # Run the Stack
 
-Follow these instructions to get the complete Medplum stack running directly on your host machine.
+Follow these instructions to get the complete Afiax stack running directly on your host machine.
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/nf6OElRWOJ4" title="YouTube video player" frameborder="0"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </div>
 
+## What you will end up with
+
+The Afiax API server on [http://localhost:8103](http://localhost:8103) and the Afiax web app on [http://localhost:3000](http://localhost:3000), running on your own computer against a local PostgreSQL database and Redis cache. All data is local test data. Never load real patient data on a laptop.
+
+## Hardware you need
+
+| | Minimum | Recommended |
+| --- | --- | --- |
+| CPU | 4 cores | 8 cores or more |
+| Memory (RAM) | 8 GB | 16 GB or more |
+| Disk | SSD with 30 GB free | NVMe SSD with 60 GB free |
+| Operating system | Ubuntu 22.04+, macOS 13+, or Windows 11 with WSL 2 | Ubuntu 24.04 LTS or macOS |
+
+The checkout and build take about 5 GB, and Docker images take another 2–18 GB. **Avoid a spinning hard disk (HDD):** installing and building read and write tens of thousands of small files, which is very slow on an HDD.
+
+For the shared dev, UAT and production servers, see *Environments and Server Requirements* in the [platform-engineering repo](https://github.com/oortcloudcomputing/afiax-platform-engineering/blob/main/docs/environments-and-sizing.md).
+
 ## Prerequisites
 
-1. **[Git](https://git-scm.com/)**
-2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 22+ required)
-3. **[Docker](https://docs.docker.com/engine/install/)**
-4. [Clone the Medplum repo](./local-dev-setup#clone-the-repo)
+Install these first, then check each one with the command shown:
+
+1. **[Git](https://git-scm.com/)**. Check with `git --version`.
+2. **[Node.js](https://nodejs.org/)** version **22.18 or newer**, or **24.2 or newer**. Check with `node -v`. We recommend installing Node.js with [nvm](https://github.com/nvm-sh/nvm).
+3. **[Docker](https://docs.docker.com/engine/install/)** with Docker Compose. Check with `docker -v` and `docker compose version`.
+4. [Clone the Afiax repo](./local-dev-setup#clone-the-repo)
 
 ## Install
 
 Our monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces), so installing dependencies for all projects is done using normal `npm install`:
 
 ```sh
-cd medplum
+cd afiax-fhir
 npm ci
 ```
+
+This downloads every dependency. It takes 5–15 minutes the first time.
 
 ## Build
 
 Use Turborepo to build all packages.
 
-From your root medplum directory run:
+From the repository root (`afiax-fhir`) run:
 
 ```sh
 npm run build:fast
@@ -40,7 +61,7 @@ npm run build:fast
 
 ## Background services
 
-The Medplum Stack requires the following services to be running in your environment:
+The Afiax Stack requires the following services to be running in your environment:
 
 - [PostgreSQL](https://www.postgresql.org/) for the primary database
 - [Redis](https://redis.com/) for caching and job queueing
@@ -49,9 +70,9 @@ When running these services on your local machine you can either use Docker (rec
 
 ### Using Docker (Recommended)
 
-Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
+Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all the configuration and database migrations Afiax needs.
 
-From your root `medplum` directory run
+From the repository root (`afiax-fhir`) run:
 
 ```sh
 docker-compose up
@@ -66,8 +87,8 @@ docker compose up
 This will:
 
 1. Start the PostgreSQL server in a container
-2. Set up the appropriate configurations (see [postgres.conf](https://github.com/medplum/medplum/blob/main/postgres/postgres.conf))
-3. Create two databases for testing: `medplum` and `medplum_test` (see [init_test.sql](https://github.com/medplum/medplum/blob/main/postgres/init_test.sql))
+2. Set up the appropriate configurations (see [postgres.conf](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/postgres/postgres.conf))
+3. Create two databases for testing: `medplum` and `medplum_test` (see [init_test.sql](https://github.com/oortcloudcomputing/afiax-fhir/blob/main/postgres/init_test.sql))
 
 When `docker-compose` completes, you should see something like this in your terminal:
 
@@ -85,10 +106,10 @@ postgres-1  | 2024-12-13 17:27:57.508 GMT [1] LOG:  database system is ready to 
 **(Optional)** If you'd like to run a `psql` to shell to inspect the database, you can run
 
 ```sh
-docker exec -it medplum-postgres-1 psql -U medplum
+docker exec -it afiax-fhir-postgres-1 psql -U medplum
 ```
 
-Where `medplum-postgres-1` can be replaced with the name of your postgres docker container.
+The container name starts with the name of the folder you cloned into. Run `docker ps` to see the exact name.
 
 ### Deploying manually
 
@@ -118,7 +139,7 @@ After that, you will have to update the file `packages/server/medplum.config.jso
 
 Use Turborepo to run all tests across all packages.
 
-From your root medplum directory run:
+From the repository root (`afiax-fhir`) run:
 
 ```sh
 npm t
@@ -128,16 +149,16 @@ npm t
 
 ### Start the servers
 
-After you have PostgreSQL and Redis up and running, you can run the Medplum API server.
+After you have PostgreSQL and Redis up and running, you can run the Afiax API server.
 
-From your root `medplum` directory run:
+From the repository root (`afiax-fhir`) run:
 
 ```sh
 cd packages/server
 npm run dev
 ```
 
-This will seed the medplum database with an example project and user.
+This will seed the database with an example project and user.
 The email and password for the example user are:
 
 |              |                   |
@@ -159,11 +180,11 @@ If you get an error such as `error: role "medplum" does not exist` or `password 
 
 :::
 
-### Run the Medplum Web App
+### Run the Afiax Web App
 
-Lastly, you can start the Medplum Wep App.
+Lastly, you can start the Afiax Wep App.
 
-From your root `medplum` directory run:
+From the repository root (`afiax-fhir`) run:
 
 ```sh
 cd packages/app

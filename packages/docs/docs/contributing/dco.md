@@ -1,6 +1,6 @@
 # Developer Certificate of Origin
 
-At Medplum, we've enabled the Developer Certificate of Origin (DCO) for all contributions to our repositories. This means every commit to the Medplum codebase needs to be "signed off" by the author. We understand this might be a new process for some, and we're here to help you get started.
+At Afiax, we've enabled the Developer Certificate of Origin (DCO) for all contributions to our repositories. This means every commit to the Afiax codebase needs to be "signed off" by the author. We understand this might be a new process for some, and we're here to help you get started.
 
 ## What is DCO and Why Do We Use It?
 
@@ -18,11 +18,11 @@ By including this line, you are certifying that:
 2.  **The contribution is based on previous work** that, to the best of your knowledge, is covered under an appropriate open-source license, and you have the right to submit that work with modifications.
 3.  **You understand and agree** that this project and your contribution are public and that a record of your contribution (including your sign-off) is maintained indefinitely and may be redistributed.
 
-### Why Medplum Requires DCO
+### Why Afiax Requires DCO
 
-As an open-source healthcare developer platform, maintaining a clear and verifiable history of contributions is crucial for Medplum. DCO helps us:
+As an open-source healthcare developer platform, maintaining a clear and verifiable history of contributions is crucial for Afiax. DCO helps us:
 
-- **Protect our users and ourselves:** It minimizes legal risks related to intellectual property and licensing, ensuring that all code contributed to Medplum can be freely used and distributed under our chosen open-source license.
+- **Protect our users and ourselves:** It minimizes legal risks related to intellectual property and licensing, ensuring that all code contributed to Afiax can be freely used and distributed under our chosen open-source license.
 - **Maintain transparency:** It provides a transparent record of who contributed what, which is essential for community trust and accountability.
 - **Streamline contributions:** It's a less burdensome alternative to a full CLA, making it easier for new contributors to get involved without extensive legal overhead.
 

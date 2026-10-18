@@ -47,20 +47,20 @@ const transactionBundle = {
 ```
 
 :::caution Transaction Support
-Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
+Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Afiax to enable this feature.
 
 The transaction feature is currently in beta. You may experience `409 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
 :::
 
 ## How to Perform a Batch Request
 
-Batch requests are performed by sending a POST request to `[baseURL]/` with a FHIR Bundle. The Medplum SDK provides the `executeBatch` helper function to simplify this operation.
+Batch requests are performed by sending a POST request to `[baseURL]/` with a FHIR Bundle. The Afiax SDK provides the `executeBatch` helper function to simplify this operation.
 
 The details of your request will be in the `entry` field of the `Bundle`, which is an array of `BundleEntry` objects. Each `BundleEntry` should have the details of the resource you are working with, as well as additional information about the request you are making.
 
 | Element               | Description                                                                                                                                                                                                                       |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `request.url`         | The URL to send your request to. This is relative to the base R4 FHIR URL (e.g. https://api.medplum.com/fhir/R4).                                                                                                                 |
+| `request.url`         | The URL to send your request to. This is relative to the base R4 FHIR URL (e.g. https://fhir.afiax.africa/fhir/R4).                                                                                                                 |
 | `request.method`      | The type of HTTP request: **GET** (read a resource or perform a search), **POST** (create), **PUT** (update), **DELETE** (delete). |
 | `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                           |
 | `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                   |
@@ -105,7 +105,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 
 Processing very large batches (for example, a `Bundle` over 5 MB in size) can take a significant amount of time, often
 longer than the default request timeout of one minute. This causes issues with processing the batch, since an error is
-returned to the client before they can access the actual results of the batch request. To resolve this problem, Medplum
+returned to the client before they can access the actual results of the batch request. To resolve this problem, Afiax
 offers the ability to process the batch asynchronously: a large `Bundle` (to to 50 MB by default) can be sent to the
 server, where it will be enqueued for processing, and a response is sent back to the client immediately with a URL where
 it can receive status updates around the batch processing job.
@@ -222,7 +222,7 @@ Other bundle entries can refer to this resource using the temporary `urn:uuid:` 
 
 Additionally, it may be necessary to link to resources that already exist on the server outside of the Bundle, for which the ID of the
 target resource is not known. To handle this use case, FHIR allows populating the reference with a search query string,
-which will be resolved by Medplum server at resource creation time. This search must resolve to a single resource, otherwise
+which will be resolved by Afiax server at resource creation time. This search must resolve to a single resource, otherwise
 an error will be returned. For example:
 
 <details>
@@ -377,7 +377,7 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 }
 ```
 
-Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
+Additionally, Afiax supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
 resource, making it easier to see what operations are happening in the batch.
 
 :::note Value Formatting
@@ -421,9 +421,9 @@ or equivalent rather than being included directly in the `Parameters`.
 }
 ```
 
-## Medplum Autobatching
+## Afiax Autobatching
 
-The Medplum Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
+The Afiax Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
 
 Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests. To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
 

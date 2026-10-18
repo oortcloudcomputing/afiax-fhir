@@ -21,4 +21,4 @@ resources required for a country-pack or tenant rollout.
 
 The Afiax Admin App is part of this [open source repository](https://github.com/mattwamoto/afiax-fhir/tree/main/packages/app).
 It is built on the [React](/docs/react) component library and the Afiax FHIR clinical core used throughout the
-platform, with Medplum as the upstream base.
+platform, with Afiax as the upstream base.

@@ -170,7 +170,7 @@ The `_tag` parameter allows you to search on the `tag` field of the `meta` eleme
 
 A compartment is a grouping of resources which share a common relation. For example, each `Patient` resource has its own compartment. A `Patient` compartment includes any resources which reference that `Patient`, usually in the `subject` field.
 
-Medplum allows you to easily search using compartments by providing the non-standard `_compartment` parameter. This enables you to find all resources of a given type that are associated with a certain compartment.
+Afiax allows you to easily search using compartments by providing the non-standard `_compartment` parameter. This enables you to find all resources of a given type that are associated with a certain compartment.
 
 <details>
   <summary>Example: Find all communications for a patient</summary>
@@ -315,7 +315,7 @@ The `_sort` parameter allows you to sort the results of your search based on dif
 
 ## \_deleted
 
-The `_deleted` parameter allows you to search for resources that have been soft-deleted. By default, Medplum filters out deleted resources.
+The `_deleted` parameter allows you to search for resources that have been soft-deleted. By default, Afiax filters out deleted resources.
 
 :::warning Mixing `_deleted` with other parameters
 

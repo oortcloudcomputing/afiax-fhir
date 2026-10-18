@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # Install on GCP
 
-This document is intended to guide Medplum through the deployment of a comprehensive infrastructure on Google Cloud Platform (GCP) using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Private Cloud (VPC), Google Kubernetes Engine (GKE) cluster, Cloud SQL database, Cloud Storage buckets, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Medplum’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
+This document is intended to guide Afiax through the deployment of a comprehensive infrastructure on Google Cloud Platform (GCP) using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Private Cloud (VPC), Google Kubernetes Engine (GKE) cluster, Cloud SQL database, Cloud Storage buckets, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Afiax’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
 
 :::caution
 
@@ -12,31 +12,31 @@ This deployment option has been validated for production use and offers a robust
 
 This is a complex multi-step process, and requires high proficiency with GCP, Terraform, Node.js, and command line tools.
 
-Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
+Afiax strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
+If you have any questions, please [contact us](mailto:info@afiax.africa).
 
 :::
 
 ## High-level overview {#high-level-overview}
 
-To deploy Medplum in GCP, the process is divided into two parts:
+To deploy Afiax in GCP, the process is divided into two parts:
 
 - Static Infrastructure (using terraform)
-- Medplum App (helm chart)
+- Afiax App (helm chart)
 
 This division allows a fully customizable deployment, for example: if a customer wants to use an existing GKE cluster, they can just deploy the helm chart to it.
 
-The Medplum application is configured using a secret in GCP Secrets Manager.
+The Afiax application is configured using a secret in GCP Secrets Manager.
 See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### GCP Architecture
 
-![Medplum GCP Architecture](./gcp-architecture.webp)
+![Afiax GCP Architecture](./gcp-architecture.webp)
 
 ### Infrastructure summary
 
-- The Medplum backend (API) container runs in GKE.
+- The Afiax backend (API) container runs in GKE.
   - The API is exposed using Ingress, which creates a GCP Load Balancer
   - The Load balancer has a WAF (Cloud Armor)
   - Google-managed certificates are used
@@ -49,7 +49,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 ### High-level deployment process {#high-level-deployment-process}
 
 1. Deploy static infrastructure (GKE, CloudSQL, Redis, Storage Buckets, LB)
-2. With the values from Step 1, create the Medplum app configuration
+2. With the values from Step 1, create the Afiax app configuration
 3. With the values from Step 1, point the DNS records
 4. Deploy the backend application using the helm chart
 5. Copy the frontend files to the CDN bucket
@@ -72,7 +72,7 @@ The `terraform` folder contains **Terraform** configurations for deploying infra
 Run:
 
 ```bash
-git clone https://github.com/medplum/medplum
+git clone https://github.com/oortcloudcomputing/afiax-fhir
 cd terraform/gcp/
 ```
 
@@ -124,7 +124,7 @@ terraform apply
 
 ### Generate configuration secret {#generate-configuration-secret}
 
-The configuration secret holds the Medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using terraform.
+The configuration secret holds the Afiax application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using terraform.
 
 **1\. Create the Secret in Secret Manager:**
 
@@ -152,7 +152,7 @@ cat <<EOF > secret_data.json
   "appBaseUrl": "http://localhost:3000/",
   "binaryStorage": "file:./binary/",
   "storageBaseUrl": "http://localhost:8103/storage/",
-  "supportEmail": "\"Medplum\" <support@medplum.com>",
+  "supportEmail": "\"Afiax\" <support@afiax.africa>",
   "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
   "googleClientSecret": "",
   "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",

@@ -12,7 +12,7 @@ Building out a charting experience requires composing multiple FHIR resources in
 
 ## Patient History
 
-Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-provider github](https://github.com/medplum/medplum/tree/main/examples/medplum-provider).
+Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Afiax [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-provider github](https://github.com/oortcloudcomputing/afiax-fhir/tree/main/examples/medplum-provider).
 
 ![Chart sample](charting-screenshot.png)
 

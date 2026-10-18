@@ -52,15 +52,15 @@ flowchart LR
 
 :::caution Note
 
-Feel free to reach out to us at hello@medplum.com if you have questions about your care plan setup.
+Feel free to reach out to us at info@afiax.africa if you have questions about your care plan setup.
 
 :::
 
 Care planning can range from very simple - for example, a single prescription, to very complex - like a surgery with post operative follow up, evaluations, medications and more. For basic use, we recommend looking at reference care plans and customizing them to your needs.
 
-- [Sample Care Plan Resources](https://github.com/medplum/medplum/blob/86bfdc2435035478d5672daf9cd45a609a012119/packages/react/src/stories/covid19.ts) including PlanDefinition, CarePlan and RequestGroup
-- [PlanDefinitions on Medplum App](https://app.medplum.com/PlanDefinition) - if you look at the tabs, you will see an `$apply` tab that allows you to convert a PlanDefinition into a RequestGroup that belongs to a specific patient.
-- [RequestGroup on Medplum App](https://app.medplum.com/RequestGroup)
+- [Sample Care Plan Resources](https://github.com/oortcloudcomputing/afiax-fhir/blob/86bfdc2435035478d5672daf9cd45a609a012119/packages/react/src/stories/covid19.ts) including PlanDefinition, CarePlan and RequestGroup
+- [PlanDefinitions on Afiax App](https://app.afiax.africa/PlanDefinition) - if you look at the tabs, you will see an `$apply` tab that allows you to convert a PlanDefinition into a RequestGroup that belongs to a specific patient.
+- [RequestGroup on Afiax App](https://app.afiax.africa/RequestGroup)
 - [PlanDefinition Builder sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-plandefinitionbuilder--basic)
 - [RequestGroup sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple)
 - [Care Plan Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acareplans) on Github

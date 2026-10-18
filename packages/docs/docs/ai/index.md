@@ -2,7 +2,7 @@
 sidebar_position: 0
 ---
 
-# Build with AI on Medplum
+# Build with AI on Afiax
 
 ## The Reality of Healthcare AI
 
@@ -31,7 +31,7 @@ Across real deployments, four requirements consistently matter:
 - **Explicit Guardrails:** AI must operate within defined permissions. It should be possible to specify what an automated system can read, suggest, or change.
 - **Built-In Interoperability:** AI depends on labs, medications, billing, and messaging. Without native interoperability, AI remains limited.
 
-Medplum is designed as a healthcare developer platform with these requirements in mind, allowing teams to focus on clinical logic rather than rebuilding basic plumbing.
+Afiax is designed as a healthcare developer platform with these requirements in mind, allowing teams to focus on clinical logic rather than rebuilding basic plumbing.
 
 ## API-First by Design: Why AI Needs Programmatic Access
 
@@ -41,7 +41,7 @@ AI systems depend on reliable programmatic access to data. They retrieve informa
 
 Many systems describe themselves as “API-enabled,” but APIs are often incomplete, inconsistent, or secondary to the user interface. Important data may only be accessible through internal workflows or manual intervention.
 
-Medplum is API-first by design. All core functionality is exposed through documented APIs, with no separate internal pathways. This has practical consequences:
+Afiax is API-first by design. All core functionality is exposed through documented APIs, with no separate internal pathways. This has practical consequences:
 
 - AI systems can access the full clinical and operational context they need
 - Automation does not depend on fragile UI-driven processes
@@ -66,7 +66,7 @@ This contrasts with proprietary models, where design shortcuts—such as hard-co
 
 Unlike traditional software, AI-driven workflows can make suggestions or initiate actions based on probabilistic reasoning. Without explicit guardrails, this creates unacceptable risk. A common pattern is **“can suggest, but not act.”** An AI may draft a note or recommend an order, while a human remains responsible for the final action.
 
-Supporting this requires permissions that are precise, enforceable, and auditable. In Medplum, an AI agent is governed by the same policy framework as a human user. Every action taken by an AI system is captured in a FHIR-standard `AuditEvent` log, providing a verifiable record of what data it accessed and what it suggested—critical for clinical safety and regulatory compliance.
+Supporting this requires permissions that are precise, enforceable, and auditable. In Afiax, an AI agent is governed by the same policy framework as a human user. Every action taken by an AI system is captured in a FHIR-standard `AuditEvent` log, providing a verifiable record of what data it accessed and what it suggested—critical for clinical safety and regulatory compliance.
 
 ## Open Source Makes AI Practical
 
@@ -74,7 +74,7 @@ Supporting this requires permissions that are precise, enforceable, and auditabl
 
 Open source provides a practical advantage for healthcare AI that is often overlooked.
 
-Modern language models are trained on public codebases, documentation, and examples. Because Medplum is open source, its APIs, data models, and architectural patterns are already familiar to these systems. This makes it easier for AI tools to generate correct integrations, follow established best practices, and avoid unsafe assumptions.
+Modern language models are trained on public codebases, documentation, and examples. Because Afiax is open source, its APIs, data models, and architectural patterns are already familiar to these systems. This makes it easier for AI tools to generate correct integrations, follow established best practices, and avoid unsafe assumptions.
 
 This transparency also benefits human developers. Teams can inspect how the platform works, understand how data flows, and reason about system behavior without relying on opaque abstractions or proprietary tooling.
 
@@ -86,18 +86,18 @@ In healthcare AI, where correctness and auditability matter, this matters more t
 
 Most healthcare AI systems work well in isolation, looking impressive in demos but stalling in real clinical environments. Real healthcare AI must interact with labs, medications, billing systems, and external partners.
 
-Point solutions struggle because they are built around a single data source and rely on custom integrations to reach everything else. Medplum functions as an interoperability hub, providing a unified data model and direct integration with HL7 v2, DICOM, and other industry standards.
+Point solutions struggle because they are built around a single data source and rely on custom integrations to reach everything else. Afiax functions as an interoperability hub, providing a unified data model and direct integration with HL7 v2, DICOM, and other industry standards.
 
 When interoperability is built into the platform, AI systems are not confined to isolated use cases; they can participate in the end-to-end workflows that define success in production.
 
 ## What This Enables in Practice
 
-> _Industry leaders like Rad AI and Unity AI use Medplum to bypass infrastructure builds and go straight to scaling AI-driven clinical workflows._
+> _Industry leaders like Rad AI and Unity AI use Afiax to bypass infrastructure builds and go straight to scaling AI-driven clinical workflows._
 
 API-first design, standardized data, strong guardrails, and deep interoperability enable classes of AI systems that are otherwise difficult to build safely.
 
-- [Rad AI](/blog/radai-case-study): Builds tools that help radiologists by automating documentation and surfacing clinical context. By using Medplum for underlying infrastructure, they can focus on AI differentiation. They now support more than half of all U.S. medical imaging providers.
-- [Unity AI](/blog/scheduling-agents-unity-ai): Uses AI-driven agents to handle tens of thousands of patient outreach calls daily. Because Medplum integrates clinical data, scheduling, and messaging, Unity AI can operate agents across multiple systems without stitching together fragile point integrations.
+- [Rad AI](https://www.medplum.com/blog/radai-case-study): Builds tools that help radiologists by automating documentation and surfacing clinical context. By using Afiax for underlying infrastructure, they can focus on AI differentiation. They now support more than half of all U.S. medical imaging providers.
+- [Unity AI](https://www.medplum.com/blog/scheduling-agents-unity-ai): Uses AI-driven agents to handle tens of thousands of patient outreach calls daily. Because Afiax integrates clinical data, scheduling, and messaging, Unity AI can operate agents across multiple systems without stitching together fragile point integrations.
 
 ## A Foundation, Not a Bet on a Single Model
 
@@ -105,17 +105,17 @@ API-first design, standardized data, strong guardrails, and deep interoperabilit
 
 AI models will continue to change; capabilities will improve and costs will shift. What should not change is the foundation those systems are built on.
 
-In healthcare, long-term success depends on platforms that are stable, interoperable, and designed with safety in mind. Medplum focuses on durable infrastructure: standardized data, comprehensive APIs, and strong access controls. This allows organizations to adopt new AI capabilities as they mature—without repeatedly re-architecting their core systems.
+In healthcare, long-term success depends on platforms that are stable, interoperable, and designed with safety in mind. Afiax focuses on durable infrastructure: standardized data, comprehensive APIs, and strong access controls. This allows organizations to adopt new AI capabilities as they mature—without repeatedly re-architecting their core systems.
 
-## AI Solutions with Medplum
+## AI Solutions with Afiax
 
-Medplum helps you put AI to work on real-world problems. Whether you're structuring clinical notes or extracting key data from faxes, Medplum is the platform that makes it possible.
+Afiax helps you put AI to work on real-world problems. Whether you're structuring clinical notes or extracting key data from faxes, Afiax is the platform that makes it possible.
 
 Explore our dedicated integrations to learn more:
 
-- **[Medplum `$ai` ](/docs/ai/ai-operation):** The FHIR-compliant operation for integrating with large language models (LLMs) and enabling conversational AI within healthcare applications.
-- **[Medplum AI (MCP)](/docs/ai/mcp):** Connect with Medplum's MCP integration to enable AI models to securely access and interact with healthcare data using FHIR standards.
+- **[Afiax `$ai` ](/docs/ai/ai-operation):** The FHIR-compliant operation for integrating with large language models (LLMs) and enabling conversational AI within healthcare applications.
+- **[Afiax AI (MCP)](/docs/ai/mcp):** Connect with Afiax's MCP integration to enable AI models to securely access and interact with healthcare data using FHIR standards.
 - **[AWS Textract](/docs/ai/aws):** Extract and analyze text from clinical documents, faxes, and other unstructured data sources.
 - **[AWS Comprehend Medical](/docs/ai/aws):** Uncover valuable insights from clinical text, identifying medical conditions, medications, and treatments.
 
-Ready to see how Medplum can accelerate your AI journey? Get started with our documentation and a code example today.
+Ready to see how Afiax can accelerate your AI journey? Get started with our documentation and a code example today.

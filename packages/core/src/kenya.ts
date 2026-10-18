@@ -1811,7 +1811,7 @@ export const KenyaIdsrCodeSystem = KenyaIdsrCodeSystemIcd11;
 
 /** Dual-coded IDSR/KHIS notifiable condition entry. */
 export interface KenyaIdsrNotifiableCondition {
-  /** ICD-11 MMS linearization code (KNTS-mandated standard). */
+  /** ICD-11 MMS code (national standard; verified against KNHTS). */
   readonly icd11: string;
   /** ICD-10 code retained for backward compatibility during transition. */
   readonly icd10: string;
@@ -1833,12 +1833,13 @@ export const KenyaIdsrImmediateNotifiableConditions: readonly KenyaIdsrNotifiabl
   { icd11: '1D61', icd10: 'A96', display: 'Arenaviral haemorrhagic fever' },
   { icd11: '1D60.0', icd10: 'A98.4', display: 'Ebola virus disease' },
   { icd11: '1D60.1', icd10: 'A98.5', display: 'Marburg virus disease' },
+  { icd11: '1D49', icd10: 'A98.0', display: 'Crimean-Congo haemorrhagic fever' },
   { icd11: '1D86', icd10: 'A99', display: 'Viral haemorrhagic fever, not elsewhere classified' },
   { icd11: '1E70', icd10: 'B03', display: 'Smallpox' },
   { icd11: '1E71', icd10: 'B04', display: 'Mpox (monkeypox)' },
   { icd11: '1F03', icd10: 'B05', display: 'Measles' },
   { icd11: '1E31', icd10: 'J09', display: 'Influenza A (novel/pandemic subtype)' },
-  { icd11: 'RA01.0', icd10: 'U07.1', display: 'COVID-19' },
+  { icd11: 'RA01', icd10: 'U07.1', display: 'COVID-19' },
 ] as const;
 
 /**
@@ -1994,36 +1995,38 @@ export function buildKenyaIdsrNotificationExtension(
 // ─── KHIS weekly notifiable conditions (MOH 505 + IDSR superset) ──────────────
 // Dual ICD-11/ICD-10 coding matches the IDSR section above.
 // Note: ICD-10 A92 (other mosquito-borne fevers) maps to two distinct ICD-11
-// codes — Rift Valley fever (1D43) and Chikungunya (1D40) are listed separately.
-// Entries marked TODO(knhts-verify) have not yet been confirmed against the KNHTS ICD-11
-// service (AfyaLink /terminology/v1/icd11); confirm before relying on them for MOH 505.
+// codes — Rift Valley fever (1D44) and Chikungunya (1D40) are listed separately.
+// Every ICD-11 code in these tables was verified against KNHTS (WHO ICD-11 source,
+// MMS release 2025-01, https://ilm-hie.dha.go.ke/ocl/orgs/WHO/sources/ICD-11/) on 2026-10-18.
+// Order matters: the first entry a code falls under wins, so specific codes precede parents.
 
 export const KenyaKhisWeeklyNotifiableConditions: readonly KenyaIdsrNotifiableCondition[] = [
   // ── Immediately notifiable (superset) ────────────────────────────────────────
   ...KenyaIdsrImmediateNotifiableConditions,
   // ── Weekly reportable (MOH 505 endemic disease surveillance) ─────────────────
-  { icd11: '1B10', icd10: 'A15', display: 'Tuberculosis (confirmed)' },
-  { icd11: '1B11', icd10: 'A16', display: 'Tuberculosis (unconfirmed)' }, // TODO(knhts-verify)
-  { icd11: '1B12', icd10: 'A17', display: 'Tuberculosis of nervous system' }, // TODO(knhts-verify)
-  { icd11: '1A36', icd10: 'A06', display: 'Amoebiasis' }, // TODO(knhts-verify)
+  { icd11: '1B10', icd10: 'A15', display: 'Tuberculosis of the respiratory system' },
+  { icd11: '1B11', icd10: 'A17', display: 'Tuberculosis of the nervous system' },
+  { icd11: '1B12', icd10: 'A18', display: 'Tuberculosis of other systems and organs' },
+  { icd11: '1B13', icd10: 'A19', display: 'Miliary tuberculosis' },
+  { icd11: '1A36', icd10: 'A06', display: 'Amoebiasis' },
   { icd11: '1A40', icd10: 'A09', display: 'Diarrhoeal diseases (gastroenteritis or colitis)' },
-  { icd11: '1B90', icd10: 'A27', display: 'Leptospirosis' }, // TODO(knhts-verify)
+  { icd11: '1B91', icd10: 'A27', display: 'Leptospirosis' },
   { icd11: '1B20', icd10: 'A30', display: 'Leprosy' },
   { icd11: '1C30', icd10: 'A75', display: 'Typhus fever' },
   { icd11: '1D2Z', icd10: 'A90', display: 'Dengue fever' },
   { icd11: '1D44', icd10: 'A92', display: 'Rift Valley fever' },
   { icd11: '1D40', icd10: 'A92', display: 'Chikungunya' },
   { icd11: '1F40', icd10: 'B50', display: 'Malaria (P. falciparum)' },
-  { icd11: '1F41', icd10: 'B51', display: 'Malaria (P. vivax)' }, // TODO(knhts-verify)
+  { icd11: '1F41', icd10: 'B51', display: 'Malaria (P. vivax)' },
   { icd11: '1F4Z', icd10: 'B54', display: 'Malaria (unspecified)' },
   { icd11: '1F54', icd10: 'B55', display: 'Leishmaniasis' },
   { icd11: '1F66', icd10: 'B74', display: 'Filariasis' },
-  { icd11: '1C1E', icd10: 'G00', display: 'Bacterial meningitis' }, // TODO(knhts-verify)
-  { icd11: 'DB50.Z', icd10: 'G03', display: 'Meningitis (other/unspecified)' }, // TODO(knhts-verify)
-  { icd11: 'CA04', icd10: 'J00', display: 'Acute nasopharyngitis (ARI)' }, // TODO(knhts-verify)
+  { icd11: '1D01.0', icd10: 'G00', display: 'Bacterial meningitis' },
+  { icd11: '1C8E', icd10: 'A87', display: 'Viral meningitis' },
+  { icd11: '1D01', icd10: 'G03', display: 'Meningitis (other infectious / unspecified)' },
+  { icd11: 'CA00', icd10: 'J00', display: 'Acute nasopharyngitis (ARI)' },
   { icd11: 'CA07', icd10: 'J06', display: 'Acute upper respiratory infection' },
   { icd11: 'CA40', icd10: 'J18', display: 'Pneumonia' },
-  { icd11: 'DA91.Z', icd10: 'K52', display: 'Acute gastroenteritis' }, // TODO(knhts-verify)
 ] as const;
 
 // Backward-compatible flat code array (ICD-10 values)

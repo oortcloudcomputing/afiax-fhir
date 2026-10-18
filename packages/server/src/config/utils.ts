@@ -168,6 +168,7 @@ const booleanKeys = new Set([
   'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'rowLevelSecurity',
+  'knhtsValidation',
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',

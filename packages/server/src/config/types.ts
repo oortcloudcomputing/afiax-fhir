@@ -183,6 +183,10 @@ export interface MedplumServerConfig {
 
   /** Optional PostgreSQL row-level security for project isolation (see fhir/rls.ts). */
   rowLevelSecurity?: boolean;
+  /** Validate Kenya ICD-11 diagnosis codes against KNHTS at the point of entry (default true) */
+  knhtsValidation?: boolean;
+  /** KNHTS (Open Concept Lab) API base URL; default https://ilm-hie.dha.go.ke/ocl */
+  knhtsBaseUrl?: string;
 }
 
 /** Field-level encryption config: envelope encryption with Vault Transit data keys. */

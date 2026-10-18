@@ -158,6 +158,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultSuperAdminClientSecret = randomUUID();
   // Run any suite with PostgreSQL row-level security on: MEDPLUM_TEST_RLS=true npx jest ...
   config.rowLevelSecurity = process.env['MEDPLUM_TEST_RLS'] === 'true';
+  config.knhtsValidation = false; // No calls to the national terminology service from tests
   return config;
 }
 

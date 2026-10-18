@@ -851,7 +851,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // Validate resource after all modifications and touchups above are done
     await this.validateResource(result);
     // Kenya country pack: diagnoses must be ICD-11 MMS coded (MoH / DHA national standard)
-    enforceKenyaIcd11Diagnosis(this.currentProject(), result, existing, this.isSuperAdmin());
+    await enforceKenyaIcd11Diagnosis(this.currentProject(), result, existing, this.isSuperAdmin());
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       await this.checkWebSocketSubscriptionLimit(result);

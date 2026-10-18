@@ -700,6 +700,23 @@ describe('Kenya IDSR ICD-11 code table', () => {
     // 1A90 is chancroid, not a diarrhoeal disease
     expect(findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code: '1A90' })).toBeUndefined();
   });
+
+  test('uses the KNHTS-verified codes for TB, meningitis, leptospirosis and VHF', () => {
+    const weekly = (code: string): string | undefined =>
+      findKenyaKhisWeeklyCondition({ system: KenyaIcd11System, code })?.display;
+    expect(weekly('1B10.Z')).toBe('Tuberculosis of the respiratory system');
+    expect(weekly('1B11.0')).toBe('Tuberculosis of the nervous system');
+    expect(weekly('1B14')).toBeUndefined(); // latent TB is not a notifiable case
+    expect(weekly('1D01.0Z')).toBe('Bacterial meningitis');
+    expect(weekly('1D01.Z')).toBe('Meningitis (other infectious / unspecified)');
+    expect(weekly('1C8E.Z')).toBe('Viral meningitis');
+    expect(weekly('1B91')).toBe('Leptospirosis');
+    expect(weekly('1B90')).toBeUndefined(); // rat-bite fever
+    expect(weekly('CA00')).toBe('Acute nasopharyngitis (ARI)');
+    expect(weekly('1C1E')).toBeUndefined(); // pinta
+    expect(findKenyaIdsrImmediateCondition('1D49', KenyaIcd11System)?.display).toBe('Crimean-Congo haemorrhagic fever');
+    expect(findKenyaIdsrImmediateCondition('RA01.1', KenyaIcd11System)?.display).toBe('COVID-19');
+  });
 });
 
 describe('Kenya ICD-11 code helpers', () => {

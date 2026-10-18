@@ -6,8 +6,10 @@ import {
   createReference,
   findKenyaKhisWeeklyCondition,
   KenyaKhisCorrelationIdSystem,
+  KenyaKhisWeeklyNotifiableConditions,
   khisWeekPeriodToDateRange,
   normalizeErrorString,
+  Operator,
 } from '@medplum/core';
 import type {
   AuditEvent,
@@ -209,24 +211,17 @@ export async function aggregateConditionsForWeek(
   const startStr = weekStart.toISOString().slice(0, 10);
   const endStr = weekEnd.toISOString().slice(0, 10);
 
-  const bundle = await ctx.repo.search<Condition>({
-    resourceType: 'Condition',
-    filters: [
-      { code: 'onset-date', operator: 'ge', value: startStr },
-      { code: 'onset-date', operator: 'le', value: endStr },
-    ],
-    count: 1000,
-  });
-
   // Keyed by the table entry's ICD-11 code. A Condition counts once per entry, even when it carries
   // several codings for the same disease (e.g. ICD-11 plus an additional ICD-10 coding).
+  // Every weekly condition starts at zero: MOH 505 requires zero reporting for diseases with no cases.
   const counts = new Map<string, { legacyCode: string; suspected: number; confirmed: number; deaths: number }>();
-
-  for (const entry of bundle.entry ?? []) {
-    const condition = entry.resource;
-    if (!condition) {
-      continue;
+  for (const c of KenyaKhisWeeklyNotifiableConditions) {
+    if (!counts.has(c.icd11)) {
+      counts.set(c.icd11, { legacyCode: c.icd10, suspected: 0, confirmed: 0, deaths: 0 });
     }
+  }
+
+  for await (const condition of searchConditionsInWeek(ctx, startStr, endStr)) {
     const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
     if (verificationStatus === 'refuted' || verificationStatus === 'entered-in-error') {
       continue;
@@ -262,6 +257,50 @@ export async function aggregateConditionsForWeek(
     confirmed: agg.confirmed,
     deaths: agg.deaths,
   }));
+}
+
+const CONDITION_PAGE_SIZE = 1000;
+// Matches the server's default maxSearchOffset (10,000)
+const CONDITION_MAX_OFFSET = 10_000;
+
+/**
+ * Yields every Condition with an onset date in the week, page by page, so busy facilities are not
+ * under-counted. If the week holds more Conditions than the server's maximum search offset, the
+ * export fails rather than submitting incomplete counts.
+ * @param ctx - The request context.
+ * @param startStr - First day of the week (YYYY-MM-DD).
+ * @param endStr - Last day of the week (YYYY-MM-DD).
+ * @yields Each Condition in the week.
+ */
+async function* searchConditionsInWeek(
+  ctx: AuthenticatedRequestContext,
+  startStr: string,
+  endStr: string
+): AsyncGenerator<Condition> {
+  for (let offset = 0; ; offset += CONDITION_PAGE_SIZE) {
+    if (offset > CONDITION_MAX_OFFSET) {
+      throw new Error(`More than ${CONDITION_MAX_OFFSET} Conditions in the week; weekly counts would be incomplete`);
+    }
+    const bundle = await ctx.repo.search<Condition>({
+      resourceType: 'Condition',
+      filters: [
+        { code: 'onset-date', operator: Operator.GREATER_THAN_OR_EQUALS, value: startStr },
+        { code: 'onset-date', operator: Operator.LESS_THAN_OR_EQUALS, value: endStr },
+      ],
+      sortRules: [{ code: '_id' }],
+      count: CONDITION_PAGE_SIZE,
+      offset,
+    });
+    const entries = bundle.entry ?? [];
+    for (const entry of entries) {
+      if (entry.resource) {
+        yield entry.resource;
+      }
+    }
+    if (entries.length < CONDITION_PAGE_SIZE) {
+      return;
+    }
+  }
 }
 
 async function createExportTask(

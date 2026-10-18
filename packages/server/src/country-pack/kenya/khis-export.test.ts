@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { KenyaIcd10System, KenyaIcd11System } from '@medplum/core';
+import { KenyaIcd10System, KenyaIcd11System, KenyaKhisWeeklyNotifiableConditions } from '@medplum/core';
 import type { Condition } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import { aggregateConditionsForWeek } from './khis-export';
@@ -17,9 +17,19 @@ function condition(codings: { system: string; code: string }[], verification = '
 function ctxWith(conditions: Condition[]): AuthenticatedRequestContext {
   return {
     repo: {
-      search: jest.fn(async () => ({ resourceType: 'Bundle', entry: conditions.map((resource) => ({ resource })) })),
+      search: jest.fn(async (req: { count: number; offset?: number }) => {
+        const offset = req.offset ?? 0;
+        const page = conditions.slice(offset, offset + req.count);
+        return { resourceType: 'Bundle', entry: page.map((resource) => ({ resource })) };
+      }),
     },
   } as unknown as AuthenticatedRequestContext;
+}
+
+const distinctWeeklyCodes = new Set(KenyaKhisWeeklyNotifiableConditions.map((c) => c.icd11)).size;
+
+function nonZero<T extends { suspected: number; confirmed: number; deaths: number }>(rows: T[]): T[] {
+  return rows.filter((r) => r.suspected || r.confirmed || r.deaths);
 }
 
 describe('aggregateConditionsForWeek', () => {
@@ -34,7 +44,7 @@ describe('aggregateConditionsForWeek', () => {
       ]),
     ]);
     const result = await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd);
-    expect(result).toEqual([{ code: '1F40', legacyCode: 'B50', suspected: 0, confirmed: 1, deaths: 0 }]);
+    expect(nonZero(result)).toEqual([{ code: '1F40', legacyCode: 'B50', suspected: 0, confirmed: 1, deaths: 0 }]);
   });
 
   test('counts ICD-11 child codes and legacy ICD-10 records under the same condition', async () => {
@@ -43,7 +53,7 @@ describe('aggregateConditionsForWeek', () => {
       condition([{ system: KenyaIcd10System, code: 'B50' }], 'provisional'),
     ]);
     const result = await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd);
-    expect(result).toEqual([{ code: '1F40', legacyCode: 'B50', suspected: 1, confirmed: 1, deaths: 0 }]);
+    expect(nonZero(result)).toEqual([{ code: '1F40', legacyCode: 'B50', suspected: 1, confirmed: 1, deaths: 0 }]);
   });
 
   test('ignores refuted and entered-in-error Conditions', async () => {
@@ -51,6 +61,27 @@ describe('aggregateConditionsForWeek', () => {
       condition([{ system: KenyaIcd11System, code: '1A00' }], 'refuted'),
       condition([{ system: KenyaIcd11System, code: '1A00' }], 'entered-in-error'),
     ]);
-    expect(await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd)).toEqual([]);
+    expect(nonZero(await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd))).toEqual([]);
+  });
+
+  test('reports zero for every weekly condition with no cases', async () => {
+    const result = await aggregateConditionsForWeek(ctxWith([]), 'facility-1', weekStart, weekEnd);
+    expect(result).toHaveLength(distinctWeeklyCodes);
+    expect(result.every((r) => r.suspected === 0 && r.confirmed === 0 && r.deaths === 0)).toBe(true);
+  });
+
+  test('counts every page of a busy week', async () => {
+    const many = Array.from({ length: 2500 }, () => condition([{ system: KenyaIcd11System, code: 'CA40' }]));
+    const ctx = ctxWith(many);
+    const result = await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd);
+    expect(result.find((r) => r.code === 'CA40')?.confirmed).toBe(2500);
+    expect(ctx.repo.search).toHaveBeenCalledTimes(3);
+  });
+
+  test('fails instead of under-counting beyond the search offset limit', async () => {
+    const many = Array.from({ length: 12_000 }, () => condition([{ system: KenyaIcd11System, code: 'CA40' }]));
+    await expect(aggregateConditionsForWeek(ctxWith(many), 'facility-1', weekStart, weekEnd)).rejects.toThrow(
+      'weekly counts would be incomplete'
+    );
   });
 });

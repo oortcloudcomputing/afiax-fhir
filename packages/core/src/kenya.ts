@@ -1692,6 +1692,39 @@ export const KenyaIcd11System = 'http://id.who.int/icd/release/11/mms';
 /** FHIR system URI for WHO ICD-10 — accepted only as an additional coding on legacy records. */
 export const KenyaIcd10System = 'http://hl7.org/fhir/sid/icd-10';
 
+// ─── KNHTS (Kenya National Health Terminology Service) ─────────────────────────
+// KNHTS (https://nhts.dha.go.ke) is the DHA's national terminology authority, served by Open Concept
+// Lab at https://ilm-hie.dha.go.ke/ocl. International sources keep their standard URIs (ICD-11, LOINC);
+// Kenyan sources without a published canonical URL are identified by their KNHTS source URL.
+export const KenyaKnhtsBaseUrl = 'https://ilm-hie.dha.go.ke/ocl';
+
+/**
+ * Returns the code system URI for a KNHTS source.
+ * @param owner - The KNHTS (OCL) organisation, e.g. MOH-KENYA.
+ * @param source - The KNHTS source id, e.g. BenefitsAndInterventions.
+ * @returns The code system URI.
+ */
+export function getKenyaKnhtsSystem(owner: string, source: string): string {
+  return `${KenyaKnhtsBaseUrl}/orgs/${owner}/sources/${source}`;
+}
+
+/** SHA benefit packages and interventions (KNHTS MOH-KENYA/BenefitsAndInterventions). */
+export const KenyaShaInterventionSystem = getKenyaKnhtsSystem('MOH-KENYA', 'BenefitsAndInterventions');
+/** WHO ICHI health interventions (KNHTS WHO/ICHI). */
+export const KenyaIchiSystem = getKenyaKnhtsSystem('WHO', 'ICHI');
+/** Health products and technologies, incl. medicines and vaccines (KNHTS MOH-PPB/HPT). */
+export const KenyaHealthProductSystem = getKenyaKnhtsSystem('MOH-PPB', 'HPT');
+/** Investigations (KNHTS MOH-PPB/Investigations). */
+export const KenyaInvestigationSystem = getKenyaKnhtsSystem('MOH-PPB', 'Investigations');
+/** Kenya patient identifier types (KNHTS MOH-KENYA/ORG-00001-SRC-016): nationalID, shaNumber, ... */
+export const KenyaPatientIdentifierTypeSystem = getKenyaKnhtsSystem('MOH-KENYA', 'ORG-00001-SRC-016');
+/** Claim / pre-authorisation document types (KNHTS MOH-KENYA/document-types). */
+export const KenyaDocumentTypeSystem = getKenyaKnhtsSystem('MOH-KENYA', 'document-types');
+/** Healthcare facility encounter types (KNHTS MOH-KENYA/ORG-00001-SRC-027). */
+export const KenyaEncounterTypeSystem = getKenyaKnhtsSystem('MOH-KENYA', 'ORG-00001-SRC-027');
+/** Allergy intolerance codes (KNHTS MOH-KENYA/ORG-00001-SRC-012). */
+export const KenyaAllergyCodeSystem = getKenyaKnhtsSystem('MOH-KENYA', 'ORG-00001-SRC-012');
+
 /** Preferred FHIR system URI for ICD-11 MMS (KNTS-mandated standard). */
 export const KenyaIdsrCodeSystemIcd11 = KenyaIcd11System;
 /** Legacy FHIR system URI for ICD-10 (retained for backward compatibility). */

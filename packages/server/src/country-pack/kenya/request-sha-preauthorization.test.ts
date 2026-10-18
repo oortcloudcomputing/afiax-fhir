@@ -3,6 +3,7 @@
 import type { Claim, Coverage, Organization, Patient, Practitioner, Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import type { ShaPreAuthItem } from './request-sha-preauthorization';
+import * as knhts from './knhts';
 import { requestKenyaShaPreauthorization } from './request-sha-preauthorization';
 
 jest.mock('node-fetch');
@@ -115,7 +116,7 @@ describe('requestKenyaShaPreauthorization', () => {
     expect(createdClaim.item).toHaveLength(2);
     expect(createdClaim.item?.[0]?.productOrService?.coding?.[0]?.code).toBe('SHA-KE-001');
     expect(createdClaim.item?.[0]?.productOrService?.coding?.[0]?.system).toBe(
-      'https://afiax.africa/kenya/CodeSystem/sha-intervention'
+      'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-KENYA/sources/BenefitsAndInterventions'
     );
     expect(createdClaim.item?.[0]?.productOrService?.text).toBe('Knee Arthroscopy');
     expect(createdClaim.item?.[0]?.quantity?.value).toBe(1);
@@ -282,6 +283,37 @@ describe('requestKenyaShaPreauthorization', () => {
     expect(result.message).toContain('Kenya SHA pre-authorization submission failed');
     expect(result.preAuthClaimId).toBeDefined();
     expect(result.rawBundle).toBeDefined();
+  });
+
+  test('rejects intervention codes that KNHTS does not know, before contacting SHA', async () => {
+    jest.spyOn(knhts, 'isKnhtsValidationEnabled').mockReturnValue(true);
+    const lookup = jest
+      .spyOn(knhts, 'lookupKnhtsConcept')
+      .mockImplementation(async (_source, code) =>
+        code === 'SHA-KE-001' ? { status: 'found', display: 'Knee Arthroscopy', retired: false } : { status: 'not-found' }
+      );
+    try {
+      const systemRepo = makeSystemRepo();
+      const result = await requestKenyaShaPreauthorization({
+        ctx: { project: projectWithCredentials, systemRepo } as any,
+        coverage: coverage as Coverage & { id: string },
+        patient: patient as Patient & { id: string },
+        providerOrganization: providerOrganization as Organization & { id: string },
+        insurerOrganization: insurerOrganization as Organization & { id: string },
+        practitioners: [practitioner as Practitioner & { id: string }],
+        requestedItems,
+        estimatedTotal: 65000,
+        currency: 'KES',
+        correlationId: 'corr-preauth-knhts',
+      });
+      expect(systemRepo.createResource).not.toHaveBeenCalled();
+      expect(result.status).toBe('error');
+      expect(result.message).toBe('Unknown SHA intervention code(s) in KNHTS: SHA-KE-002');
+      expect(lookup).toHaveBeenCalledWith(knhts.KnhtsSources.shaInterventions, 'SHA-KE-001');
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      jest.restoreAllMocks();
+    }
   });
 
   test('uses quantity 1 as default when item quantity is not specified', async () => {

@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getKenyaShaClaimsEnvironment, normalizeErrorString } from '@medplum/core';
+import {
+  createReference,
+  getKenyaShaClaimsEnvironment,
+  KenyaShaInterventionSystem,
+  normalizeErrorString,
+} from '@medplum/core';
 import type {
   Bundle,
   BundleEntry,
@@ -15,6 +20,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequestContext } from '../../context';
+import { isKnhtsValidationEnabled, KnhtsSources, lookupKnhtsConcept } from './knhts';
 import {
   getKenyaShaClaimsBaseUrl,
   getKenyaShaClaimsCredentials,
@@ -74,6 +80,26 @@ function rewriteReference<T extends Reference | undefined>(reference: T, referen
   return { ...reference, reference: fullUrl } as T;
 }
 
+/**
+ * Returns the requested intervention codes that KNHTS (MOH-KENYA/BenefitsAndInterventions) does not
+ * know. Codes are not rejected when KNHTS is unreachable or validation is disabled.
+ * @param items - The requested items.
+ * @returns The unknown codes.
+ */
+async function findUnknownShaInterventionCodes(items: readonly ShaPreAuthItem[]): Promise<string[]> {
+  if (!isKnhtsValidationEnabled()) {
+    return [];
+  }
+  const unknown: string[] = [];
+  for (const code of new Set(items.map((item) => item.interventionCode))) {
+    const result = await lookupKnhtsConcept(KnhtsSources.shaInterventions, code);
+    if (result.status === 'not-found' || (result.status === 'found' && result.retired)) {
+      unknown.push(code);
+    }
+  }
+  return unknown;
+}
+
 export async function requestKenyaShaPreauthorization(
   input: RequestShaPreauthorizationInput
 ): Promise<RequestShaPreauthorizationResult> {
@@ -91,6 +117,19 @@ export async function requestKenyaShaPreauthorization(
   } = input;
 
   const shaClaimsEnvironment = getKenyaShaClaimsEnvironment(ctx.project);
+
+  // Intervention codes must be SHA benefit/intervention codes published in KNHTS
+  const unknownCodes = await findUnknownShaInterventionCodes(requestedItems);
+  if (unknownCodes.length > 0) {
+    return {
+      status: 'error',
+      correlationId,
+      message: `Unknown SHA intervention code(s) in KNHTS: ${unknownCodes.join(', ')}`,
+      nextState: 'preauth-request-invalid',
+      shaClaimsEnvironment,
+    };
+  }
+
   const claimsBaseUrl = getKenyaShaClaimsBaseUrl(ctx.project);
   const bundleId = randomUUID();
   const submissionEndpoint = `${claimsBaseUrl}/v1/shr-med/bundle`;
@@ -113,7 +152,7 @@ export async function requestKenyaShaPreauthorization(
     item: requestedItems.map((item) => ({
       sequence: item.sequence,
       productOrService: {
-        coding: [{ system: 'https://afiax.africa/kenya/CodeSystem/sha-intervention', code: item.interventionCode }],
+        coding: [{ system: KenyaShaInterventionSystem, code: item.interventionCode }],
         text: item.description,
       },
       quantity: { value: item.quantity ?? 1 },

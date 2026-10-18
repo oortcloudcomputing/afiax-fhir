@@ -23,6 +23,7 @@ Kenya is the reference implementation for:
 - resource-level country workflows
 - DHA HIE connector normalization
 - SHA submit and status workflows
+- ICD-11 diagnosis coding validated against KNHTS, IDSR notification and KHIS weekly reporting ([details](./kenya-terminology-and-surveillance))
 - optional post-submit and post-status bot handoff
 
 ## Scope
@@ -551,6 +552,10 @@ If you are extending the Kenya pack, start here:
 - `packages/server/src/country-pack/kenya/submit-national-claim.ts`
 - `packages/server/src/country-pack/kenya/check-national-claim-status.ts`
 - `packages/server/src/country-pack/kenya/workflow-bot.ts`
+- `packages/server/src/country-pack/kenya/knhts.ts`
+- `packages/server/src/country-pack/kenya/icd11-diagnosis.ts`
+- `packages/server/src/country-pack/kenya/idsr.ts` and `auto-idsr.ts`
+- `packages/server/src/country-pack/kenya/khis-export.ts`
 - `packages/core/src/kenya.ts`
 
 If you are extending the Kenya UI, start here:
@@ -578,4 +583,5 @@ If you are extending the Kenya UI, start here:
 - [Country packs](./index.md)
 - [Country pack SDK](./sdk)
 - [Kenya billing and settlement](./kenya-billing-and-settlement)
+- [Kenya terminology and surveillance](./kenya-terminology-and-surveillance) — KNHTS, ICD-11 rule, IDSR, KHIS
 - [Canonical FHIR model](../architecture/canonical-model)

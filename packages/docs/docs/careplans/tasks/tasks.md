@@ -120,7 +120,7 @@ You can search for all unassigned tasks using the [`:missing`](/docs/search/basi
 
 A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
-It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
+It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/country-packs/kenya-terminology-and-surveillance) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
 
 In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Afiax recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
 

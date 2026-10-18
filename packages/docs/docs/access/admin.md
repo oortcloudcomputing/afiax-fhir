@@ -37,5 +37,5 @@ To grant a user super admin privilege, invite them to the Super Admin project (s
 Project Admins have the following privileges:
 
 - **Overwrite all resource fields** - Super admin users bypass all data validation checks, and can edit protected fields like `id` and `meta` properties.
-- **Rebuild shared data structures** - Certain shared resources, such as `StructureDefinitions` and `ValueSets`, sometimes need to be built after some server updates. See the [Super Admin Guide](/docs/self-hosting/super-admin-guide) for more details.
+- **Rebuild shared data structures** - Certain shared resources, such as `StructureDefinitions` and `ValueSets`, sometimes need to be built after some server updates. See the [Super Admin Guide](/docs/afiax-cloud/operations-and-updates#changing-settings) for more details.
 - **Create projects via API** - Because [`Projects`](/docs/api/fhir/medplum/project) are system-level resources, creating them via API requires the creation of a Super Admin [`ClientApplication`](/docs/api/fhir/medplum/clientapplication)

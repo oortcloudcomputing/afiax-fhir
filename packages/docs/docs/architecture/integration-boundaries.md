@@ -218,7 +218,7 @@ Interpretation:
 ### Incorrect
 
 - calling DHA directly from a React screen without the pack handler
-- creating ERPNext documents from Afiax FHIR core routes
+- creating Afiax Billing documents from Afiax FHIR core routes
 - letting the mobile gateway become the only source of reimbursement state
 
 ## Related docs

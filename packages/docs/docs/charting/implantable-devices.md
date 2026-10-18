@@ -8,7 +8,7 @@ Capturing a Patient's implanted devices is a core function of an Electronic Heal
 
 Implantable device list can be input via multiple methods, for example via **application user interface (UI)**, synchronized via **integration** or written via **API**.
 
-The [USCDI](/docs/fhir-datastore/understanding-uscdi-dataclasses) V2 data standard outlines specific technical requirements, you can see the [profile on HL7.org](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-implantable-device.html).
+The [USCDI](/docs/country-packs/kenya-terminology-and-surveillance) V2 data standard outlines specific technical requirements, you can see the [profile on HL7.org](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-implantable-device.html).
 
 ## Device Specific Identifiers
 

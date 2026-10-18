@@ -44,7 +44,7 @@ limit.
 
 You can configure rate limits at the **Server**, **Project**, and **User** levels.
 
-- **Server Level Defaults (Self-Hosting)**: Defined in [Server Configuration](/docs/self-hosting/server-config) using `defaultRateLimit` and `defaultFhirQuota`.
+- **Server Level Defaults (set by Oortcloud)**: Defined in [Server Configuration](/docs/afiax-cloud/operations-and-updates#changing-settings) using `defaultRateLimit` and `defaultFhirQuota`.
 - **Project Level Overrides**: Configured in the `Project.systemSettings` (see below).
 - **User Level Overrides**: Configured in `UserConfiguration` resources (see [User Configuration](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits)).
 

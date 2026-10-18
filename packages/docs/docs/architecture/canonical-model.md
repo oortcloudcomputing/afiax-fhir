@@ -212,7 +212,7 @@ Keep these out of the canonical model:
 - country-specific endpoint URLs
 - regulator-specific payload shapes
 - country program names as field names
-- ERPNext invoice, payroll, CRM, training, and inventory object shapes
+- Afiax Billing invoice, payroll, CRM, training, and inventory object shapes
 - Afiax Pay wallet ledger internals
 - partner-product and quote objects
 - tenant shortcuts that collapse core and country layers

@@ -47,7 +47,7 @@ If installed as a package dependency, you can use the `medplum` command via `npx
 npx medplum <command> <args>
 ```
 
-By default, the `medplum` command uses the Afiax hosted API at "https://fhir.afiax.africa". If you want to use the `medplum` command against your own self-hosted server, you can use the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
+By default, the `medplum` command uses the Afiax hosted API at "https://fhir.afiax.africa". To use it against UAT (`https://fhir.uat.afiax.africa/`), set the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
 
 ### optional flags for medplum commands
 
@@ -236,50 +236,6 @@ medplum project invite <firstName> <lastName> <email>
   - The type of role the new user will have
   - Choices are Patient, Practitioner, and RelatedPerson
     - Default will be Practitioner
-
-### AWS
-
-`aws` includes commands for creating and managing AWS resources.
-
-The AWS commands require [AWS authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html). Please make sure your credentials are configured before using the `aws` commands.
-
-:::caution
-
-The `aws` commands are in beta, and likely to change.
-
-:::
-
-#### list
-
-List your Afiax deployments. This command lists AWS CloudFormation stacks with the `medplum:environment` tag.
-
-```bash
-medplum aws list
-```
-
-#### describe
-
-Describe an Afiax deployment. Displays select AWS resources such as ECS Cluster, ECS Service, and S3 buckets from the AWS CloudFormation stack with the corresponding `medplum:environment` tag.
-
-```bash
-medplum aws describe <name>
-```
-
-#### update-app
-
-Updates the app S3 bucket in an Afiax deployment to the latest version.
-
-```bash
-medplum aws update-app <name>
-```
-
-#### update-server
-
-Updates the ECS Service in an Afiax deployment to the latest version.
-
-```bash
-medplum aws update-server <name>
-```
 
 ### Bots
 

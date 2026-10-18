@@ -6,7 +6,7 @@ sidebar_position: 5
 
 This page defines how Afiax FHIR integrates with Afiax Pay inside Afiax Enterprise.
 
-Afiax Pay is the Mifos-derived payments and wallet platform in the enterprise architecture.
+Afiax Pay is the payments and wallet platform in the enterprise architecture.
 
 Use this page when deciding whether a payment, wallet, co-pay, subsidy, premium, or refund capability belongs in
 Afiax FHIR, Afiax Pay, or the active country pack.

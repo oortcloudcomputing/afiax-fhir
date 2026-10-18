@@ -6,7 +6,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 const config: Config = {
   title: 'Afiax FHIR',
-  tagline: 'FHIR-native clinical core for Afiax Enterprise',
+  tagline: 'Managed, Kenya-hosted clinical platform by Oortcloud',
   url: 'https://www.fhirdocs.afiax.africa',
   baseUrl: '/',
   trailingSlash: false,
@@ -96,9 +96,15 @@ const config: Config = {
         },
         {
           type: 'doc',
-          docId: 'architecture/enterprise-platform',
+          docId: 'products/index',
           position: 'left',
-          label: 'Platform',
+          label: 'Products',
+        },
+        {
+          type: 'doc',
+          docId: 'afiax-cloud/index',
+          position: 'left',
+          label: 'Afiax Cloud',
         },
         {
           type: 'doc',
@@ -163,8 +169,12 @@ const config: Config = {
               to: '/docs/bots',
             },
             {
-              label: 'Self hosting',
-              to: '/docs/self-hosting',
+              label: 'Afiax Cloud',
+              to: '/docs/afiax-cloud',
+            },
+            {
+              label: 'Products',
+              to: '/docs/products',
             },
           ],
         },

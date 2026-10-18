@@ -42,4 +42,4 @@ This architecture allows Afiax to support:
 - [Projects](/docs/access/projects)
 - [Multi-tenant access policy](/docs/access/multi-tenant-access-policy)
 - [Country packs](/docs/country-packs)
-- [Self hosting](/docs/self-hosting)
+- [Afiax Cloud](/docs/afiax-cloud)

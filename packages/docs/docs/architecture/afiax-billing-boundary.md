@@ -16,7 +16,7 @@ page.
 
 Afiax FHIR remains the clinical and reimbursement source of truth.
 
-Afiax Billing is the ERPNext-based enterprise billing and operations surface under Afiax Enterprise.
+Afiax Billing is the enterprise billing and operations surface under Afiax Enterprise.
 
 It remains the system of record for:
 
@@ -43,9 +43,9 @@ Implemented in this repo today:
 
 Not implemented in this repo:
 
-- ERPNext document creation
-- ERPNext inventory workflows
-- ERPNext invoicing and payment posting
+- Afiax Billing document creation
+- Afiax Billing inventory workflows
+- Afiax Billing invoicing and payment posting
 - CRM, HR, and training synchronization code
 
 This page is therefore both a boundary definition and an anti-drift guardrail.

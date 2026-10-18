@@ -4,9 +4,9 @@ sidebar_position: 3
 
 # Order Labs and Imaging
 
-Certified EHRs are required to support Computerized Physician Order Entry (CPOE) for Medications Labs and/or Imaging. These correspond to the ONC (a)(1), (a)(2) and (a)(3) criteria and which are described on [HealthIt.gov](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications).
+Clinicians order laboratory tests and imaging electronically in Afiax Provider (computerised order entry). Orders are stored in Afiax FHIR, and are sent on to the lab or to [Afiax DICOM](/docs/integration/afiax-dicom).
 
-This guide will describe how Afiax supports CPOE for Labs and Imaging. The guide for meds will be covered in the [Medications](/docs/medications) section.
+This guide describes how lab and imaging ordering works. The guide for meds will be covered in the [Medications](/docs/medications) section.
 
 ## Order Form
 
@@ -19,12 +19,16 @@ Building a custom computerized order form that represents an organization's [Dia
 
 This [questionnaire](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--lab-ordering) demonstrates a sample CPOE order form and can be added to your Afiax app or provider facing application to enable an ordering workflow.
 
-## Common Diagnostics Providers
+## Where orders go
 
-Afiax is provider agnostic and supports connecting to Lab and Imaging orders of all types, assuming an integration is in place. Common integrations can be found in the [integration](/docs/integration) section. Quest, Labcorp and [Health Gorilla](/docs/integration/health-gorilla) are the most frequently enabled.
+| Order | Fulfilled by | Docs |
+| --- | --- | --- |
+| Lab test, in-house lab | The facility's lab; analysers connected through the Afiax Facility Agent | [Laboratory orders and results](/docs/integration/laboratory) |
+| Lab test, external lab | An approved partner laboratory connected to Afiax | [Laboratory orders and results](/docs/integration/laboratory) |
+| Imaging | The facility's radiology department, with studies stored in Afiax DICOM | [Afiax DICOM](/docs/integration/afiax-dicom) |
 
 :::caution
-Lab and imaging ordering requires setup. Contact us at [info@afiax.africa](mailto:info+diagnostics@medplum.com?subject=enabling%20diagnostic%20providers) to enable a provider.
+Connecting a lab, analyser or imaging modality is done by Oortcloud during onboarding. To add one, raise a request with the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla).
 :::
 
 ## Logistics
@@ -35,18 +39,9 @@ CPOE should be aware of the logistics workflow a provider wants to enable. Below
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Specimen collected on site   | CPOE must collect specimen collected time and details as well as support printing of requisitions to attach to specimens |
 | Specimen collected elsewhere | No specimen collection details on the form - patients informed of geographic location of diagnostics provider            |
-| At-home lab                  | Patient data must include accurate mailing address                                                                       |
 
 ## Related Material
 
-- [Sandbox CPOE video](https://www.youtube.com/watch?v=m0AWpEOh1es)
-- [Health Gorilla](/docs/integration/health-gorilla) in integration
-- [(a)(2) CPOE Laboratory](https://youtu.be/bb_ISvpcw6o) on Youtube
-
-:::caution
-
-ONC (a)(2),(a)(3) certification is under development.
-
-:::
-
-Certification for (a)(2),(a)(3) is in progress, follow [Github issue](https://github.com/oortcloudcomputing/afiax-fhir/issues/3003) for updates.
+- [Laboratory orders and results](/docs/integration/laboratory)
+- [Afiax DICOM](/docs/integration/afiax-dicom)
+- [Diagnostic catalog](/docs/careplans/diagnostic-catalog)

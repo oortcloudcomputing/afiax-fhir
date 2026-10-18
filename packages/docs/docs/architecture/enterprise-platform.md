@@ -179,14 +179,9 @@ This sequence is already visible in the Kenya-first implementation.
 
 ## Delivery model assumptions
 
-The platform is designed to support more than one runtime model:
-
-- `Shared SaaS`
-- `Dedicated SaaS`
-- `Managed PaaS`
-- `Sovereign deployment`
-
-These deployment models matter, but they should not drive early product complexity inside the repo.
+The platform runs as a managed service on [Afiax Cloud](/docs/afiax-cloud), operated by Oortcloud. Identifiable data
+is hosted in the country it belongs to: Kenya first, in two Liquid data centres. Tenants are isolated as separate
+projects on the shared platform.
 
 Implementation rule:
 

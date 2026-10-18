@@ -46,7 +46,7 @@ You should record the participating physicians using the `Encounter.participant`
 
 The `Encounter.class` is a required element in FHIR and should be taken from the [HL7 Act Encounter Code Valueset](https://terminology.hl7.org/3.1.0/ValueSet-v3-ActEncounterCode.html). Asynchronous care contexts will almost always use the code `VR` ("virtual").
 
-Also check our [USCDI guide](/docs/fhir-datastore/understanding-uscdi-dataclasses) for information on how to make your [`Encounter`](/docs/api/fhir/resources/encounter) compatible with the US Core standards.
+Also check our [USCDI guide](/docs/country-packs/kenya-terminology-and-surveillance) for information on how to make your [`Encounter`](/docs/api/fhir/resources/encounter) compatible with the US Core standards.
 
 :::
 

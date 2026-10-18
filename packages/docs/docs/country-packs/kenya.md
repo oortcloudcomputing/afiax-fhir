@@ -63,7 +63,7 @@ Kenya code in this repo does:
 Kenya code in this repo does not do:
 
 - direct browser calls to DHA or SHA
-- ERPNext or Afiax Billing document creation
+- Afiax Billing document creation
 - Afiax Pay financial execution
 - generic core model changes that should apply to every country
 
@@ -573,7 +573,7 @@ If you are extending the Kenya UI, start here:
 
 - do not call DHA or SHA directly from the browser or mobile UI
 - do not add Kenya-specific field names to the shared canonical model
-- do not add ERPNext or Afiax Billing implementation logic to the Kenya pack
+- do not add Afiax Billing implementation logic to the Kenya pack
 - do not add Afiax Pay execution logic to the Kenya pack
 - do not put credentials in `Project.setting`
 - do not treat a successful transport call as enough; persist workflow evidence

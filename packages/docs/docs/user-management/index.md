@@ -92,7 +92,7 @@ The simplest way to create a project is to visit https://app.afiax.africa/regist
 
 :::caution Note
 
-If you are self-hosting, replace `app.afiax.africa` with `app.your-base-url.com`
+When testing in UAT, replace `app.afiax.africa` with `app.uat.afiax.africa`
 
 :::
 

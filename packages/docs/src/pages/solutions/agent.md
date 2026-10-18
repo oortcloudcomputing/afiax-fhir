@@ -22,14 +22,14 @@ The Agent helps Afiax support:
 - diagnostics and imaging integrations
 - facility systems that only expose local-network interfaces
 - secure message and file movement from regulated environments
-- hybrid and sovereign deployment models where some workloads remain on local infrastructure
+- facilities whose equipment must stay on the local network while the record lives on Afiax Cloud
 
 ## Operational model
 
 - local protocol handling happens close to the source system
 - workflow logic and normalization can run through Afiax Bots and platform services
 - audit and monitoring stay aligned with the rest of the Afiax platform
-- customer IT and security teams retain control over local installation and approval workflows
+- Oortcloud installs and monitors the Agent during onboarding, with the facility's IT team approving local access
 
 ## Security posture
 
@@ -38,7 +38,7 @@ The Agent is designed for regulated healthcare environments:
 - encrypted transport
 - controlled remote operations
 - compatibility with audit and monitoring workflows
-- support for hybrid and sovereign deployment patterns
+- devices never connect to the internet directly; only the Agent talks to Afiax Cloud
 
 ## Related docs
 

@@ -11,9 +11,9 @@ The following features should be used in concert to build out an analytics progr
 
 Analytics on healthcare data generally have two broad areas of application: **retroactive analysis** of performance and quality metrics, and **predictive modeling** to make recommendations for future behavior.
 
-Retroactive analysis can be used to measure metrics related to operational efficiency and quality of care. In addition, many payors, including Medicare and Medicaid, provide higher reimbursements to providers who report specific quality-of-care measures.
+Retroactive analysis can be used to measure metrics related to operational efficiency and quality of care. In Kenya, facilities must also report health indicators to the Ministry of Health through KHIS (DHIS2), and quality of care feeds into SHA contracting.
 
-On the predictive side, Clinical Decision Support (CDS) systems encode evidence-based clinical guidelines into rules-based suggestions to guide clinicians. Machine learning can also be used to identify common patterns across patients and care plan recommendations.
+On the predictive side, Clinical Decision Support (CDS) systems encode evidence-based clinical guidelines into rules-based suggestions to guide clinicians. Machine learning for clinical use is delivered through [Afiax AI](/docs/products/afiax-ai), which runs in Kenya under its own regulatory controls.
 
 ## Program Design
 
@@ -22,7 +22,7 @@ When designing your analytics program, it can be useful to consider the followin
 | Program Type                                          | Application Area | Implementation Tools                                                                     |
 | ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
 | Ad-hoc clinical reports                               | Retrospective    | FHIR Datastore, including [Bulk](/docs/api/fhir/operations/bulk-fhir.mdx) and Batch APIs |
-| Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Bots for data quality, dashboard apps to monitor                                         |
+| National reports (KHIS / MOH 505, IDSR, MOH 705/711) | Retrospective    | Kenya country pack exports; Bots for data quality                                         |
 | Clinical decision support                             | Prospective      | Bots to produce event driven scores, notifications                                       |
 | Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, TypeScript SDK for dashboarding                     |
 
@@ -40,33 +40,23 @@ Many healthcare analytics workflows require analyzing patients by cohort. Bots c
 
 Converting resources to the [Parquet file format](https://gidon-16942.medium.com/apache-parquet-for-hl7-fhir-c23610131f8c) helps support queries that require large aggregates.
 
-## Healthcare Standard Reports
+## National Reports
 
-Healthcare standard reports rely on coding systems to classify conditions, procedures, drugs, and outcomes. These codes help create a standardized vocabulary between providers, labs, pharmacies, and payors to streamline operations, billing, and analysis.
+National reporting depends on consistent coding. In Kenya, every code comes from KNHTS: ICD-11 for diagnoses, LOINC and the Kenyan investigations list for laboratory, and the health products list (HPT) for medicines. See [Commonly used terminologies](/docs/terminology/common-terminologies).
 
-The U.S. healthcare system implements a number of different coding standards that have different specializations.
+| Report | What it is | Status in Afiax |
+| --- | --- | --- |
+| **MOH 505** weekly disease surveillance | Weekly counts of notifiable conditions, sent to KHIS (DHIS2), with zero reporting | Implemented: `$khis-weekly-export` |
+| **IDSR** immediate notification | Same-day notification of immediately notifiable diseases | Implemented: automatic on diagnosis |
+| **MOH 705/711** monthly summaries | Monthly outpatient morbidity and service summaries | Planned |
 
-- **RxNorm:** A code system of normalized drug names, organized into a hierarchical ontology to represent generics, branded drugs, single doses and drug packs.
-- **LOINC:** Clinical terminology relevant to clinical lab orders and results.
-- **SNOMED/ICD-10/CPT/HCPCs:** Multiple code sets used to represent clinical procedures and diagnoses. SNOMED CT serves as a global standard for clinical terminology in a variety of contexts, while CPT, ICD-10, and HCPCS are primarily used for billing insurance.
+See [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance) for how these reports are built.
 
-To help organize these different standards, the NIH maintains the [Unified Medical Language System](https://www.nlm.nih.gov/research/umls/index.html) (UMLS), which provides a unified package with codes and terminologies from all major medical code systems, as well as conceptual maps between the various standards.
+Only aggregate counts are sent to KHIS. Patient identifiers never leave the facility's record for national reporting.
 
-In the domain of machine learning and analytics, using standardized codes makes it easier to share knowledge with researchers and leverage existing datasets, models, and clinical guidelines.
+## Afiax Workspace analytics
 
-Assuming you have standards compliant FHIR, tagged with the appropriate ontologies, standard reports become accessible.
-
-As much as possible, we encourage organizations to constantly evaluate data quality and run reports.
-
-### HEDIS
-
-HEDIS Measures are a standardized set of over 90 metrics used by health plans to measure quality of care. In addition to helping digital health providers identify gaps in care, reporting HEDIS measures can allow providers to qualify for increased payor reimbursements through Pay for Quality or Value Based Care models. [Digital versions](https://store.ncqa.org/hedis-quality-measurement.html) of the HEDIS measures are published in FHIR/CQL format, and having patient data modeled natively as FHIR allows providers to easily compute and report these measures.
-
-### CMS Measures
-
-The Centers for Medicare & Medicaid Services (CMS) requires certain providers to report electronic clinical quality measures (eCQMs) via an EHR system that has been certified by the ONC. CMS publishes [eCQMs in FHIR/CQL format](https://ecqi.healthit.gov/ecqms) to help standardize computation of these measures across EMRs, and they provide the [Cypress tool](https://www.healthit.gov/cypress/index.html) to validate EHR implementations against synthetic patient data.
-
-Related: [eCQM fact sheet 2022](https://www.cms.gov/files/document/2022-ecqm-reporting-requirements.pdf), [List of CQMs](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)
+Operational dashboards (attendance, waiting times, claims, revenue) are part of [Afiax Workspace](/docs/products/afiax-workspace), built on de-identified data from Afiax FHIR.
 
 ## Clinical Decision Support
 

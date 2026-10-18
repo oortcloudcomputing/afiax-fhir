@@ -17,7 +17,7 @@ For interoperability with external systems, referrals often need to be transmitt
 - Relevant diagnostic results
 - Care plan and instructions
 
-See the [C-CDA Transitions of Care documentation](/docs/integration/c-cda#transitions-of-care) for implementation details on generating standards-compliant referral documents.
+See the C-CDA Transitions of Care documentation for implementation details on generating standards-compliant referral documents.
 
 ```typescript
 // Example of generating a C-CDA Transitions of Care document for a referral

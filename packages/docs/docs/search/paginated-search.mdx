@@ -155,11 +155,11 @@ Because computing counts is an expensive operation, Afiax **only produces estima
 
 For customers on the Afiax hosted service, this threshold is set to 1 million entries
 
-For self-hosted customers, this threshold is server-level configuration called `accurateCountThreshold` ([learn more](/docs/self-hosting/server-config)).
+On Afiax Cloud, this threshold is a server-level setting (`accurateCountThreshold`) managed by Oortcloud ([learn more](/docs/afiax-cloud/operations-and-updates#changing-settings)).
 
 When `_total=accurate` is used, the server will attempt to provide an exact count of the total number of matching resources. For performance reasons, the server may be configured to reject this request if the number of matching resources exceeds a predefined threshold.
 
-For self-hosted customers, this threshold is server-level configuration called `accurateCountThreshold` ([learn more](/docs/self-hosting/server-config)).
+On Afiax Cloud, this threshold is a server-level setting (`accurateCountThreshold`) managed by Oortcloud ([learn more](/docs/afiax-cloud/operations-and-updates#changing-settings)).
 
 When returning an accurate count, the `meta.total` property will be present in the search result bundle, and `relation` will be set to `eq`.
 

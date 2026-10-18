@@ -152,7 +152,7 @@ These bot hooks are the correct place to trigger:
 - Afiax Pay co-pay or settlement continuation
 - later callback or polling continuation
 
-This repo does not embed ERPNext or Afiax Pay implementation logic directly in the Kenya pack.
+This repo does not embed Afiax Billing or Afiax Pay implementation logic directly in the Kenya pack.
 
 ## Afiax Billing interaction
 
@@ -224,7 +224,7 @@ Do not start from the enterprise side if the Kenya claim workflow in Afiax FHIR 
 - SHA claim packaging and submission stay in the Kenya pack
 - Afiax Billing does not become a second clinical source of truth
 - Afiax Pay does not own clinical reimbursement state
-- ERPNext document logic does not belong in this repo
+- Afiax Billing document logic does not belong in this repo
 - Kenya-specific reimbursement rules do not leak into the shared billing docs
 
 ## Related docs

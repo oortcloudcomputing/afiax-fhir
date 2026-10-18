@@ -1,41 +1,34 @@
-# E-Prescribe (eRx)
+---
+sidebar_position: 3
+---
 
-Afiax allows enabling e-prescribe(eRx) functionality. Afiax's e-prescribe functionality is exclusively available to providers directly engaged in patient care as part of [Afiax EHR](/solutions/medplum-ehr).
+# Prescribing and Dispensing
 
-Visit our [DoseSpot integrations page](/docs/integration/dosespot) to learn more about our DoseSpot integration.
+This page explains how medicines are prescribed and dispensed in Afiax Clinical Suite.
 
-## E-Prescribe FAQ
+## The flow
 
-### Who is qualified to use the eRx feature at Afiax?
+1. **Prescribe.** The clinician prescribes in Afiax Provider. Afiax FHIR stores a `MedicationRequest` that includes:
+   - the medicine, coded from the Kenyan health products list in KNHTS (`MOH-PPB/HPT`)
+   - the dose, route, frequency and duration
+   - the reason, as an ICD-11 diagnosis.
+2. **Check.** The clinician reviews the patient's recorded allergies and current medicines in the chart. Automatic drug-interaction and drug-allergy alerts are planned.
+3. **Dispense.** The pharmacy sees the prescription. Stock, batches and expiry are managed in **Afiax Billing** (the pharmacy and inventory part of Clinical Suite). The dispense is recorded in Afiax FHIR as a `MedicationDispense`, linked to the prescription.
+4. **Bill.** Dispensed items are added to the visit's claim for SHA, an insurer or the patient, and paid through [Afiax Pay](/docs/integration/afiax-pay) where the patient pays.
 
-The eRx feature at Afiax is available to professionals authorized to prescribe medication in the United States. The feature is user-specific; hence, only approved users can issue prescriptions.
+Prescriptions are issued only by practitioners whose professional registration (KMPDC, NCK or PPB) has been verified at onboarding.
 
-### Is it possible to prescribe controlled substances through Afiax?
+## Codes
 
-No. Currently, Afiax's eRx integration does not allow prescription of controlled substances. If controlled substances are important for your care model, please contact our support team at [support@afiax.africa](mailto:support@afiax.africa).
+| What | Code system |
+| --- | --- |
+| Medicine | KNHTS `MOH-PPB/HPT` (Kenyan health products and technologies), constant `KenyaHealthProductSystem` |
+| Reason for the prescription | ICD-11 MMS (KNHTS) |
 
-### Are there other limits on which medications can be prescribed?
+The binding of medication codes to the KNHTS health products list is planned for Q4 2026 to Q1 2027. Until then, check the codes your project uses with your Oortcloud implementation lead. See [Medication codes](./medication-codes).
 
-No. Beyond restrictions on controlled substances, prescriber has free choice of medication when prescribing.
+## Related
 
-### What guidelines exist for prescribing to minors through Afiax?
-
-It is up to the prescriber to ensure dosages are within standard guidelines for for patient's height and weight.
-
-:::danger
-
-E-prescription providers often impose additional validation requirements when prescribing medication for minors. Please check the requirements of your eRx vendor.
-
-:::
-
-### Can prescription cost information be retrieved through the API?
-
-At this time, prescription cost retrieval is not available via the Afiax API. However, Some eRx vendors may display cost information at the time a prescription is written. Check with your specific eRX vendor for more details.
-
-### How does Afiax collect and manage patient insurance details?
-
-It is best practice to maintain up-to-date coverage information for each patient in Afiax, as it is important for
-both clinical and administrative workflows in the core EHR. See our
-[Payer and Coverage Context](/docs/billing/patient-insurance) guide for more details.
-
-However, many eRx vendors do not allow users to directly input patient coverage details. Rather, they depend on clearinghouses to supply patient coverage data. Check with your eRx vendor for details on how patient coverage is managed.
+- [Medications overview](./index.md)
+- [Formulary](./formulary)
+- [Afiax Billing integration](/docs/architecture/afiax-billing-boundary)

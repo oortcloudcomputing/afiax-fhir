@@ -1,6 +1,3 @@
-import ExampleCode from '!!raw-loader!@site/../examples/src/charting/representing-diagnoses.ts';
-import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-
 # Representing Diagnoses
 
 Representing diagnoses accurately is crucial for all healthcare systems. There are generally two types of diagnoses:
@@ -24,32 +21,63 @@ It is important to note that a [`Condition`](/docs/api/fhir/resources/condition)
 
 | **Element**          | **Description**                                                                                                                                                                                             | **Code System**                                                                                       | **Example**                                               |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `code`               | A code identifying what the condition or problem is.                                                                                                                                                        | [ICD-10](https://www.cms.gov/medicare/coding-billing/icd-10-codes), [SNOMED](https://www.snomed.org/) | C46.50 - Kaposi's sarcoma of unspecified lung             |
+| `code`               | A code identifying what the condition or problem is.                                                                                                                                                        | ICD-11 MMS, from KNHTS (required in Kenya)                                                             | 1F40.Z - Malaria due to Plasmodium falciparum, unspecified |
 | `category`           | A category assigned to the condition. [See below.](#types-of-diagnoses)                                                                                                                                     | [Condition Category Codes](https://build.fhir.org/valueset-condition-category.html)                   | `problem-list-item` or `encounter-diagnosis`              |
 | `clinicalStatus`     | The current clinical status of the condition. i.e., whether it is recurring, active, etc.                                                                                                                   | [Condition Clinical Status Codes](https://build.fhir.org/valueset-condition-clinical.html)            | active                                                    |
 | `verificationStatus` | The verification of the condition. For example, could indicate if a patient has claimed they have a condition that has not yet been verified by a physician.                                                | [Condition Verification Status Codes](https://build.fhir.org/valueset-condition-ver-status.html)      | provisional                                               |
 | `severity`           | A subjective measure of the severity of the condition.                                                                                                                                                      | [Condition/Diagnosis Severity Codes](https://build.fhir.org/valueset-condition-severity.html)         | Severe                                                    |
-| `subject`            | The patient that has the condition.                                                                                                                                                                         |                                                                                                       | Patient/homer-simpson                                     |
+| `subject`            | The patient that has the condition.                                                                                                                                                                         |                                                                                                       | Patient/example                                           |
 | `onset[x]`           | The date or time that the condition began. Can be a `dateTime`, [`Age`](/docs/api/fhir/datatypes/age), [`Period`](/docs/api/fhir/datatypes/period), [`Range`](/docs/api/fhir/datatypes/range), or `string`. |                                                                                                       | 2024-01-04                                                |
 | `abatement[x]`       | The date or time that the condition ended. Can be a `dateTime`, [`Age`](/docs/api/fhir/datatypes/age), [`Period`](/docs/api/fhir/datatypes/period), [`Range`](/docs/api/fhir/datatypes/range), or `string`. |                                                                                                       | 2024-01-11                                                |
-| `recordedDate`       | When the condition was recorded and entered into the system. This is often system-generated.                                                                                                                |                                                                                                       | Fri Jan 12 2024 09:45:28 GMT-0500 (Eastern Standard Time) |
+| `recordedDate`       | When the condition was recorded and entered into the system. This is often system-generated.                                                                                                                |                                                                                                       | 2024-01-12T09:45:28+03:00                                 |
 | `stage`              | A summary of the stage of the condition. This is specific to the condition, and many will not have a stage.                                                                                                 |                                                                                                       | Stage 3                                                   |
 | `evidence`           | Supporting evidence that provides the basis for determining the condition. This can include references to other resources, such as [`Observations`](/docs/api/fhir/resources/observation).                  |                                                                                                       | Observation/collapsed-lung                                |
 | `note`               | Any additional notes about the condition.                                                                                                                                                                   |                                                                                                       | The patient has a family history of cancer.               |
 
 <details>
   <summary>Example Condition</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="sampleCondition">
-    {ExampleCode}
-  </MedplumCodeBlock>
+
+```json
+{
+  "resourceType": "Condition",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+          "code": "encounter-diagnosis"
+        }
+      ]
+    }
+  ],
+  "clinicalStatus": {
+    "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }]
+  },
+  "verificationStatus": {
+    "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status", "code": "confirmed" }]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://id.who.int/icd/release/11/mms",
+        "code": "1F40.Z",
+        "display": "Malaria due to Plasmodium falciparum, unspecified"
+      }
+    ]
+  },
+  "subject": { "reference": "Patient/example" },
+  "encounter": { "reference": "Encounter/example" },
+  "onsetDateTime": "2024-01-04"
+}
+```
+
 </details>
 
-<details>
-  <summary>Example ValueSet of Condition Codes</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="sampleValueSet">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+:::info ICD-11 is required in Kenya
+
+In projects using the Kenya country pack, every `Condition.code` must include an ICD-11 MMS coding that exists in KNHTS. Otherwise the save is rejected. You may add an ICD-10 coding alongside it for legacy reporting. Some ICD-11 codes are notifiable diseases, and saving them raises an IDSR notification automatically. See [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance).
+
+:::
 
 ### Additional Use Cases
 
@@ -72,7 +100,7 @@ A [`Condition`](/docs/api/fhir/resources) with type `encounter-diagnosis` repres
 
 To model an encounter diagnosis, the `Condition.category` field must be set to `encounter-diagnosis`. Additionally, the `Condition.encounter` should link to the [`Encounter`](/docs/api/fhir/resources/encounter) resource during which the diagnosis was made.
 
-The [US Core implementation of encounter diagnoses](https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-encounter-diagnosis.html) provides further guidelines on how they should be modeled.
+Encounter diagnoses are what SHA claims are built from, so record every diagnosis made at the visit, each with its ICD-11 code.
 
 ### Problem List Item
 

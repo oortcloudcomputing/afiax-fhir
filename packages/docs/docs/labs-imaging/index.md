@@ -38,9 +38,17 @@ flowchart RL
 
 ## Key Code Systems
 
-| **Code System**                                                | **Description**                                                                                  |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Specimen`](/docs/api/fhir/resources/specimen) resource. |
-| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
-| [SNOMED](https://www.snomed.org/)                              | Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and retrieval methods.      |
-| [LOINC](/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
+All codes come from KNHTS. See [Commonly used terminologies](/docs/terminology/common-terminologies).
+
+| **Code System** | **Used for** |
+| --- | --- |
+| Kenyan investigations list (`MOH-PPB/Investigations`) | The test ordered on the [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) |
+| [LOINC](/docs/careplans/loinc) (`Regenstrief/LOINC` in KNHTS) | Tests and results on [`Observation`](/docs/api/fhir/resources/observation) resources |
+| ICD-11 MMS | The diagnosis or reason for the order |
+| [UCUM](https://ucum.org/) | Units of measurement on results and specimens |
+
+## Afiax products and integrations
+
+- [Laboratory orders and results](/docs/integration/laboratory): in-house analysers and external labs
+- [Afiax DICOM](/docs/integration/afiax-dicom): imaging studies and radiology reports
+- [Afiax Facility Agent](/docs/agent): connecting on-site equipment

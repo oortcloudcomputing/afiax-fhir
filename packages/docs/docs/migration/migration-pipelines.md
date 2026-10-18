@@ -88,7 +88,7 @@ For large-scale migrations, you can combine batches and transactions to balance 
 
 ## Migrating Binary Files
 
-When migrating files to Afiax, you can use our [auto-download feature](/docs/self-hosting/server-config) to simplify your migration. If your current system can generate pre-signed URLs (or URLs that are accessible to our servers), Afiax will automatically detect any external URLs and attempt to download them and store them in the Afiax storage system. An example DocumentReference is shown below:
+When migrating files to Afiax, you can use our [auto-download feature](/docs/afiax-cloud/operations-and-updates#changing-settings) to simplify your migration. If your current system can generate pre-signed URLs (or URLs that are accessible to our servers), Afiax will automatically detect any external URLs and attempt to download them and store them in the Afiax storage system. An example DocumentReference is shown below:
 
 ```
 {

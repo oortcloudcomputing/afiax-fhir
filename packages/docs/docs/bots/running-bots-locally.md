@@ -4,7 +4,7 @@ To set up the Afiax [`Bot`](/docs/api/fhir/medplum/bot) framework locally, Afiax
 
 Before enabling VM Context [Bots](/docs/api/fhir/medplum/bot), you must first enable bots on your project. To do so, follow thse steps:
 
-1. Log in to your [Super Admin Project](/docs/self-hosting/super-admin-guide).
+1. Log in to your [Super Admin Project](/docs/afiax-cloud/operations-and-updates#changing-settings).
 2. Access your [Project](/docs/api/fhir/medplum/project) resource.
 3. Go to the `Edit` tab.
 4. In the `Features` section, add the `bot` feature.
@@ -18,7 +18,7 @@ Once this is done, you can enable VM Context bots. There are two steps to set up
 1. Enable VM Context [`Bots`](/docs/api/fhir/medplum/bot) on your server config.
 2. Set your [`Bot's`](/docs/api/fhir/medplum/bot) runtime version to VM Context.
 
-To enable VM Context [`Bots`](/docs/api/fhir/medplum/bot) on your server, set `vmContextBotsEnabled: true` in both the AWS parameter store and your local `config.json` file.
+To enable VM Context [`Bots`](/docs/api/fhir/medplum/bot) on your server, set `vmContextBotsEnabled: true` in your local `medplum.config.json` file.
 
 All [`Bots`](/docs/api/fhir/medplum/bot) have a field for `runtimeVersion`, which can be set to either `awslambda` or `vmcontext`. To use your [`Bot`](/docs/api/fhir/medplum/bot) locally, set this field to `vmcontext`.
 

@@ -7,7 +7,7 @@ Allergies are recorded via [`AllergyIntolerance`](/docs/api/fhir/resources/aller
 | `clinicalStatus`           | The status of the allergy. Allergies may become inactive or re-activate over time.                     |
 | `verificationStatus`       | Whether the allergy has been confirmed by the clinician.                                               |
 | `category`                 | Whether the allergy is food, medication, environmental, or biologic.                                   |
-| `code`                     | The code, along with the code system. In the US, this is commonly RxNorm (medications) or SNOMED (food + environment).                              |
+| `code`                     | The code, along with the code system. In Kenya, use the KNHTS allergy codes (`MOH-KENYA/ORG-00001-SRC-012`, constant `KenyaAllergyCodeSystem`). For a medicine allergy, you may add the medicine's active-ingredient code from HPT (`MOH-PPB/HPT`).                              |
 | `patient`                  | Patient who has this allergy.                                                                          |
 | `encounter`                | The Encounter where this allergy was discussed.                                                        |
 | `recorder`                 | Who documented this allergy.                                                                             |
@@ -38,14 +38,14 @@ It is important to record allergies that clinicians should ask about, and do not
 {
   resourceType: 'AllergyIntolerance',
   subject: {
-    reference: 'Patient/homer-simpson',
+    reference: 'Patient/example',
   },
   code: {
     coding: [
       {
-        system: 'http://hl7.org/fhir/sid/snomed',
-        code: '213020009',
-        display: "Allergy to egg protein",
+        system: 'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-KENYA/sources/ORG-00001-SRC-012',
+        code: 'ORG-00001-CPT-0002021',
+        display: "Egg protein allergy",
       },
     ],
   },
@@ -63,20 +63,20 @@ It is important to record allergies that clinicians should ask about, and do not
 
 2. Patient has confirmed that they have no drug allergies. 
 
-If the patient confirms they have no known allergies, either any allergies in general or no allergies of a specific type, it can be recorded using one of the [SNOMED no known allergy codes](https://bioportal.bioontology.org/ontologies/SNOMEDCT?p=classes&conceptid=http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FSNOMEDCT%2F716186003). Note that if the assertion is confirmed via allergy test or parent, for example, the asserter would then be a `Practitioner` or a `Related Person`, respectively. The example below is specifically for when the patient self-reports that they do not have any drug allergies. 
+If the patient confirms they have no known allergies, either any allergies in general or no allergies of a specific type, it can be recorded using one of the KNHTS "no known allergy" codes: `ORG-00001-CPT-0003007` No known allergies, `ORG-00001-CPT-0003008` No known medication allergies, `ORG-00001-CPT-0003009` No known environmental allergies, or `ORG-00001-CPT-0003010` No known food allergies. Note that if the assertion is confirmed via allergy test or parent, for example, the asserter would then be a `Practitioner` or a `Related Person`, respectively. The example below is specifically for when the patient self-reports that they do not have any drug allergies. 
 
 ```js
 {
   resourceType: 'AllergyIntolerance',
   subject: {
-    reference: 'Patient/homer-simpson',
+    reference: 'Patient/example',
   },
   code: {
     coding: [
       {
-        system: 'http://hl7.org/fhir/sid/snomed',
-        code: '409137002',
-        display: "No known drug allergy",
+        system: 'https://ilm-hie.dha.go.ke/ocl/orgs/MOH-KENYA/sources/ORG-00001-SRC-012',
+        code: 'ORG-00001-CPT-0003008',
+        display: "No known medication allergies",
       },
     ],
   },
@@ -107,3 +107,9 @@ If the patient confirms they have no known allergies, either any allergies in ge
 3. Scenarios when Allergy status is not relevant to patient care. 
 
 For scenarios in which the allergy status is not relevant, it is best practice not to create an [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resource in order to avoid adding unnecessary and, if improperly documented, inaccurate information. For example, if treating a sprained wrist with a brace and no medication, it is not necessary to add an [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance). However, it is possible that a provider may be prompted to add an [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) as part of a generic care workflow. The provider might then select 'No Known Drug Allergy' (NKDA) since it is not relevant to care, which could cause future clinicians to believe that the patient has no allergies, when that might not be the case. In summary, avoiding documentation of allergy status when not clinically relevant prevents the propagation of potentially misleading information that could impact future care decisions.
+
+:::note
+
+Afiax does not yet enforce KNHTS allergy codes; that binding is planned for Q4 2026 to Q1 2027. Use them now so your records are valid when enforcement starts.
+
+:::

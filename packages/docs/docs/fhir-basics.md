@@ -189,7 +189,7 @@ Refer to the [FHIR official documentation](https://hl7.org/fhir/R4/terminologies
 <details>
 Example: Tylenol
 <summary>
-Below is an example [`CodeableConcept`][codeableconcept], that defines the medication Tylenol, in both the [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) systems.
+Below is an example [`CodeableConcept`][codeableconcept], that defines the medication Tylenol, in both the [RXNorm](/docs/medications/medication-codes#levels-of-code) or [NDC](/docs/medications/medication-codes#levels-of-code) systems.
 
 <MedplumCodeBlock language="ts" selectBlocks="tylenol-example">
   {MedicationExample}

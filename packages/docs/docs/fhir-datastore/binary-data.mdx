@@ -211,7 +211,7 @@ When you read a FHIR resource (read by ID, read history, or search) that referen
 
 When using the Afiax cloud service, this feature is enabled by default.
 
-When self-hosting, this feature requires configuring a signing key. The Afiax CDK construct includes this automatically.
+On Afiax Cloud, the signing key for presigned URLs is configured by Oortcloud.
 
 Learn more about AWS CloudFront presigned URLs: [Using signed URLs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html)
 
@@ -219,7 +219,7 @@ Learn more about AWS CloudFront presigned URLs: [Using signed URLs](https://docs
 
 While Afiax's default behavior of rewriting Attachment URLs to presigned URLs offers many benefits (as described above), there are scenarios where you might prefer to serve binary content directly through your Afiax server instance. This can be useful for:
 
-- **Self-hosting environments** where direct access might be restricted or undesirable.
+- **Restricted networks** where direct access to storage might be undesirable.
 - **Simplified network configuration** by routing all traffic through a single endpoint.
 - **Centralized logging and monitoring** on your Afiax server for binary data access.
 

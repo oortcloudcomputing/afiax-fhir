@@ -90,7 +90,7 @@ To add Google auth to a [`@medplum/app`](/docs/app) deployment, modify the corre
 }
 ```
 
-Then, [re-deploy the app](/docs/self-hosting/install-on-aws#deploy-the-app) using the CLI:
+Then, [re-deploy the app](/docs/afiax-cloud) using the CLI:
 
 ```
 npx medplum aws update-app <environment>

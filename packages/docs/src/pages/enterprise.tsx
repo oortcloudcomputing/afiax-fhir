@@ -53,9 +53,9 @@ export default function EnterprisePage(): JSX.Element {
         </Jumbotron>
         <Section>
           <FeatureGrid columns={3}>
-            <Feature title="Sovereign deployment" icon={<IconLock />}>
-              Support country-specific hosting, controlled environments, and enterprise-grade isolation without changing
-              the core clinical model.
+            <Feature title="Hosted in Kenya" icon={<IconLock />}>
+              Run on Afiax Cloud, operated by Oortcloud in Kenyan data centres, with each organisation isolated in its
+              own project.
             </Feature>
             <Feature title="Identity and access" icon={<IconCloudLock />}>
               Apply multi-tenant controls, role-aware access, and partner collaboration patterns across ministries,

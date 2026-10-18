@@ -73,7 +73,7 @@ MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
 
 :::
 
-If you are self-hosting Afiax, set `MEDPLUM_BASE_URL` to the base URL of your Afiax server as an environment variable or in your .env file.
+To deploy to UAT rather than production, set `MEDPLUM_BASE_URL` to `https://fhir.uat.afiax.africa/` as an environment variable or in your `.env` file.
 
 ```bash
 export MEDPLUM_BASE_URL=https://api.example.com/
@@ -220,7 +220,7 @@ npx medplum bot deploy *staging*
 Running this command does two things:
 
 1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
-2. Deploys your compiled Javascript code as an AWS Lambda function with your Afiax deployment.
+2. Deploys your compiled JavaScript code to your project on Afiax Cloud, where it runs whenever it is triggered.
 
 :::caution Note
 There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/oortcloudcomputing/afiax-fhir/issues/new) or [**contact support**](mailto:support@afiax.africa)
@@ -304,7 +304,7 @@ Logging can also be limited by setting the destination that your Bot logs to. Th
 
 By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Afiax's API and will be visible in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
 
-Setting `auditEventDestination` to `log` will only output an `AuditEvent` in your existing enterprise logging infrastructure, such as [AWS Athena](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog), or others. This can make testing and debugging more difficult, but is quicker and useful for high-volume operations as it will fill up or slow down your main database.
+Setting `auditEventDestination` to `log` will only output an `AuditEvent` in your existing enterprise logging infrastructure, such as [AWS Athena](/docs/afiax-cloud), [Datadog](/docs/afiax-cloud), or others. This can make testing and debugging more difficult, but is quicker and useful for high-volume operations as it will fill up or slow down your main database.
 
 ## Conclusion
 

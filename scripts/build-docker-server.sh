@@ -52,7 +52,7 @@ tar \
 ATTESTATIONS="--provenance=true --sbom=true"
 
 # Target platforms
-PLATFORMS="--platform linux/amd64,linux/arm64"
+PLATFORMS="--platform ${DOCKER_PLATFORMS:-linux/amd64,linux/arm64}"
 
 # If this is a release, get version information
 # Release is specified with a "--release" argument

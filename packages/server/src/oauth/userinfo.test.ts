@@ -46,8 +46,8 @@ describe('OAuth2 UserInfo', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeDefined();
-    expect(res3.body.name).toBe('Medplum Admin');
-    expect(res3.body.given_name).toBe('Medplum');
+    expect(res3.body.name).toBe('Afiax Admin');
+    expect(res3.body.given_name).toBe('Afiax');
     expect(res3.body.family_name).toBe('Admin');
     expect(res3.body.email).toBe('admin@example.com');
   });

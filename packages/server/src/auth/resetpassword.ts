@@ -73,9 +73,9 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   if (req.body.sendEmail !== false) {
     await sendEmail(systemRepo, {
       to: user.email,
-      subject: 'Medplum Password Reset',
+      subject: 'Afiax Connected Healthcare — Password Reset',
       text: [
-        'Someone requested to reset your Medplum password.',
+        'Someone requested to reset your Afiax Connected Healthcare password.',
         '',
         'Please click on the following link:',
         '',
@@ -84,7 +84,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
         'If you received this in error, you can safely ignore it.',
         '',
         'Thank you,',
-        'Medplum',
+        'Afiax Connected Healthcare',
         '',
       ].join('\n'),
     });

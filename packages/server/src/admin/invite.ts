@@ -409,7 +409,7 @@ async function sendInviteEmail(
   const options: Mail.Options = { to: user.email };
   if (existing) {
     // Existing user
-    options.subject = `Medplum: Welcome to ${request.project.name}`;
+    options.subject = `Afiax Connected Healthcare — Welcome to ${request.project.name}`;
     options.text = [
       `You were invited to ${request.project.name}`,
       '',
@@ -418,12 +418,12 @@ async function sendInviteEmail(
       `You can sign in here: ${getConfig().appBaseUrl}signin`,
       '',
       'Thank you,',
-      'Medplum',
+      'Afiax Connected Healthcare',
       '',
     ].join('\n');
   } else {
     // New user
-    options.subject = 'Welcome to Medplum';
+    options.subject = 'Welcome to Afiax Connected Healthcare';
     options.text = [
       `You were invited to ${request.project.name}`,
       '',
@@ -432,7 +432,7 @@ async function sendInviteEmail(
       resetPasswordUrl,
       '',
       'Thank you,',
-      'Medplum',
+      'Afiax Connected Healthcare',
       '',
     ].join('\n');
   }

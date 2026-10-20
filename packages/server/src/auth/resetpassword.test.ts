@@ -112,7 +112,7 @@ describe('Reset Password', () => {
     expect(args.Destination.ToAddresses[0]).toBe(email);
 
     const parsed = await simpleParser(args.Content.Raw.Data);
-    expect(parsed.subject).toBe('Medplum Password Reset');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Password Reset');
   });
 
   test('Success no send email', async () => {
@@ -165,7 +165,7 @@ describe('Reset Password', () => {
     expect(args.Destination.ToAddresses[0]).toBe(email);
 
     const parsed = await simpleParser(args.Content.Raw.Data);
-    expect(parsed.subject).toBe('Medplum Password Reset');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Password Reset');
   });
 
   test('External auth', async () => {
@@ -244,7 +244,7 @@ describe('Reset Password', () => {
     expect(args.Destination.ToAddresses[0]).toBe(email);
 
     const parsed = await simpleParser(args.Content.Raw.Data);
-    expect(parsed.subject).toBe('Medplum Password Reset');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Password Reset');
   });
 
   test('Custom reCAPTCHA site key not found', async () => {
@@ -392,7 +392,7 @@ describe('Reset Password', () => {
 
     // Verify parsed email content
     const parsed = await simpleParser(args.Content.Raw.Data);
-    expect(parsed.subject).toBe('Medplum Password Reset');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Password Reset');
   });
 
   test('Password change request with redirectUri', async () => {
@@ -457,6 +457,6 @@ describe('Reset Password', () => {
 
     // Verify parsed email content
     const parsed = await simpleParser(args.Content.Raw.Data);
-    expect(parsed.subject).toBe('Medplum Password Reset');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Password Reset');
   });
 });

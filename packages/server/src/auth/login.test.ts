@@ -3,7 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
-import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -14,7 +14,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -575,5 +575,39 @@ describe('Login', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Invalid origin');
+  });
+
+  test('Password refused for a domain with its own identity provider', async () => {
+    const domain = randomUUID() + '.example.com';
+    const externalEmail = 'alice@' + domain;
+    await withTestContext(async () => {
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://idp.example.com/oauth2/authorize',
+          tokenUrl: 'https://idp.example.com/oauth2/token',
+          userInfoUrl: 'https://idp.example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      });
+      const { user } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Alice',
+        lastName: 'External',
+        email: externalEmail,
+      });
+      await setPassword(user, password);
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: externalEmail,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Sign in with your organization account');
   });
 });

@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { badRequest } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { randomUUID } from 'node:crypto';
+import { sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
@@ -26,6 +29,13 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   // The only rule is that they have to match
   const clientId = req.body.clientId;
   const projectId = await getProjectIdByClientId(req.body.clientId, req.body.projectId as string | undefined);
+
+  // An email domain with its own identity provider (DomainConfiguration) signs in only there, so
+  // its sign-in policy, such as multi-factor authentication, cannot be skipped with a password.
+  if (await isExternalAuth(req.body.email)) {
+    sendOutcome(res, badRequest('Sign in with your organization account', 'email'));
+    return;
+  }
 
   const login = await tryLogin({
     authMethod: 'password',

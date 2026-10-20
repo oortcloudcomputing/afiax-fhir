@@ -13,6 +13,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { isExternalAuth } from './method';
 import { bcryptHashPassword } from './utils';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -67,6 +68,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
   if (existingUser) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
+    return;
+  }
+
+  // A domain with its own identity provider gets its accounts from there, not by self sign-up
+  if (await isExternalAuth(email)) {
+    sendOutcome(res, badRequest('Sign in with your organization account', 'email'));
     return;
   }
 

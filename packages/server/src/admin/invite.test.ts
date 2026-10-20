@@ -87,7 +87,7 @@ describe('Admin Invite', () => {
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
-    expect(parsed.subject).toBe('Welcome to Medplum');
+    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
@@ -141,7 +141,7 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
+    expect(parsed.subject).toBe('Afiax Connected Healthcare — Welcome to Alice Project');
 
     const rows = await new SelectQuery('User')
       .column('content')
@@ -695,7 +695,7 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(lowerBobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Welcome to Medplum');
+    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
   });
 
   test('Invite user with existing membership', async () => {
@@ -1120,7 +1120,7 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Welcome to Medplum');
+    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
 
     const setPasswordUrl = parsed.text?.match(/http[s]?:\/\/[^\s]+/)?.[0];
     expect(setPasswordUrl).toBeDefined();

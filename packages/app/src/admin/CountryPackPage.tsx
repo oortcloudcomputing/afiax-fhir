@@ -269,8 +269,8 @@ export function CountryPackPage(): JSX.Element {
       <Stack gap="md">
         <Title>Country Pack</Title>
         <Text>
-          No country pack is selected for this project yet. Core Medplum features remain available, but country-specific
-          verification, registry, and payer flows are not enabled.
+          No country pack is selected for this project yet. Core Afiax FHIR features remain available, but
+          country-specific verification, registry, and payer flows are not enabled.
         </Text>
         <DescriptionList>
           <DescriptionListEntry term="Current Pack">Core / No Country Pack</DescriptionListEntry>

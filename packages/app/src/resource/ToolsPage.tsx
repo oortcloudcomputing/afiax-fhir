@@ -223,8 +223,8 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Agent Status</Title>
       <p>
-        Retrieve the status of the agent. This tests whether the agent is connected to the Medplum server, and the last
-        time it was able to communicate.
+        Retrieve the status of the agent. This tests whether the agent is connected to the Afiax FHIR server, and the
+        last time it was able to communicate.
       </p>
       <Button onClick={handleStatus} loading={loadingStatus} disabled={working && !loadingStatus}>
         Get Status
@@ -252,8 +252,8 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Reload Config</Title>
       <p>
-        Reload the configuration of this agent, syncing it with the current version of the Agent resource on the Medplum
-        server.
+        Reload the configuration of this agent, syncing it with the current version of the Agent resource on the Afiax
+        FHIR server.
       </p>
       <Button
         onClick={handleReloadConfig}

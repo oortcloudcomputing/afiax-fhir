@@ -142,7 +142,10 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
   const redisSubscriber = getPubSubRedisSubscriber();
   const channel = randomUUID();
 
-  await redisSubscriber.subscribe(channel);
+  // Register every listener before awaiting the subscription. A client may send as soon as the
+  // socket opens; if the socket 'message' listener were attached only after SUBSCRIBE returned,
+  // early messages would be dropped and the client would wait forever for its echo.
+  const subscribed = redisSubscriber.subscribe(channel);
 
   redisSubscriber.on('message', (channel: string, message: string) => {
     globalLogger.debug('[WS] redis message', { channel, message });
@@ -154,6 +157,8 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
+      // Publishing before the subscription is active would lose the message.
+      await subscribed;
       await publish(channel, data as Buffer);
     })
   );
@@ -162,6 +167,8 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
     echoWebSockets.delete(socket);
     redisSubscriber.disconnect();
   });
+
+  await subscribed;
 }
 
 export async function closeWebSockets(): Promise<void> {

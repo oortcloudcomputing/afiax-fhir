@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { getConfig } from './config';
 
-export const DEFAULT_IDLE_TIMEOUT_MINUTES = 30;
+export const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
 export const LAST_ACTIVITY_KEY = 'afiax.lastActivity';
 
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'wheel', 'scroll'] as const;

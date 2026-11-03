@@ -18,7 +18,7 @@ Afiax Clinical Suite holds patient health records, so security is designed into 
 
 - Every user has a personal account. Shared logins are not allowed.
 - Sign-in is handled by Zitadel (OpenID Connect) with **mandatory multi-factor authentication**.
-- Password and session rules: passwords of at least 12 characters, a 90-day maximum password age, lockout after 5 failed attempts, and automatic sign-out after 30 minutes of inactivity.
+- Password and session rules: passwords of at least 12 characters, a 90-day maximum password age, lockout after 5 failed attempts, and automatic sign-out after 15 minutes of inactivity.
 
 ## Who can see what
 

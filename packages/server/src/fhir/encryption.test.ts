@@ -16,6 +16,7 @@ import {
   shutdownFieldEncryption,
 } from './encryption';
 import type { Repository } from './repo';
+import { getGlobalSystemRepo } from './repo';
 
 jest.mock('node-fetch', () => {
   const actual = jest.requireActual('node-fetch');
@@ -128,6 +129,9 @@ describe('Field encryption (Vault Transit)', () => {
 
 describe('Field encryption in the repository', () => {
   let repo: Repository;
+  // Resources written by these tests. They are encrypted, so they are expunged in afterAll;
+  // otherwise other test files sharing the database would hit rows they cannot decrypt.
+  const created: { resourceType: 'Patient' | 'Observation'; id: string }[] = [];
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -136,6 +140,12 @@ describe('Field encryption in the repository', () => {
   });
 
   afterAll(async () => {
+    await initFieldEncryption({ enabled: true, localKey });
+    const systemRepo = getGlobalSystemRepo();
+    for (const { resourceType, id } of created) {
+      await systemRepo.expungeResource(resourceType, id);
+    }
+    await shutdownFieldEncryption();
     await shutdownApp();
   });
 
@@ -158,6 +168,7 @@ describe('Field encryption in the repository', () => {
     withTestContext(async () => {
       const family = `Otieno${randomUUID().slice(0, 8)}`;
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+      created.push({ resourceType: 'Patient', id: patient.id });
 
       const stored = await rawContent('Patient', patient.id);
       expect(isEncryptedContent(stored)).toBe(true);
@@ -179,6 +190,7 @@ describe('Field encryption in the repository', () => {
         status: 'preliminary',
         code: { text: 'Blood pressure' },
       });
+      created.push({ resourceType: 'Observation', id: obs.id });
       const updated = await repo.updateResource<Observation>({ ...obs, status: 'final' });
 
       const history = await repo.readHistory<Observation>('Observation', obs.id);
@@ -192,6 +204,7 @@ describe('Field encryption in the repository', () => {
     withTestContext(async () => {
       await shutdownFieldEncryption();
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'Kamau' }] });
+      created.push({ resourceType: 'Patient', id: patient.id });
       expect(isEncryptedContent(await rawContent('Patient', patient.id))).toBe(false);
 
       await initFieldEncryption({ enabled: true, localKey });

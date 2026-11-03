@@ -4,8 +4,8 @@ import { allOk, badRequest, OperationOutcomeError, toKhisWeekPeriod } from '@med
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { handleKhisWeeklyExport } from '../../country-pack/kenya/khis-export';
 import { getAuthenticatedContext } from '../../context';
+import { handleKhisWeeklyExport } from '../../country-pack/kenya/khis-export';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -22,12 +22,30 @@ export const khisWeeklyExportOperation: OperationDefinition = {
   instance: false,
   affectsState: true,
   parameter: [
-    { use: 'in', name: 'period', type: 'string', min: 0, max: '1',
-      documentation: 'DHIS2 ISO week period (e.g. 2026W24). Defaults to current week.' },
-    { use: 'in', name: 'facilityId', type: 'string', min: 1, max: '1',
-      documentation: 'Organization resource ID of the reporting facility.' },
-    { use: 'in', name: 'dryRun', type: 'boolean', min: 0, max: '1',
-      documentation: 'If true, aggregate and validate without pushing to KHIS.' },
+    {
+      use: 'in',
+      name: 'period',
+      type: 'string',
+      min: 0,
+      max: '1',
+      documentation: 'DHIS2 ISO week period (e.g. 2026W24). Defaults to current week.',
+    },
+    {
+      use: 'in',
+      name: 'facilityId',
+      type: 'string',
+      min: 1,
+      max: '1',
+      documentation: 'Organization resource ID of the reporting facility.',
+    },
+    {
+      use: 'in',
+      name: 'dryRun',
+      type: 'boolean',
+      min: 0,
+      max: '1',
+      documentation: 'If true, aggregate and validate without pushing to KHIS.',
+    },
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
     { use: 'out', name: 'correlationId', type: 'string', min: 1, max: '1' },
     { use: 'out', name: 'period', type: 'string', min: 1, max: '1' },
@@ -53,7 +71,7 @@ interface KhisWeeklyExportParameters {
 export async function khisWeeklyExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
 

@@ -118,6 +118,8 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
  * Creates a new project.
  * @param projectName - The new project name.
  * @param admin - The Project admin user.
+ * @param options - Optional project creation options.
+ * @param options.countryPack - The country pack to enable for the project.
  * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
  */
 export async function createProject(

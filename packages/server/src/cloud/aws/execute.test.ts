@@ -55,17 +55,7 @@ describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
-
-    const meRes = await request(app).get('/auth/me').set('Authorization', 'Bearer ' + accessToken);
-    expect(meRes.status).toBe(200);
-
-    const settingsRes = await request(app)
-      .post(`/admin/projects/${meRes.body.project.id}/settings`)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send([{ name: 'countryPack', valueString: 'kenya' }]);
-    expect(settingsRes.status).toBe(200);
+    accessToken = await initTestAuth({ project: { setting: [{ name: 'countryPack', valueString: 'kenya' }] } });
 
     const res = await request(app)
       .post(`/fhir/R4/Bot`)

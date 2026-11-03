@@ -6,14 +6,20 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
-import { getKenyaAfyaLinkCredentials, searchAfyaLinkPractitioner } from './afyalink';
 import type { CountryPackVerifyPractitionerAuthorityInput, VerifyPractitionerAuthorityResult } from '../types';
+import { getKenyaAfyaLinkCredentials, searchAfyaLinkPractitioner } from './afyalink';
 
 function normalizeOptionalString(value: unknown): string | undefined {
   if (value === undefined || value === null || value === '') {
     return undefined;
   }
-  return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }
 
 function isInactivePractitioner(activeStatus: string | undefined): boolean {
@@ -55,7 +61,7 @@ export async function verifyKenyaPractitionerAuthority(
     const activeStatus = normalizeOptionalString(message?.is_active);
     const registrationNumber = normalizeOptionalString(message?.registration_number);
 
-    if (!message || message.found !== 1) {
+    if (message?.found !== 1) {
       return {
         status: 'unverified',
         correlationId: input.correlationId,

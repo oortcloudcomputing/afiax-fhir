@@ -14,12 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import type { VerifyPractitionerAuthorityResult } from '../../country-pack/types';
-import {
-  AuditEventOutcome,
-  createAuditEvent,
-  OperationInteraction,
-  RestfulOperationType,
-} from '../../util/auditevent';
+import { AuditEventOutcome, createAuditEvent, OperationInteraction, RestfulOperationType } from '../../util/auditevent';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const verifyPractitionerAuthorityOperation: OperationDefinition = {
@@ -82,7 +77,10 @@ export async function verifyPractitionerAuthorityHandler(req: FhirRequest): Prom
   const updatedPractitioner = await persistVerificationResult(practitioner, updatedTask, result);
   await createVerificationAuditEvent(updatedTask, updatedPractitioner, result);
 
-  return [allOk, buildOutputParameters(verifyPractitionerAuthorityOperation, { ...result, task: createReference(updatedTask) })];
+  return [
+    allOk,
+    buildOutputParameters(verifyPractitionerAuthorityOperation, { ...result, task: createReference(updatedTask) }),
+  ];
 }
 
 async function getPractitionerForVerification(req: FhirRequest): Promise<WithId<Practitioner>> {
@@ -102,7 +100,10 @@ async function getPractitionerForVerification(req: FhirRequest): Promise<WithId<
   );
 }
 
-async function createVerificationTask(practitioner: WithId<Practitioner>, correlationId: string): Promise<WithId<Task>> {
+async function createVerificationTask(
+  practitioner: WithId<Practitioner>,
+  correlationId: string
+): Promise<WithId<Task>> {
   const ctx = getAuthenticatedContext();
   const practitionerName =
     practitioner.name?.[0]?.text ??
@@ -167,23 +168,37 @@ async function completeVerificationTask(
   });
 }
 
+function getVerificationAuditOutcome(status: VerifyPractitionerAuthorityResult['status']): AuditEventOutcome {
+  switch (status) {
+    case 'verified':
+      return AuditEventOutcome.Success;
+    case 'error':
+      return AuditEventOutcome.MajorFailure;
+    default:
+      return AuditEventOutcome.MinorFailure;
+  }
+}
+
 async function createVerificationAuditEvent(
   task: WithId<Task>,
   practitioner: WithId<Practitioner>,
   result: VerifyPractitionerAuthorityResult
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const outcome =
-    result.status === 'verified'
-      ? AuditEventOutcome.Success
-      : result.status === 'error'
-        ? AuditEventOutcome.MajorFailure
-        : AuditEventOutcome.MinorFailure;
+  const outcome = getVerificationAuditOutcome(result.status);
 
-  const auditEvent = createAuditEvent(RestfulOperationType, OperationInteraction, ctx.project.id, ctx.profile, undefined, outcome, {
-    description: result.message,
-    resource: createReference(task),
-  });
+  const auditEvent = createAuditEvent(
+    RestfulOperationType,
+    OperationInteraction,
+    ctx.project.id,
+    ctx.profile,
+    undefined,
+    outcome,
+    {
+      description: result.message,
+      resource: createReference(task),
+    }
+  );
 
   auditEvent.entity = [
     ...(auditEvent.entity ?? []),

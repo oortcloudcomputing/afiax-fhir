@@ -6,6 +6,8 @@ import { getKnativeAuthHeaders, getKnativeConfig, getKnativeFunctionUrl } from '
 
 /**
  * Executes a Bot with Knative.
+ * @param request - The bot execution context.
+ * @returns The bot execution result.
  */
 export function executeKnativeBot(request: BotExecutionContext): Promise<BotExecutionResult> {
   const config = getKnativeConfig();

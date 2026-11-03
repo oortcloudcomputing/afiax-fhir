@@ -19,7 +19,7 @@ export function Logo(props: LogoProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 128 128"
       style={{ width: props.size, height: props.size }}
-      aria-hidden="true"
+      role="img"
     >
       <title>{appName} Logo</title>
       <circle cx="64" cy="64" r="61" fill="#5d6671" stroke="#d9dfe6" strokeWidth="3.5" />

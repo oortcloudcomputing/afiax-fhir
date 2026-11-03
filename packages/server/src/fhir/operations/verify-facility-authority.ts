@@ -1,19 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, buildKenyaFacilityVerificationExtension, createReference, OperationOutcomeError } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  buildKenyaFacilityVerificationExtension,
+  createReference,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AuditEvent, OperationDefinition, Organization, Reference, Task } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import type { VerifyFacilityAuthorityResult } from '../../country-pack/types';
-import {
-  AuditEventOutcome,
-  createAuditEvent,
-  OperationInteraction,
-  RestfulOperationType,
-} from '../../util/auditevent';
+import { AuditEventOutcome, createAuditEvent, OperationInteraction, RestfulOperationType } from '../../util/auditevent';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const verifyFacilityAuthorityOperation: OperationDefinition = {
@@ -76,7 +77,10 @@ export async function verifyFacilityAuthorityHandler(req: FhirRequest): Promise<
   const updatedOrganization = await persistVerificationResult(organization, updatedTask, result);
   await createVerificationAuditEvent(updatedTask, updatedOrganization, result);
 
-  return [allOk, buildOutputParameters(verifyFacilityAuthorityOperation, { ...result, task: createReference(updatedTask) })];
+  return [
+    allOk,
+    buildOutputParameters(verifyFacilityAuthorityOperation, { ...result, task: createReference(updatedTask) }),
+  ];
 }
 
 async function getOrganizationForVerification(req: FhirRequest): Promise<WithId<Organization>> {
@@ -96,7 +100,10 @@ async function getOrganizationForVerification(req: FhirRequest): Promise<WithId<
   );
 }
 
-async function createVerificationTask(organization: WithId<Organization>, correlationId: string): Promise<WithId<Task>> {
+async function createVerificationTask(
+  organization: WithId<Organization>,
+  correlationId: string
+): Promise<WithId<Task>> {
   const ctx = getAuthenticatedContext();
   return ctx.systemRepo.createResource<Task>({
     resourceType: 'Task',
@@ -157,23 +164,37 @@ async function completeVerificationTask(
   });
 }
 
+function getVerificationAuditOutcome(status: VerifyFacilityAuthorityResult['status']): AuditEventOutcome {
+  switch (status) {
+    case 'verified':
+      return AuditEventOutcome.Success;
+    case 'error':
+      return AuditEventOutcome.MajorFailure;
+    default:
+      return AuditEventOutcome.MinorFailure;
+  }
+}
+
 async function createVerificationAuditEvent(
   task: WithId<Task>,
   organization: WithId<Organization>,
   result: VerifyFacilityAuthorityResult
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const outcome =
-    result.status === 'verified'
-      ? AuditEventOutcome.Success
-      : result.status === 'error'
-        ? AuditEventOutcome.MajorFailure
-        : AuditEventOutcome.MinorFailure;
+  const outcome = getVerificationAuditOutcome(result.status);
 
-  const auditEvent = createAuditEvent(RestfulOperationType, OperationInteraction, ctx.project.id, ctx.profile, undefined, outcome, {
-    description: result.message,
-    resource: createReference(task),
-  });
+  const auditEvent = createAuditEvent(
+    RestfulOperationType,
+    OperationInteraction,
+    ctx.project.id,
+    ctx.profile,
+    undefined,
+    outcome,
+    {
+      description: result.message,
+      resource: createReference(task),
+    }
+  );
 
   // Include the organization alongside the Task so verification traces can be reconciled from either side.
   auditEvent.entity = [

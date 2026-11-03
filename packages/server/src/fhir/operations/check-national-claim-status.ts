@@ -9,24 +9,12 @@ import {
   OperationOutcomeError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  AuditEvent,
-  Claim,
-  ClaimResponse,
-  OperationDefinition,
-  Reference,
-  Task,
-} from '@medplum/fhirtypes';
+import type { AuditEvent, Claim, OperationDefinition, Reference, Task } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import type { CheckNationalClaimStatusResult } from '../../country-pack/types';
-import {
-  AuditEventOutcome,
-  createAuditEvent,
-  OperationInteraction,
-  RestfulOperationType,
-} from '../../util/auditevent';
+import { AuditEventOutcome, createAuditEvent, OperationInteraction, RestfulOperationType } from '../../util/auditevent';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const checkNationalClaimStatusOperation: OperationDefinition = {
@@ -92,7 +80,10 @@ export async function checkNationalClaimStatusHandler(req: FhirRequest): Promise
   const updatedClaim = await persistClaimStatusResult(claim, updatedTask, result);
   await createClaimStatusAuditEvent(updatedTask, updatedClaim, result);
 
-  return [allOk, buildOutputParameters(checkNationalClaimStatusOperation, { ...result, task: createReference(updatedTask) })];
+  return [
+    allOk,
+    buildOutputParameters(checkNationalClaimStatusOperation, { ...result, task: createReference(updatedTask) }),
+  ];
 }
 
 async function getClaimForStatusCheck(req: FhirRequest): Promise<WithId<Claim>> {
@@ -107,7 +98,9 @@ async function getClaimForStatusCheck(req: FhirRequest): Promise<WithId<Claim>> 
     return ctx.repo.readReference<Claim>(params.claim);
   }
 
-  throw new OperationOutcomeError(badRequest('Must call this operation on a Claim instance or include a claim reference.'));
+  throw new OperationOutcomeError(
+    badRequest('Must call this operation on a Claim instance or include a claim reference.')
+  );
 }
 
 async function createClaimStatusTask(claim: WithId<Claim>, correlationId: string): Promise<WithId<Task>> {
@@ -133,7 +126,10 @@ async function createClaimStatusTask(claim: WithId<Claim>, correlationId: string
   });
 }
 
-async function completeClaimStatusTask(task: WithId<Task>, result: CheckNationalClaimStatusResult): Promise<WithId<Task>> {
+async function completeClaimStatusTask(
+  task: WithId<Task>,
+  result: CheckNationalClaimStatusResult
+): Promise<WithId<Task>> {
   const ctx = getAuthenticatedContext();
   const end = new Date().toISOString();
   return ctx.systemRepo.updateResource<Task>({
@@ -189,32 +185,44 @@ async function persistClaimStatusResult(
   });
 }
 
+function getClaimStatusAuditOutcome(status: CheckNationalClaimStatusResult['status']): AuditEventOutcome {
+  switch (status) {
+    case 'error':
+      return AuditEventOutcome.MajorFailure;
+    case 'rejected':
+      return AuditEventOutcome.MinorFailure;
+    default:
+      return AuditEventOutcome.Success;
+  }
+}
+
 async function createClaimStatusAuditEvent(
   task: WithId<Task>,
   claim: WithId<Claim>,
   result: CheckNationalClaimStatusResult
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const outcome =
-    result.status === 'adjudicated'
-      ? AuditEventOutcome.Success
-      : result.status === 'error'
-        ? AuditEventOutcome.MajorFailure
-        : result.status === 'rejected'
-          ? AuditEventOutcome.MinorFailure
-          : AuditEventOutcome.Success;
+  const outcome = getClaimStatusAuditOutcome(result.status);
 
-  const auditEvent = createAuditEvent(RestfulOperationType, OperationInteraction, ctx.project.id, ctx.profile, undefined, outcome, {
-    description: result.message,
-    resource: createReference(task),
-  });
+  const auditEvent = createAuditEvent(
+    RestfulOperationType,
+    OperationInteraction,
+    ctx.project.id,
+    ctx.profile,
+    undefined,
+    outcome,
+    {
+      description: result.message,
+      resource: createReference(task),
+    }
+  );
 
   auditEvent.entity = [
     ...(auditEvent.entity ?? []),
     {
       what: createReference(claim),
     },
-    ...(result.claimResponse ? [{ what: result.claimResponse as Reference<ClaimResponse> }] : []),
+    ...(result.claimResponse ? [{ what: result.claimResponse }] : []),
   ];
 
   await ctx.systemRepo.createResource<AuditEvent>(auditEvent);

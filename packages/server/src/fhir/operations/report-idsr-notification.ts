@@ -4,8 +4,8 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Condition, OperationDefinition, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from '../../country-pack/kenya/idsr';
 import { getAuthenticatedContext } from '../../context';
+import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from '../../country-pack/kenya/idsr';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -41,7 +41,7 @@ interface ReportIdsrNotificationParameters {
 export async function reportIdsrNotificationHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
 

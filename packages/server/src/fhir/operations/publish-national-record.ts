@@ -5,8 +5,8 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
-import { getProjectCountryPack } from '../../country-pack/registry';
 import { handlePublishNationalRecord } from '../../country-pack/kenya/publish-national-record';
+import { getProjectCountryPack } from '../../country-pack/registry';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const publishNationalRecordOperation: OperationDefinition = {
@@ -24,15 +24,27 @@ export const publishNationalRecordOperation: OperationDefinition = {
   affectsState: true,
   parameter: [
     {
-      use: 'in', name: 'patient', type: 'Reference', min: 0, max: '1',
+      use: 'in',
+      name: 'patient',
+      type: 'Reference',
+      min: 0,
+      max: '1',
       documentation: 'Reference to the Patient. Omit when calling on a Patient instance.',
     },
     {
-      use: 'in', name: 'includeActiveConditions', type: 'boolean', min: 0, max: '1',
+      use: 'in',
+      name: 'includeActiveConditions',
+      type: 'boolean',
+      min: 0,
+      max: '1',
       documentation: 'Include active Conditions in the published Bundle. Default: false.',
     },
     {
-      use: 'in', name: 'includeRecentEncounters', type: 'boolean', min: 0, max: '1',
+      use: 'in',
+      name: 'includeRecentEncounters',
+      type: 'boolean',
+      min: 0,
+      max: '1',
       documentation: 'Include the 20 most recent Encounters in the published Bundle. Default: false.',
     },
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
@@ -56,7 +68,7 @@ interface PublishNationalRecordParameters {
 export async function publishNationalRecordHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
 

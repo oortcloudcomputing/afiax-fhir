@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumKnativeConfig } from '../../config/types';
 import { getConfig } from '../../config/loader';
+import type { MedplumKnativeConfig } from '../../config/types';
 import { resolveBotRuntimeUrl } from '../external/execute';
 
 /**
  * Returns the Knative configuration from the Medplum configuration.
  * Throws an error if Knative is not enabled in the configuration.
+ * @returns The Knative configuration.
  */
 export function getKnativeConfig(): MedplumKnativeConfig {
   const config = getConfig().knative;

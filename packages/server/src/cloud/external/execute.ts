@@ -25,6 +25,8 @@ export interface ExternalBotRequestOptions {
 
 /**
  * Builds the shared execution payload used by external bot runtimes.
+ * @param request - The bot execution context.
+ * @returns The JSON payload sent to the external runtime.
  */
 export function buildBotExecutionPayload(request: BotExecutionContext): ExternalBotPayload {
   const { bot, accessToken, project, requester, secrets, input, contentType, traceId, headers } = request;
@@ -45,6 +47,10 @@ export function buildBotExecutionPayload(request: BotExecutionContext): External
 /**
  * Resolves an external runtime URL. If the template includes "{{id}}", then
  * the bot ID is substituted directly. Otherwise, a default path segment is appended.
+ * @param templateOrBaseUrl - A URL template containing "{{id}}", or a base URL.
+ * @param botId - The bot ID.
+ * @param defaultPathPrefix - Path prefix used before the bot ID when the URL has no "{{id}}".
+ * @returns The resolved runtime URL.
  */
 export function resolveBotRuntimeUrl(templateOrBaseUrl: string, botId: string, defaultPathPrefix = 'bot-'): string {
   if (templateOrBaseUrl.includes('{{id}}')) {
@@ -55,6 +61,10 @@ export function resolveBotRuntimeUrl(templateOrBaseUrl: string, botId: string, d
 
 /**
  * Executes a bot against an HTTP-based external runtime.
+ * @param url - The runtime URL to POST to.
+ * @param request - The bot execution context.
+ * @param options - Optional extra headers and timeout.
+ * @returns The bot execution result.
  */
 export async function executeHttpBot(
   url: string,

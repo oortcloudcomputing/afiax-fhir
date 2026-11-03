@@ -4,8 +4,8 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { handleBreakGlassAccess } from '../../country-pack/kenya/break-glass';
 import { getAuthenticatedContext } from '../../context';
+import { handleBreakGlassAccess } from '../../country-pack/kenya/break-glass';
 import { getProjectCountryPack } from '../../country-pack/registry';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -24,15 +24,27 @@ export const breakGlassOperation: OperationDefinition = {
   affectsState: true,
   parameter: [
     {
-      use: 'in', name: 'reason', type: 'string', min: 1, max: '1',
+      use: 'in',
+      name: 'reason',
+      type: 'string',
+      min: 1,
+      max: '1',
       documentation: 'Clinical reason justifying emergency access. Recorded in the audit trail and security alert.',
     },
     {
-      use: 'in', name: 'durationHours', type: 'integer', min: 0, max: '1',
+      use: 'in',
+      name: 'durationHours',
+      type: 'integer',
+      min: 0,
+      max: '1',
       documentation: 'Duration in hours for which access is declared. Minimum 1, maximum 24. Default 4.',
     },
     {
-      use: 'in', name: 'patient', type: 'Reference', min: 0, max: '1',
+      use: 'in',
+      name: 'patient',
+      type: 'Reference',
+      min: 0,
+      max: '1',
       documentation: 'Reference to the Patient. Omit when calling on a Patient instance.',
     },
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
@@ -56,7 +68,7 @@ interface BreakGlassParameters {
 export async function breakGlassHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
 
@@ -81,10 +93,7 @@ export async function breakGlassHandler(req: FhirRequest): Promise<FhirResponse>
   return [allOk, buildOutputParameters(breakGlassOperation, result)];
 }
 
-async function resolvePatient(
-  req: FhirRequest,
-  params: BreakGlassParameters
-): Promise<Patient & { id: string }> {
+async function resolvePatient(req: FhirRequest, params: BreakGlassParameters): Promise<Patient & { id: string }> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
   if (id) {

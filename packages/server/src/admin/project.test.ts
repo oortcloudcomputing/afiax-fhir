@@ -646,7 +646,7 @@ describe('Project Admin routes', () => {
 
     (fetch as unknown as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: jest.fn(async () => ({ token: 'jwt-token' })),
+      text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
     });
 
     const res = await request(app)

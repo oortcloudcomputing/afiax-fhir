@@ -5,8 +5,8 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
-import { getProjectCountryPack } from '../../country-pack/registry';
 import { handleResolvePatientIdentity } from '../../country-pack/kenya/resolve-patient-identity';
+import { getProjectCountryPack } from '../../country-pack/registry';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const resolvePatientIdentityOperation: OperationDefinition = {
@@ -24,15 +24,28 @@ export const resolvePatientIdentityOperation: OperationDefinition = {
   affectsState: true,
   parameter: [
     {
-      use: 'in', name: 'identificationType', type: 'string', min: 1, max: '1',
-      documentation: 'Identification type used for the DHA lookup: National ID | Alien ID | Passport | Birth Certificate | Refugee ID',
+      use: 'in',
+      name: 'identificationType',
+      type: 'string',
+      min: 1,
+      max: '1',
+      documentation:
+        'Identification type used for the DHA lookup: National ID | Alien ID | Passport | Birth Certificate | Refugee ID',
     },
     {
-      use: 'in', name: 'identificationNumber', type: 'string', min: 1, max: '1',
+      use: 'in',
+      name: 'identificationNumber',
+      type: 'string',
+      min: 1,
+      max: '1',
       documentation: 'The identification number matching the identificationType.',
     },
     {
-      use: 'in', name: 'patient', type: 'Reference', min: 0, max: '1',
+      use: 'in',
+      name: 'patient',
+      type: 'Reference',
+      min: 0,
+      max: '1',
       documentation: 'Reference to the Patient. Omit when calling on a Patient instance.',
     },
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
@@ -59,7 +72,7 @@ interface ResolvePatientIdentityParameters {
 export async function resolvePatientIdentityHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const countryPack = getProjectCountryPack(ctx.project);
-  if (!countryPack || countryPack.id !== 'kenya') {
+  if (countryPack?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
 

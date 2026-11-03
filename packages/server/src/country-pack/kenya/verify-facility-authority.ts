@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getProjectSettingString, normalizeErrorString } from '@medplum/core';
 import type { Identifier, Project } from '@medplum/fhirtypes';
-import { getKenyaAfyaLinkCredentials, searchAfyaLinkFacility } from './afyalink';
 import type { CountryPackVerifyFacilityAuthorityInput, VerifyFacilityAuthorityResult } from '../types';
+import { getKenyaAfyaLinkCredentials, searchAfyaLinkFacility } from './afyalink';
 
 export const KENYA_FACILITY_AUTHORITY_IDENTIFIER_SYSTEM = 'https://afiax.africa/kenya/identifier/mfl-code';
 
@@ -23,8 +23,7 @@ function isFacilityAuthorityIdentifier(identifier: Identifier, preferredSystem: 
 
   const codings = identifier.type?.coding ?? [];
   return codings.some(
-    (coding) =>
-      coding.code === 'facility-authority-id' || coding.display?.toLowerCase().includes('facility authority')
+    (coding) => coding.code === 'facility-authority-id' || coding.display?.toLowerCase().includes('facility authority')
   );
 }
 
@@ -37,7 +36,9 @@ function getFacilityAuthoritySystem(input: CountryPackVerifyFacilityAuthorityInp
 
 function getFacilityAuthorityIdentifier(input: CountryPackVerifyFacilityAuthorityInput): Identifier | undefined {
   const preferredSystem = getFacilityAuthoritySystem(input);
-  return input.organization.identifier?.find((identifier) => isFacilityAuthorityIdentifier(identifier, preferredSystem));
+  return input.organization.identifier?.find((identifier) =>
+    isFacilityAuthorityIdentifier(identifier, preferredSystem)
+  );
 }
 
 export async function verifyKenyaFacilityAuthority(
@@ -65,7 +66,7 @@ export async function verifyKenyaFacilityAuthority(
     const response = await searchAfyaLinkFacility(credentials, authorityIdentifier.value);
     const message = response.message;
 
-    if (!message || message.found !== 1) {
+    if (message?.found !== 1) {
       return {
         status: 'unverified',
         correlationId: input.correlationId,
@@ -87,7 +88,8 @@ export async function verifyKenyaFacilityAuthority(
         operationalStatus.toLowerCase().includes(value)
       );
     const looksUnapproved =
-      !!approvalStatus && ['false', '0', 'no', 'not approved', 'unapproved', 'rejected'].includes(approvalStatus.toLowerCase());
+      !!approvalStatus &&
+      ['false', '0', 'no', 'not approved', 'unapproved', 'rejected'].includes(approvalStatus.toLowerCase());
 
     if (input.organization.active === false || looksInactive) {
       return {
@@ -155,5 +157,11 @@ function normalizeOptionalString(value: unknown): string | undefined {
   if (value === undefined || value === null || value === '') {
     return undefined;
   }
-  return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }

@@ -88,14 +88,10 @@ export function SettingsPage(): JSX.Element {
   );
   const [selectedKenyaHieCredentialMode, setSelectedKenyaHieCredentialMode] = useState<
     'tenant-managed' | 'afiax-managed'
-  >(
-    'tenant-managed'
-  );
+  >('tenant-managed');
   const [selectedKenyaShaClaimsCredentialMode, setSelectedKenyaShaClaimsCredentialMode] = useState<
     'tenant-managed' | 'afiax-managed'
-  >(
-    'tenant-managed'
-  );
+  >('tenant-managed');
   const [kenyaHieAgentId, setKenyaHieAgentId] = useState('');
   const [kenyaClaimSubmitWorkflowBotId, setKenyaClaimSubmitWorkflowBotId] = useState('');
   const [kenyaClaimStatusWorkflowBotId, setKenyaClaimStatusWorkflowBotId] = useState('');
@@ -118,6 +114,8 @@ export function SettingsPage(): JSX.Element {
     setKenyaHieAgentId(getKenyaHieAgentId(nextSettings) ?? '');
     setKenyaClaimSubmitWorkflowBotId(getKenyaClaimSubmitWorkflowBotId(nextSettings) ?? '');
     setKenyaClaimStatusWorkflowBotId(getKenyaClaimStatusWorkflowBotId(nextSettings) ?? '');
+    // Keyed on the serialised settings so a refetch with identical values doesn't discard unsaved edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadedSettingsKey]);
 
   if (!schemaLoaded || settings === undefined) {
@@ -176,16 +174,8 @@ export function SettingsPage(): JSX.Element {
           KenyaProjectSettingNames.claimStatusWorkflowBotId,
           selectedCountryPack === 'kenya' ? kenyaClaimStatusWorkflowBotId : ''
         );
-        settingsToSave = setNamedProjectSettingValue(
-          settingsToSave,
-          KenyaProjectSettingNames.claimWorkflowBotId,
-          ''
-        );
-        settingsToSave = setNamedProjectSettingValue(
-          settingsToSave,
-          KenyaProjectSettingNames.afyaLinkEnvironment,
-          ''
-        );
+        settingsToSave = setNamedProjectSettingValue(settingsToSave, KenyaProjectSettingNames.claimWorkflowBotId, '');
+        settingsToSave = setNamedProjectSettingValue(settingsToSave, KenyaProjectSettingNames.afyaLinkEnvironment, '');
         settingsToSave = setNamedProjectSettingValue(
           settingsToSave,
           KenyaProjectSettingNames.afyaLinkCredentialMode,
@@ -234,8 +224,8 @@ export function SettingsPage(): JSX.Element {
           <>
             <Title order={3}>Kenya DHA and SHA Access</Title>
             <Text size="sm" c="dimmed">
-              Kenya registry and HIE services use the HIE environment below. Kenya SHA claim operations use the
-              separate SHA claims environment. Project admins only set the environments and HIE agent ID here.
+              Kenya registry and HIE services use the HIE environment below. Kenya SHA claim operations use the separate
+              SHA claims environment. Project admins only set the environments and HIE agent ID here.
             </Text>
             <NativeSelect
               label="Kenya HIE Environment"
@@ -306,8 +296,8 @@ export function SettingsPage(): JSX.Element {
             />
             {selectedKenyaHieCredentialMode === 'afiax-managed' && (
               <Text size="sm">
-                Afiax-managed mode hides HIE credentials from tenant admins. The Secrets tab will show connection
-                status only and rely on platform-managed secrets.
+                Afiax-managed mode hides HIE credentials from tenant admins. The Secrets tab will show connection status
+                only and rely on platform-managed secrets.
               </Text>
             )}
             {selectedKenyaShaClaimsCredentialMode === 'afiax-managed' && (

@@ -73,12 +73,12 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
 
     setLoading(true);
     try {
-      const result = (await medplum.get(
+      const result: KenyaAfyaLinkSecretsResponse = await medplum.get(
         `admin/super/projects/${projectId.trim()}/kenya/afyalink/systemsecrets`
-      )) as KenyaAfyaLinkSecretsResponse;
-      const shaResult = (await medplum.get(
+      );
+      const shaResult: KenyaShaSecretsResponse = await medplum.get(
         `admin/super/projects/${projectId.trim()}/kenya/sha/systemsecrets`
-      )) as KenyaShaSecretsResponse;
+      );
       setSelectedProject(
         result.project.id ? { reference: `Project/${result.project.id}`, display: result.project.name } : undefined
       );
@@ -129,10 +129,10 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
 
     setSaving(true);
     try {
-      const result = (await medplum.post(
+      const result: KenyaAfyaLinkSecretsResponse = await medplum.post(
         `admin/super/projects/${projectId.trim()}/kenya/afyalink/systemsecrets`,
         buildSecretPayload()
-      )) as KenyaAfyaLinkSecretsResponse;
+      );
       setSelectedProject(
         result.project.id ? { reference: `Project/${result.project.id}`, display: result.project.name } : undefined
       );
@@ -155,10 +155,10 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
 
     setSavingSha(true);
     try {
-      const result = (await medplum.post(
+      const result: KenyaShaSecretsResponse = await medplum.post(
         `admin/super/projects/${projectId.trim()}/kenya/sha/systemsecrets`,
         buildShaSecretPayload()
-      )) as KenyaShaSecretsResponse;
+      );
       setSelectedProject(
         result.project.id ? { reference: `Project/${result.project.id}`, display: result.project.name } : undefined
       );
@@ -181,10 +181,10 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
 
     setTesting(true);
     try {
-      const result = (await medplum.post(
+      const result: { message?: string } = await medplum.post(
         `admin/super/projects/${projectId.trim()}/kenya/afyalink/test`,
         buildSecretPayload()
-      )) as { message?: string };
+      );
       showNotification({
         color: 'green',
         message: result.message ?? 'Afiax-managed Kenya HIE authentication succeeded',
@@ -237,17 +237,11 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
       </Group>
       {projectName && (
         <Text size="sm">
-          Loaded project:
-          {' '}
-          <strong>{projectName}</strong>
+          Loaded project: <strong>{projectName}</strong>
           {' | '}
-          Environment:
-          {' '}
-          <strong>{environment === 'production' ? 'Production' : 'UAT'}</strong>
+          Environment: <strong>{environment === 'production' ? 'Production' : 'UAT'}</strong>
           {' | '}
-          Credential mode:
-          {' '}
-          <strong>{credentialMode === 'afiax-managed' ? 'Afiax-managed' : 'Tenant-managed'}</strong>
+          Credential mode: <strong>{credentialMode === 'afiax-managed' ? 'Afiax-managed' : 'Tenant-managed'}</strong>
         </Text>
       )}
       {credentialMode === 'tenant-managed' && (
@@ -283,8 +277,8 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
         data-testid="afiax-managed-password"
       />
       <Text size="sm" c="dimmed">
-        Saving updates only the Kenya HIE credentials in <code>Project.systemSecret</code>. Other system secrets for
-        the project are preserved.
+        Saving updates only the Kenya HIE credentials in <code>Project.systemSecret</code>. Other system secrets for the
+        project are preserved.
       </Text>
       <Title order={2}>Afiax-Managed Kenya SHA Claim Credentials</Title>
       <Text>
@@ -293,19 +287,16 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
       </Text>
       {projectName && (
         <Text size="sm">
-          SHA environment:
-          {' '}
-          <strong>{shaEnvironment === 'production' ? 'Production' : 'UAT'}</strong>
+          SHA environment: <strong>{shaEnvironment === 'production' ? 'Production' : 'UAT'}</strong>
           {' | '}
-          SHA credential mode:
-          {' '}
+          SHA credential mode:{' '}
           <strong>{shaCredentialMode === 'afiax-managed' ? 'Afiax-managed' : 'Tenant-managed'}</strong>
         </Text>
       )}
       {shaCredentialMode === 'tenant-managed' && (
         <Text size="sm" c="dimmed">
-          This project is currently set to Tenant-managed SHA mode. Saving Afiax-managed SHA credentials here will
-          stage them, but the project will not use them until its Kenya settings are switched to Afiax-managed.
+          This project is currently set to Tenant-managed SHA mode. Saving Afiax-managed SHA credentials here will stage
+          them, but the project will not use them until its Kenya settings are switched to Afiax-managed.
         </Text>
       )}
       <TextInput
@@ -340,8 +331,8 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
         </Button>
       </Group>
       <Text size="sm" c="dimmed">
-        Saving updates only the Kenya SHA credentials in <code>Project.systemSecret</code>. Other system secrets for
-        the project are preserved.
+        Saving updates only the Kenya SHA credentials in <code>Project.systemSecret</code>. Other system secrets for the
+        project are preserved.
       </Text>
     </Stack>
   );

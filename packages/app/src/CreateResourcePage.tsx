@@ -18,9 +18,15 @@ export function CreateResourcePage(): JSX.Element {
   const countryPack = getProjectSettingString(project, 'countryPack');
 
   if (countryPack === 'kenya') {
-    if (resourceType === 'Organization') return <KenyaOrganizationWizard />;
-    if (resourceType === 'Practitioner') return <KenyaPractitionerWizard />;
-    if (resourceType === 'Patient') return <KenyaPatientWizard />;
+    if (resourceType === 'Organization') {
+      return <KenyaOrganizationWizard />;
+    }
+    if (resourceType === 'Practitioner') {
+      return <KenyaPractitionerWizard />;
+    }
+    if (resourceType === 'Patient') {
+      return <KenyaPatientWizard />;
+    }
   }
 
   return (

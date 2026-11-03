@@ -14,11 +14,11 @@ import {
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { KenyaPractitionerIdentificationType } from '@medplum/core';
 import {
   KenyaPractitionerIdentificationTypeLabels,
   normalizeErrorString,
   setKenyaPractitionerLookupIdentifier,
-  type KenyaPractitionerIdentificationType,
 } from '@medplum/core';
 import type { HumanName, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
@@ -38,9 +38,15 @@ interface LookupResponse {
 
 function extractMessage(resp: LookupResponse): PractitionerLookupMessage | undefined {
   const r = resp.result;
-  if (!r) return undefined;
-  if (r.message) return r.message;
-  if ('found' in r) return r as PractitionerLookupMessage;
+  if (!r) {
+    return undefined;
+  }
+  if (r.message) {
+    return r.message;
+  }
+  if ('found' in r) {
+    return r as PractitionerLookupMessage;
+  }
   return undefined;
 }
 
@@ -49,6 +55,7 @@ const REGISTRY_TYPES = Object.entries(KenyaPractitionerIdentificationTypeLabels)
   string,
 ][];
 
+const PractitionerIdPlaceholders: Partial<Record<string, string>> = { KMPDC: 'M0031534', COC: 'COC/12345' };
 export function KenyaPractitionerWizard(): JSX.Element {
   const medplum = useMedplum();
   const project = medplum.getProject();
@@ -66,13 +73,17 @@ export function KenyaPractitionerWizard(): JSX.Element {
 
   async function handleSearch(): Promise<void> {
     const number = idNumber.trim();
-    if (!number) { setError('Enter a registration number.'); return; }
-    setSearching(true); setError(undefined);
+    if (!number) {
+      setError('Enter a registration number.');
+      return;
+    }
+    setSearching(true);
+    setError(undefined);
     try {
-      const resp = (await medplum.post(
-        `admin/projects/${project?.id}/kenya/afyalink/practitioner-lookup`,
-        { identificationType: idType, identificationNumber: number }
-      )) as LookupResponse;
+      const resp = await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/practitioner-lookup`, {
+        identificationType: idType,
+        identificationNumber: number,
+      });
       setLookupResult(extractMessage(resp));
       setActive(1);
     } catch (err) {
@@ -85,8 +96,12 @@ export function KenyaPractitionerWizard(): JSX.Element {
   async function handleCreate(): Promise<void> {
     const family = familyName.trim();
     const given = givenName.trim();
-    if (!family) { setError('Family name is required.'); return; }
-    setCreating(true); setError(undefined);
+    if (!family) {
+      setError('Family name is required.');
+      return;
+    }
+    setCreating(true);
+    setError(undefined);
     try {
       const name: HumanName = { family, ...(given ? { given: [given] } : {}) };
       let practitioner: Practitioner = { resourceType: 'Practitioner', name: [name] };
@@ -95,7 +110,7 @@ export function KenyaPractitionerWizard(): JSX.Element {
       }
       const created = await medplum.createResource(practitioner);
       showNotification({ color: 'green', message: `Practitioner created: ${family}` });
-      navigate(`/Practitioner/${created.id}`);
+      navigate(`/Practitioner/${created.id}`)?.catch(console.error);
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
@@ -107,7 +122,10 @@ export function KenyaPractitionerWizard(): JSX.Element {
 
   const found = lookupResult?.found === 1;
   const isActive = lookupResult?.is_active === true || lookupResult?.is_active === 'yes';
-  const regNumberStr = lookupResult?.registration_number != null ? String(lookupResult.registration_number) : undefined;
+  const regNumberStr =
+    lookupResult?.registration_number !== undefined && lookupResult?.registration_number !== null
+      ? String(lookupResult.registration_number)
+      : undefined;
 
   return (
     <Paper p="xl" maw={640} mx="auto" mt="md">
@@ -118,7 +136,8 @@ export function KenyaPractitionerWizard(): JSX.Element {
           <Stepper.Step label="Registry Search" description="Verify in AfyaLink HWR">
             <Stack gap="md" mt="lg">
               <Alert color="blue" variant="light">
-                Search the DHA Health Worker Registry (HWR) via AfyaLink to verify this practitioner's registration before creating the record.
+                Search the DHA Health Worker Registry (HWR) via AfyaLink to verify this practitioner's registration
+                before creating the record.
               </Alert>
               <NativeSelect
                 label="Registry / Licence Type"
@@ -128,17 +147,27 @@ export function KenyaPractitionerWizard(): JSX.Element {
               />
               <TextInput
                 label={KenyaPractitionerIdentificationTypeLabels[idType]}
-                placeholder={idType === 'KMPDC' ? 'M0031534' : idType === 'COC' ? 'COC/12345' : '12345678'}
+                placeholder={PractitionerIdPlaceholders[idType] ?? '12345678'}
                 value={idNumber}
                 onChange={(e) => setIdNumber(e.currentTarget.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch().catch(console.error)}
               />
               {error && <Alert color="red">{error}</Alert>}
               <Group>
-                <Button onClick={() => handleSearch().catch(console.error)} loading={searching} disabled={!idNumber.trim()}>
+                <Button
+                  onClick={() => handleSearch().catch(console.error)}
+                  loading={searching}
+                  disabled={!idNumber.trim()}
+                >
                   Search AfyaLink HWR
                 </Button>
-                <Button variant="subtle" onClick={() => { setLookupResult(undefined); setActive(1); }}>
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setLookupResult(undefined);
+                    setActive(1);
+                  }}
+                >
                   Skip HIE search
                 </Button>
               </Group>
@@ -154,25 +183,39 @@ export function KenyaPractitionerWizard(): JSX.Element {
                     : 'Practitioner not found in Kenya HWR — proceeding with manual entry.'}
                 </Alert>
               ) : (
-                <Alert color="yellow" variant="light">HIE search skipped — enter details manually.</Alert>
+                <Alert color="yellow" variant="light">
+                  HIE search skipped — enter details manually.
+                </Alert>
               )}
 
               {found && (
                 <Paper withBorder p="sm" radius="sm">
                   <Stack gap={4}>
                     <Group gap="xs">
-                      <Text fw={500} size="sm">HWR Registry Data</Text>
-                      <Badge size="xs" color={isActive ? 'green' : 'orange'}>AfyaLink</Badge>
+                      <Text fw={500} size="sm">
+                        HWR Registry Data
+                      </Text>
+                      <Badge size="xs" color={isActive ? 'green' : 'orange'}>
+                        AfyaLink
+                      </Badge>
                     </Group>
-                    {regNumberStr && <Text size="sm"><b>Registration No.:</b> {regNumberStr}</Text>}
+                    {regNumberStr && (
+                      <Text size="sm">
+                        <b>Registration No.:</b> {regNumberStr}
+                      </Text>
+                    )}
                     <Text size="sm">
                       <b>Active:</b>{' '}
                       <Badge size="xs" color={isActive ? 'green' : 'red'} variant="light">
                         {isActive ? 'Yes' : 'No'}
                       </Badge>
                     </Text>
-                    <Text size="sm"><b>Registry:</b> {KenyaPractitionerIdentificationTypeLabels[idType]}</Text>
-                    <Text size="sm"><b>Number:</b> {idNumber}</Text>
+                    <Text size="sm">
+                      <b>Registry:</b> {KenyaPractitionerIdentificationTypeLabels[idType]}
+                    </Text>
+                    <Text size="sm">
+                      <b>Number:</b> {idNumber}
+                    </Text>
                   </Stack>
                 </Paper>
               )}
@@ -209,8 +252,14 @@ export function KenyaPractitionerWizard(): JSX.Element {
               {error && <Alert color="red">{error}</Alert>}
 
               <Group>
-                <Button variant="default" onClick={() => setActive(0)}>Back</Button>
-                <Button onClick={() => handleCreate().catch(console.error)} loading={creating} disabled={!familyName.trim()}>
+                <Button variant="default" onClick={() => setActive(0)}>
+                  Back
+                </Button>
+                <Button
+                  onClick={() => handleCreate().catch(console.error)}
+                  loading={creating}
+                  disabled={!familyName.trim()}
+                >
                   Create Practitioner
                 </Button>
               </Group>

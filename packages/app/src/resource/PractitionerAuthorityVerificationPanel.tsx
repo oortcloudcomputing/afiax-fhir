@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Badge, Button, Divider, Group, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { KenyaPractitionerIdentificationType } from '@medplum/core';
 import {
   applyKenyaPractitionerRegistryToPractitioner,
   clearKenyaPractitionerRegistrySnapshot,
@@ -13,7 +14,6 @@ import {
   KenyaPractitionerIdentificationTypeLabels,
   normalizeErrorString,
   setKenyaPractitionerLookupIdentifier,
-  type KenyaPractitionerIdentificationType,
 } from '@medplum/core';
 import type { Parameters, ParametersParameter, Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, MedplumLink, useMedplum } from '@medplum/react';
@@ -39,8 +39,16 @@ interface KenyaPractitionerLookupResponse {
   readonly identificationType?: string;
   readonly identificationNumber?: string;
   readonly result?: {
-    readonly message?: { readonly registration_number?: string | number | null; readonly found?: number | null; readonly is_active?: string | boolean | null };
-  } & { readonly registration_number?: string | number | null; readonly found?: number | null; readonly is_active?: string | boolean | null };
+    readonly message?: {
+      readonly registration_number?: string | number | null;
+      readonly found?: number | null;
+      readonly is_active?: string | boolean | null;
+    };
+  } & {
+    readonly registration_number?: string | number | null;
+    readonly found?: number | null;
+    readonly is_active?: string | boolean | null;
+  };
 }
 
 export interface PractitionerAuthorityVerificationPanelProps {
@@ -66,34 +74,71 @@ function getVerificationResult(parameters: Parameters | undefined): Practitioner
   };
 }
 
-function getLookupMessage(response: KenyaPractitionerLookupResponse | undefined) {
+type KenyaPractitionerLookupMessage = NonNullable<NonNullable<KenyaPractitionerLookupResponse['result']>['message']>;
+
+function getLookupMessage(
+  response: KenyaPractitionerLookupResponse | undefined
+): KenyaPractitionerLookupMessage | undefined {
   const result = response?.result;
-  if (!result) return undefined;
-  if (result.message) return result.message;
-  if ('registration_number' in result || 'found' in result) return result;
+  if (!result) {
+    return undefined;
+  }
+  if (result.message) {
+    return result.message;
+  }
+  if ('registration_number' in result || 'found' in result) {
+    return result;
+  }
   return undefined;
 }
 
 function statusBadge(status: string | undefined): JSX.Element | null {
-  if (!status) return null;
-  const color = status === 'verified' ? 'green' : status === 'error' ? 'red' : 'yellow';
-  return <Badge color={color} variant="filled" size="sm">{status.toUpperCase()}</Badge>;
+  if (!status) {
+    return null;
+  }
+  const colors: Record<string, string> = { verified: 'green', error: 'red' };
+  const color = colors[status] ?? 'yellow';
+  return (
+    <Badge color={color} variant="filled" size="sm">
+      {status.toUpperCase()}
+    </Badge>
+  );
 }
 
+const PractitionerIdLabels: Partial<Record<string, string>> = { KMPDC: 'KMPDC Licence No.', COC: 'COC Licence No.' };
+const PractitionerIdPlaceholders: Partial<Record<string, string>> = { KMPDC: 'M0031534', COC: 'COC/12345' };
 export function PractitionerAuthorityVerificationPanel(
   props: PractitionerAuthorityVerificationPanelProps
 ): JSX.Element | null {
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!props.practitioner.id || countryPack !== 'kenya') return null;
+  if (!props.practitioner.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <PractitionerAuthorityVerificationPanelContent {...props} />;
+}
+
+function PractitionerAuthorityVerificationPanelContent(
+  props: PractitionerAuthorityVerificationPanelProps
+): JSX.Element | null {
+  const medplum = useMedplum();
+  const project = medplum.getProject();
 
   const currentLookupId = getKenyaPractitionerLookupIdentifier(props.practitioner);
-  const syncKey = JSON.stringify({ id: props.practitioner.id, identifier: props.practitioner.identifier, extension: props.practitioner.extension });
+  const syncKey = JSON.stringify({
+    id: props.practitioner.id,
+    identifier: props.practitioner.identifier,
+    extension: props.practitioner.extension,
+  });
 
-  const [idType, setIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'KMPDC');
+  const [idType, setIdType] = useState<KenyaPractitionerIdentificationType>(
+    currentLookupId?.identificationType ?? 'KMPDC'
+  );
   const [idNumber, setIdNumber] = useState(currentLookupId?.identifier.value ?? '');
-  const [savedIdType, setSavedIdType] = useState<KenyaPractitionerIdentificationType>(currentLookupId?.identificationType ?? 'KMPDC');
+  const [savedIdType, setSavedIdType] = useState<KenyaPractitionerIdentificationType>(
+    currentLookupId?.identificationType ?? 'KMPDC'
+  );
   const [savedIdNumber, setSavedIdNumber] = useState(currentLookupId?.identifier.value ?? '');
   const [loadedKey, setLoadedKey] = useState(syncKey);
   const [saving, setSaving] = useState(false);
@@ -105,8 +150,15 @@ export function PractitionerAuthorityVerificationPanel(
   const [registryOverride, setRegistryOverride] = useState(getKenyaPractitionerRegistrySnapshot(props.practitioner));
   const [resultOverride, setResultOverride] = useState<PractitionerVerificationResult | null>();
 
-  const registry = registryOverride === undefined ? getKenyaPractitionerRegistrySnapshot(props.practitioner) : registryOverride ?? undefined;
-  const currentResult = result ?? (resultOverride === undefined ? getKenyaPractitionerVerificationSnapshot(props.practitioner) : resultOverride ?? undefined);
+  const registry =
+    registryOverride === undefined
+      ? getKenyaPractitionerRegistrySnapshot(props.practitioner)
+      : (registryOverride ?? undefined);
+  const currentResult =
+    result ??
+    (resultOverride === undefined
+      ? getKenyaPractitionerVerificationSnapshot(props.practitioner)
+      : (resultOverride ?? undefined));
 
   useEffect(() => {
     if (loadedKey !== syncKey) {
@@ -123,34 +175,50 @@ export function PractitionerAuthorityVerificationPanel(
 
   async function handleSave(): Promise<void> {
     const number = idNumber.trim();
-    if (!number) { setError('Identification number is required.'); return; }
-    setSaving(true); setError(undefined);
+    if (!number) {
+      setError('Identification number is required.');
+      return;
+    }
+    setSaving(true);
+    setError(undefined);
     try {
       const saved = await medplum.updateResource(
         clearKenyaPractitionerRegistrySnapshot(
-          clearKenyaPractitionerVerificationSnapshot(setKenyaPractitionerLookupIdentifier(props.practitioner, idType, number))
+          clearKenyaPractitionerVerificationSnapshot(
+            setKenyaPractitionerLookupIdentifier(props.practitioner, idType, number)
+          )
         )
       );
-      setIdNumber(number); setSavedIdType(idType); setSavedIdNumber(number);
+      setIdNumber(number);
+      setSavedIdType(idType);
+      setSavedIdNumber(number);
       setRegistryOverride(getKenyaPractitionerRegistrySnapshot(saved));
-      setLookupDebug(undefined); setResult(undefined); setResultOverride(null);
+      setLookupDebug(undefined);
+      setResult(undefined);
+      setResultOverride(null);
       showNotification({ color: 'green', message: 'Practitioner identification saved' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLookup(): Promise<void> {
     const number = idNumber.trim();
-    if (!number) { setError('Identification number is required.'); return; }
-    setLookingUp(true); setError(undefined);
+    if (!number) {
+      setError('Identification number is required.');
+      return;
+    }
+    setLookingUp(true);
+    setError(undefined);
     try {
-      const resp = (await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/practitioner-lookup`, {
+      const resp = await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/practitioner-lookup`, {
         identificationType: idType,
         identificationNumber: number,
-      })) as KenyaPractitionerLookupResponse;
+      });
       const msg = getLookupMessage(resp);
       setLookupDebug(resp);
       const saved = await medplum.updateResource(
@@ -159,36 +227,52 @@ export function PractitionerAuthorityVerificationPanel(
           {
             identificationType: resp.identificationType ?? idType,
             identificationNumber: resp.identificationNumber ?? number,
-            registrationNumber: msg?.registration_number == null ? undefined : String(msg.registration_number),
+            registrationNumber:
+              msg?.registration_number === undefined || msg.registration_number === null
+                ? undefined
+                : String(msg.registration_number),
             found: msg?.found,
             isActive: msg?.is_active,
           },
           new Date().toISOString()
         )
       );
-      setSavedIdType(idType); setSavedIdNumber(number);
+      setSavedIdType(idType);
+      setSavedIdNumber(number);
       setRegistryOverride(getKenyaPractitionerRegistrySnapshot(saved));
-      setResult(undefined); setResultOverride(null);
-      showNotification({ color: msg?.found === 1 ? 'green' : 'yellow', message: msg?.found === 1 ? 'Practitioner found in Kenya HIE' : `No match for ${idType} ${number}` });
+      setResult(undefined);
+      setResultOverride(null);
+      showNotification({
+        color: msg?.found === 1 ? 'green' : 'yellow',
+        message: msg?.found === 1 ? 'Practitioner found in Kenya HIE' : `No match for ${idType} ${number}`,
+      });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setLookingUp(false); }
+    } finally {
+      setLookingUp(false);
+    }
   }
 
   async function handleVerify(): Promise<void> {
-    setVerifying(true); setError(undefined);
+    setVerifying(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Practitioner', props.practitioner.id as string, '$verify-practitioner-authority'))) as Parameters;
+      const params = await medplum.post(
+        medplum.fhirUrl('Practitioner', props.practitioner.id as string, '$verify-practitioner-authority')
+      );
       const r = getVerificationResult(params);
-      setResult(r); setResultOverride(r);
+      setResult(r);
+      setResultOverride(r);
       showNotification({ color: 'green', message: 'Verification complete' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setVerifying(false); }
+    } finally {
+      setVerifying(false);
+    }
   }
 
   const idUnsaved = idNumber.trim() !== savedIdNumber.trim() || idType !== savedIdType;
@@ -201,10 +285,19 @@ export function PractitionerAuthorityVerificationPanel(
           {statusBadge(currentResult?.status)}
         </Group>
         <Group>
-          <Button variant="light" onClick={() => handleLookup().catch(console.error)} loading={lookingUp} disabled={!idNumber.trim() || saving || verifying}>
+          <Button
+            variant="light"
+            onClick={() => handleLookup().catch(console.error)}
+            loading={lookingUp}
+            disabled={!idNumber.trim() || saving || verifying}
+          >
             Lookup
           </Button>
-          <Button onClick={() => handleVerify().catch(console.error)} loading={verifying} disabled={!savedIdNumber.trim() || saving || lookingUp || idUnsaved}>
+          <Button
+            onClick={() => handleVerify().catch(console.error)}
+            loading={verifying}
+            disabled={!savedIdNumber.trim() || saving || lookingUp || idUnsaved}
+          >
             Verify
           </Button>
         </Group>
@@ -213,24 +306,38 @@ export function PractitionerAuthorityVerificationPanel(
       <Group align="flex-end" grow>
         <NativeSelect
           label="Registry"
-          data={(Object.entries(KenyaPractitionerIdentificationTypeLabels) as [KenyaPractitionerIdentificationType, string][])
-            .map(([value, label]) => ({ value, label }))}
+          data={(
+            Object.entries(KenyaPractitionerIdentificationTypeLabels) as [KenyaPractitionerIdentificationType, string][]
+          ).map(([value, label]) => ({ value, label }))}
           value={idType}
           onChange={(e) => setIdType(e.currentTarget.value as KenyaPractitionerIdentificationType)}
         />
         <TextInput
-          label={idType === 'KMPDC' ? 'KMPDC Licence No.' : idType === 'COC' ? 'COC Licence No.' : 'National ID / Passport'}
-          placeholder={idType === 'KMPDC' ? 'M0031534' : idType === 'COC' ? 'COC/12345' : '12345678'}
+          label={PractitionerIdLabels[idType] ?? 'National ID / Passport'}
+          placeholder={PractitionerIdPlaceholders[idType] ?? '12345678'}
           value={idNumber}
           onChange={(e) => setIdNumber(e.currentTarget.value)}
         />
-        <Button variant="light" onClick={() => handleSave().catch(console.error)} loading={saving} disabled={!idNumber.trim() || !idUnsaved}>
+        <Button
+          variant="light"
+          onClick={() => handleSave().catch(console.error)}
+          loading={saving}
+          disabled={!idNumber.trim() || !idUnsaved}
+        >
           Save
         </Button>
       </Group>
 
-      {!idNumber.trim() && <Alert color="yellow" variant="light">Enter the practitioner identification document to continue.</Alert>}
-      {idNumber.trim() && idUnsaved && <Alert color="blue" variant="light">Save the identification before running lookup or verify.</Alert>}
+      {!idNumber.trim() && (
+        <Alert color="yellow" variant="light">
+          Enter the practitioner identification document to continue.
+        </Alert>
+      )}
+      {idNumber.trim() && idUnsaved && (
+        <Alert color="blue" variant="light">
+          Save the identification before running lookup or verify.
+        </Alert>
+      )}
       {error && <Alert color="red">{error}</Alert>}
 
       {currentResult?.status && (
@@ -238,11 +345,17 @@ export function PractitionerAuthorityVerificationPanel(
           <Divider />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentResult.status}</DescriptionListEntry>
-            {currentResult.message && <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>}
-            {currentResult.practitionerAuthorityIdentifier && (
-              <DescriptionListEntry term="Registration No.">{currentResult.practitionerAuthorityIdentifier}</DescriptionListEntry>
+            {currentResult.message && (
+              <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>
             )}
-            {currentResult.verifiedAt && <DescriptionListEntry term="Verified">{currentResult.verifiedAt}</DescriptionListEntry>}
+            {currentResult.practitionerAuthorityIdentifier && (
+              <DescriptionListEntry term="Registration No.">
+                {currentResult.practitionerAuthorityIdentifier}
+              </DescriptionListEntry>
+            )}
+            {currentResult.verifiedAt && (
+              <DescriptionListEntry term="Verified">{currentResult.verifiedAt}</DescriptionListEntry>
+            )}
             {currentResult.task?.reference && (
               <DescriptionListEntry term="Task">
                 <MedplumLink to={`/${currentResult.task.reference}`}>{currentResult.task.reference}</MedplumLink>
@@ -256,11 +369,23 @@ export function PractitionerAuthorityVerificationPanel(
         <>
           <Divider />
           <DescriptionList>
-            {registry.registrationNumber && <DescriptionListEntry term="Registration No.">{registry.registrationNumber}</DescriptionListEntry>}
-            {registry.identificationNumber && <DescriptionListEntry term="ID Number">{registry.identificationNumber}</DescriptionListEntry>}
-            {registry.found != null && <DescriptionListEntry term="Registry Match">{registry.found ? 'Found' : 'Not found'}</DescriptionListEntry>}
-            {registry.isActive != null && <DescriptionListEntry term="Active">{String(registry.isActive)}</DescriptionListEntry>}
-            {registry.lookedUpAt && <DescriptionListEntry term="Last Lookup">{registry.lookedUpAt}</DescriptionListEntry>}
+            {registry.registrationNumber && (
+              <DescriptionListEntry term="Registration No.">{registry.registrationNumber}</DescriptionListEntry>
+            )}
+            {registry.identificationNumber && (
+              <DescriptionListEntry term="ID Number">{registry.identificationNumber}</DescriptionListEntry>
+            )}
+            {registry.found !== undefined && registry.found !== null && (
+              <DescriptionListEntry term="Registry Match">
+                {registry.found ? 'Found' : 'Not found'}
+              </DescriptionListEntry>
+            )}
+            {registry.isActive !== undefined && registry.isActive !== null && (
+              <DescriptionListEntry term="Active">{String(registry.isActive)}</DescriptionListEntry>
+            )}
+            {registry.lookedUpAt && (
+              <DescriptionListEntry term="Last Lookup">{registry.lookedUpAt}</DescriptionListEntry>
+            )}
           </DescriptionList>
         </>
       )}
@@ -268,7 +393,19 @@ export function PractitionerAuthorityVerificationPanel(
       {lookupDebug && (
         <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
           <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw HIE response</summary>
-          <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+          <Text
+            component="pre"
+            size="xs"
+            style={{
+              padding: '8px',
+              borderRadius: 6,
+              backgroundColor: 'var(--mantine-color-gray-0)',
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              marginTop: 4,
+            }}
+          >
             {JSON.stringify(lookupDebug, null, 2)}
           </Text>
         </details>

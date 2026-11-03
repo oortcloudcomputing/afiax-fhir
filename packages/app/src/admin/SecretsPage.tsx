@@ -104,6 +104,18 @@ function setNamedSecretValue(secrets: ProjectSetting[], name: string, value: str
   return nextSecrets;
 }
 
+function getCredentialStatusMessage(
+  tenantManaged: boolean,
+  missingCount: number,
+  completeMessage: string,
+  missingMessage: string,
+  afiaxManagedMessage: string
+): string {
+  if (!tenantManaged) {
+    return afiaxManagedMessage;
+  }
+  return missingCount === 0 ? completeMessage : missingMessage;
+}
 export function SecretsPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
@@ -122,6 +134,8 @@ export function SecretsPage(): JSX.Element {
 
   useEffect(() => {
     setSecrets(deepClone(projectDetails.project.secret || []));
+    // Keyed on the serialised secrets so a refetch with identical values doesn't discard unsaved edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadedSecretsKey]);
 
   if (!schemaLoaded || !secrets) {
@@ -188,28 +202,25 @@ export function SecretsPage(): JSX.Element {
               APIs. Kenya SHA claim operations use a separate endpoint family selected in Settings.
             </Text>
             <Text size="sm" mt="xs">
-              HIE environment:
-              {' '}
-              <strong>{kenyaHieEnvironment === 'production' ? 'Production' : 'UAT'}</strong>
+              HIE environment: <strong>{kenyaHieEnvironment === 'production' ? 'Production' : 'UAT'}</strong>
               {' | '}
-              SHA claims environment:
-              {' '}
+              SHA claims environment:{' '}
               <strong>{kenyaShaClaimsEnvironment === 'production' ? 'Production' : 'UAT'}</strong>
               {' | '}
-              HIE credential mode:
-              {' '}
+              HIE credential mode:{' '}
               <strong>{kenyaHieCredentialMode === 'afiax-managed' ? 'Afiax-managed' : 'Tenant-managed'}</strong>
               {' | '}
-              SHA credential mode:
-              {' '}
+              SHA credential mode:{' '}
               <strong>{kenyaShaClaimsCredentialMode === 'afiax-managed' ? 'Afiax-managed' : 'Tenant-managed'}</strong>
             </Text>
             <Text size="sm" mt="xs">
-              {isTenantManagedKenyaHieProject
-                ? missingKenyaHieSecretCount === 0
-                  ? 'All required tenant-managed Kenya HIE credentials are configured.'
-                  : `${missingKenyaHieSecretCount} required Kenya HIE credential${missingKenyaHieSecretCount === 1 ? '' : 's'} still missing.`
-                : 'This project relies on Afiax-managed HIE credentials. Tenant admins do not enter HIE credentials here; platform ops manages them in Super Admin.'}
+              {getCredentialStatusMessage(
+                isTenantManagedKenyaHieProject,
+                missingKenyaHieSecretCount,
+                'All required tenant-managed Kenya HIE credentials are configured.',
+                `${missingKenyaHieSecretCount} required Kenya HIE credential${missingKenyaHieSecretCount === 1 ? '' : 's'} still missing.`,
+                'This project relies on Afiax-managed HIE credentials. Tenant admins do not enter HIE credentials here; platform ops manages them in Super Admin.'
+              )}
             </Text>
           </div>
           {isTenantManagedKenyaHieProject &&
@@ -266,11 +277,13 @@ export function SecretsPage(): JSX.Element {
               from the Kenya HIE credentials used for registries and eligibility.
             </Text>
             <Text size="sm" mt="xs">
-              {isTenantManagedKenyaShaProject
-                ? missingKenyaShaSecretCount === 0
-                  ? 'All required tenant-managed Kenya SHA claim credentials are configured.'
-                  : `${missingKenyaShaSecretCount} required Kenya SHA credential${missingKenyaShaSecretCount === 1 ? '' : 's'} still missing.`
-                : 'This project relies on Afiax-managed SHA claim credentials. Tenant admins do not enter them here; platform ops manages them in Super Admin.'}
+              {getCredentialStatusMessage(
+                isTenantManagedKenyaShaProject,
+                missingKenyaShaSecretCount,
+                'All required tenant-managed Kenya SHA claim credentials are configured.',
+                `${missingKenyaShaSecretCount} required Kenya SHA credential${missingKenyaShaSecretCount === 1 ? '' : 's'} still missing.`,
+                'This project relies on Afiax-managed SHA claim credentials. Tenant admins do not enter them here; platform ops manages them in Super Admin.'
+              )}
             </Text>
           </div>
           {isTenantManagedKenyaShaProject &&

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Badge, Button, Divider, Group, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { KenyaCoverageEligibilityIdentificationType } from '@medplum/core';
 import {
   clearKenyaCoverageEligibilitySnapshot,
   getKenyaCoverageEligibilityLookupIdentifier,
@@ -9,7 +10,6 @@ import {
   getProjectSettingString,
   normalizeErrorString,
   setKenyaCoverageEligibilityLookupIdentifier,
-  type KenyaCoverageEligibilityIdentificationType,
 } from '@medplum/core';
 import type {
   Coverage,
@@ -73,35 +73,68 @@ function getCheckCoverageResult(parameters: Parameters | undefined): CoverageChe
     requestIdNumber: getParameter(parameters, 'requestIdNumber')?.valueString,
     requestIdType: getParameter(parameters, 'requestIdType')?.valueString,
     rawResponse: getParameter(parameters, 'rawResponse')?.valueString,
-    eligibilityRequest: getParameter(parameters, 'coverageEligibilityRequest')?.valueReference as Reference<CoverageEligibilityRequest> | undefined,
-    eligibilityResponse: getParameter(parameters, 'coverageEligibilityResponse')?.valueReference as Reference<CoverageEligibilityResponse> | undefined,
+    eligibilityRequest: getParameter(parameters, 'coverageEligibilityRequest')?.valueReference as
+      | Reference<CoverageEligibilityRequest>
+      | undefined,
+    eligibilityResponse: getParameter(parameters, 'coverageEligibilityResponse')?.valueReference as
+      | Reference<CoverageEligibilityResponse>
+      | undefined,
     task: getParameter(parameters, 'task')?.valueReference as Reference<Task> | undefined,
   };
 }
 
 function eligibilityBadge(eligible: boolean | undefined): JSX.Element | null {
-  if (eligible === undefined) return null;
-  return <Badge color={eligible ? 'green' : 'red'} variant="filled" size="sm">{eligible ? 'ELIGIBLE' : 'INELIGIBLE'}</Badge>;
+  if (eligible === undefined) {
+    return null;
+  }
+  return (
+    <Badge color={eligible ? 'green' : 'red'} variant="filled" size="sm">
+      {eligible ? 'ELIGIBLE' : 'INELIGIBLE'}
+    </Badge>
+  );
 }
 
 function statusBadge(status: string | undefined): JSX.Element | null {
-  if (!status) return null;
-  const color = status === 'eligible' ? 'green' : status === 'error' ? 'red' : 'yellow';
-  return <Badge color={color} variant="outline" size="sm">{status}</Badge>;
+  if (!status) {
+    return null;
+  }
+  const colors: Record<string, string> = { eligible: 'green', error: 'red' };
+  const color = colors[status] ?? 'yellow';
+  return (
+    <Badge color={color} variant="outline" size="sm">
+      {status}
+    </Badge>
+  );
 }
 
 export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): JSX.Element | null {
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!props.coverage.id || countryPack !== 'kenya') return null;
+  if (!props.coverage.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <CoverageEligibilityPanelContent {...props} />;
+}
+
+function CoverageEligibilityPanelContent(props: CoverageEligibilityPanelProps): JSX.Element | null {
+  const medplum = useMedplum();
 
   const currentLookupId = getKenyaCoverageEligibilityLookupIdentifier(props.coverage);
-  const syncKey = JSON.stringify({ id: props.coverage.id, identifier: props.coverage.identifier, subscriberId: props.coverage.subscriberId, extension: props.coverage.extension });
+  const syncKey = JSON.stringify({
+    id: props.coverage.id,
+    identifier: props.coverage.identifier,
+    subscriberId: props.coverage.subscriberId,
+    extension: props.coverage.extension,
+  });
 
-  const [idType, setIdType] = useState<KenyaCoverageEligibilityIdentificationType>(currentLookupId?.identificationType ?? 'National ID');
+  const [idType, setIdType] = useState<KenyaCoverageEligibilityIdentificationType>(
+    currentLookupId?.identificationType ?? 'National ID'
+  );
   const [idNumber, setIdNumber] = useState(currentLookupId?.identifier.value ?? '');
-  const [savedIdType, setSavedIdType] = useState<KenyaCoverageEligibilityIdentificationType>(currentLookupId?.identificationType ?? 'National ID');
+  const [savedIdType, setSavedIdType] = useState<KenyaCoverageEligibilityIdentificationType>(
+    currentLookupId?.identificationType ?? 'National ID'
+  );
   const [savedIdNumber, setSavedIdNumber] = useState(currentLookupId?.identifier.value ?? '');
   const [loadedKey, setLoadedKey] = useState(syncKey);
   const [saving, setSaving] = useState(false);
@@ -110,7 +143,11 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
   const [result, setResult] = useState<CoverageCheckResult>();
   const [resultOverride, setResultOverride] = useState<CoverageCheckResult | null>();
 
-  const currentResult = result ?? (resultOverride === undefined ? getKenyaCoverageEligibilitySnapshot(props.coverage) : resultOverride ?? undefined);
+  const currentResult =
+    result ??
+    (resultOverride === undefined
+      ? getKenyaCoverageEligibilitySnapshot(props.coverage)
+      : (resultOverride ?? undefined));
 
   useEffect(() => {
     if (loadedKey !== syncKey) {
@@ -125,32 +162,49 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
 
   async function handleSave(): Promise<void> {
     const number = idNumber.trim();
-    if (!number) { setError('Identification number is required.'); return; }
-    setSaving(true); setError(undefined);
+    if (!number) {
+      setError('Identification number is required.');
+      return;
+    }
+    setSaving(true);
+    setError(undefined);
     try {
-      const saved = await medplum.updateResource(clearKenyaCoverageEligibilitySnapshot(setKenyaCoverageEligibilityLookupIdentifier(props.coverage, idType, number)));
-      setIdNumber(number); setSavedIdType(idType); setSavedIdNumber(number);
-      setResult(undefined); setResultOverride(getKenyaCoverageEligibilitySnapshot(saved) ?? null);
+      const saved = await medplum.updateResource(
+        clearKenyaCoverageEligibilitySnapshot(
+          setKenyaCoverageEligibilityLookupIdentifier(props.coverage, idType, number)
+        )
+      );
+      setIdNumber(number);
+      setSavedIdType(idType);
+      setSavedIdNumber(number);
+      setResult(undefined);
+      setResultOverride(getKenyaCoverageEligibilitySnapshot(saved) ?? null);
       showNotification({ color: 'green', message: 'Eligibility lookup saved' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleCheck(): Promise<void> {
-    setChecking(true); setError(undefined);
+    setChecking(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Coverage', props.coverage.id as string, '$check-coverage'))) as Parameters;
+      const params = await medplum.post(medplum.fhirUrl('Coverage', props.coverage.id as string, '$check-coverage'));
       const r = getCheckCoverageResult(params);
-      setResult(r); setResultOverride(r);
+      setResult(r);
+      setResultOverride(r);
       showNotification({ color: 'green', message: 'Coverage check complete' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setChecking(false); }
+    } finally {
+      setChecking(false);
+    }
   }
 
   const idUnsaved = idNumber.trim() !== savedIdNumber.trim() || idType !== savedIdType;
@@ -163,7 +217,11 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
           {statusBadge(currentResult?.status)}
           {eligibilityBadge(currentResult?.eligible)}
         </Group>
-        <Button onClick={() => handleCheck().catch(console.error)} loading={checking} disabled={!savedIdNumber.trim() || saving || idUnsaved}>
+        <Button
+          onClick={() => handleCheck().catch(console.error)}
+          loading={checking}
+          disabled={!savedIdNumber.trim() || saving || idUnsaved}
+        >
           Check Coverage
         </Button>
       </Group>
@@ -175,14 +233,32 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
           value={idType}
           onChange={(e) => setIdType(e.currentTarget.value as KenyaCoverageEligibilityIdentificationType)}
         />
-        <TextInput label="ID Number" placeholder="12345678" value={idNumber} onChange={(e) => setIdNumber(e.currentTarget.value)} />
-        <Button variant="light" onClick={() => handleSave().catch(console.error)} loading={saving} disabled={!idNumber.trim() || !idUnsaved}>
+        <TextInput
+          label="ID Number"
+          placeholder="12345678"
+          value={idNumber}
+          onChange={(e) => setIdNumber(e.currentTarget.value)}
+        />
+        <Button
+          variant="light"
+          onClick={() => handleSave().catch(console.error)}
+          loading={saving}
+          disabled={!idNumber.trim() || !idUnsaved}
+        >
           Save
         </Button>
       </Group>
 
-      {!idNumber.trim() && <Alert color="yellow" variant="light">Enter the DHA eligibility identifier to continue.</Alert>}
-      {idNumber.trim() && idUnsaved && <Alert color="blue" variant="light">Save before running the check.</Alert>}
+      {!idNumber.trim() && (
+        <Alert color="yellow" variant="light">
+          Enter the DHA eligibility identifier to continue.
+        </Alert>
+      )}
+      {idNumber.trim() && idUnsaved && (
+        <Alert color="blue" variant="light">
+          Save before running the check.
+        </Alert>
+      )}
       {error && <Alert color="red">{error}</Alert>}
 
       {currentResult?.status && (
@@ -190,11 +266,19 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
           <Divider />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentResult.status}</DescriptionListEntry>
-            {currentResult.fullName && <DescriptionListEntry term="Member Name">{currentResult.fullName}</DescriptionListEntry>}
-            {currentResult.message && <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>}
-            {currentResult.coverageEndDate && <DescriptionListEntry term="Coverage Ends">{currentResult.coverageEndDate}</DescriptionListEntry>}
+            {currentResult.fullName && (
+              <DescriptionListEntry term="Member Name">{currentResult.fullName}</DescriptionListEntry>
+            )}
+            {currentResult.message && (
+              <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>
+            )}
+            {currentResult.coverageEndDate && (
+              <DescriptionListEntry term="Coverage Ends">{currentResult.coverageEndDate}</DescriptionListEntry>
+            )}
             {currentResult.reason && <DescriptionListEntry term="Reason">{currentResult.reason}</DescriptionListEntry>}
-            {currentResult.checkedAt && <DescriptionListEntry term="Checked">{currentResult.checkedAt}</DescriptionListEntry>}
+            {currentResult.checkedAt && (
+              <DescriptionListEntry term="Checked">{currentResult.checkedAt}</DescriptionListEntry>
+            )}
             {currentResult.task?.reference && (
               <DescriptionListEntry term="Task">
                 <MedplumLink to={`/${currentResult.task.reference}`}>{currentResult.task.reference}</MedplumLink>
@@ -205,18 +289,30 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
           <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
             <summary style={{ cursor: 'pointer', userSelect: 'none' }}>All eligibility details</summary>
             <DescriptionList>
-              {currentResult.transitionStatus && <DescriptionListEntry term="Transition Status">{currentResult.transitionStatus}</DescriptionListEntry>}
-              {currentResult.possibleSolution && <DescriptionListEntry term="Suggestion">{currentResult.possibleSolution}</DescriptionListEntry>}
-              {currentResult.requestId && <DescriptionListEntry term="DHA Request ID">{currentResult.requestId}</DescriptionListEntry>}
-              {currentResult.identificationNumber && <DescriptionListEntry term="Lookup Number">{currentResult.identificationNumber}</DescriptionListEntry>}
+              {currentResult.transitionStatus && (
+                <DescriptionListEntry term="Transition Status">{currentResult.transitionStatus}</DescriptionListEntry>
+              )}
+              {currentResult.possibleSolution && (
+                <DescriptionListEntry term="Suggestion">{currentResult.possibleSolution}</DescriptionListEntry>
+              )}
+              {currentResult.requestId && (
+                <DescriptionListEntry term="DHA Request ID">{currentResult.requestId}</DescriptionListEntry>
+              )}
+              {currentResult.identificationNumber && (
+                <DescriptionListEntry term="Lookup Number">{currentResult.identificationNumber}</DescriptionListEntry>
+              )}
               {currentResult.eligibilityRequest?.reference && (
                 <DescriptionListEntry term="Eligibility Request">
-                  <MedplumLink to={`/${currentResult.eligibilityRequest.reference}`}>{currentResult.eligibilityRequest.reference}</MedplumLink>
+                  <MedplumLink to={`/${currentResult.eligibilityRequest.reference}`}>
+                    {currentResult.eligibilityRequest.reference}
+                  </MedplumLink>
                 </DescriptionListEntry>
               )}
               {currentResult.eligibilityResponse?.reference && (
                 <DescriptionListEntry term="Eligibility Response">
-                  <MedplumLink to={`/${currentResult.eligibilityResponse.reference}`}>{currentResult.eligibilityResponse.reference}</MedplumLink>
+                  <MedplumLink to={`/${currentResult.eligibilityResponse.reference}`}>
+                    {currentResult.eligibilityResponse.reference}
+                  </MedplumLink>
                 </DescriptionListEntry>
               )}
             </DescriptionList>
@@ -227,7 +323,19 @@ export function CoverageEligibilityPanel(props: CoverageEligibilityPanelProps): 
       {result?.rawResponse && (
         <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
           <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw HIE response</summary>
-          <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+          <Text
+            component="pre"
+            size="xs"
+            style={{
+              padding: '8px',
+              borderRadius: 6,
+              backgroundColor: 'var(--mantine-color-gray-0)',
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              marginTop: 4,
+            }}
+          >
             {result.rawResponse}
           </Text>
         </details>

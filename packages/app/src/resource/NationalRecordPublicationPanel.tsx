@@ -39,7 +39,8 @@ function getPublicationResult(parameters: Parameters | undefined): PublicationRe
     patientId: getParameter(parameters, 'patientId')?.valueString,
     publicationId: getParameter(parameters, 'publicationId')?.valueString,
     endpoint: getParameter(parameters, 'endpoint')?.valueString,
-    publishedAt: getParameter(parameters, 'publishedAt')?.valueDateTime ?? getParameter(parameters, 'publishedAt')?.valueString,
+    publishedAt:
+      getParameter(parameters, 'publishedAt')?.valueDateTime ?? getParameter(parameters, 'publishedAt')?.valueString,
     message: getParameter(parameters, 'message')?.valueString,
     bundleEntryCount: getParameter(parameters, 'bundleEntryCount')?.valueInteger,
     task: getParameter(parameters, 'task')?.valueReference as Reference<Task> | undefined,
@@ -47,16 +48,30 @@ function getPublicationResult(parameters: Parameters | undefined): PublicationRe
 }
 
 function statusBadge(status: string | undefined): JSX.Element | null {
-  if (!status) return null;
-  const color = status === 'published' ? 'green' : status === 'error' ? 'red' : 'yellow';
-  return <Badge color={color} variant="filled" size="sm">{status.toUpperCase()}</Badge>;
+  if (!status) {
+    return null;
+  }
+  const colors: Record<string, string> = { published: 'green', error: 'red' };
+  const color = colors[status] ?? 'yellow';
+  return (
+    <Badge color={color} variant="filled" size="sm">
+      {status.toUpperCase()}
+    </Badge>
+  );
 }
 
 export function NationalRecordPublicationPanel(props: NationalRecordPublicationPanelProps): JSX.Element | null {
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!props.patient.id || countryPack !== 'kenya') return null;
+  if (!props.patient.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <NationalRecordPublicationPanelContent {...props} />;
+}
+
+function NationalRecordPublicationPanelContent(props: NationalRecordPublicationPanelProps): JSX.Element | null {
+  const medplum = useMedplum();
 
   const persisted = getKenyaNationalRecordPublicationSnapshot(props.patient);
   const [publishing, setPublishing] = useState(false);
@@ -68,24 +83,34 @@ export function NationalRecordPublicationPanel(props: NationalRecordPublicationP
   const currentResult: PublicationResult | undefined = (result ?? persisted) as PublicationResult | undefined;
 
   async function handlePublish(): Promise<void> {
-    setPublishing(true); setError(undefined);
+    setPublishing(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Patient', props.patient.id as string, '$publish-national-record'), {
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'includeActiveConditions', valueBoolean: includeConditions },
-          { name: 'includeRecentEncounters', valueBoolean: includeEncounters },
-        ],
-      })) as Parameters;
+      const params = await medplum.post(
+        medplum.fhirUrl('Patient', props.patient.id as string, '$publish-national-record'),
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'includeActiveConditions', valueBoolean: includeConditions },
+            { name: 'includeRecentEncounters', valueBoolean: includeEncounters },
+          ],
+        }
+      );
       const r = getPublicationResult(params);
       setResult(r);
       const color = r.status === 'published' ? 'green' : 'red';
-      showNotification({ color, message: r.message ?? `SHR ${r.status}`, autoClose: r.status === 'error' ? false : undefined });
+      showNotification({
+        color,
+        message: r.message ?? `SHR ${r.status}`,
+        autoClose: r.status === 'error' ? false : undefined,
+      });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setPublishing(false); }
+    } finally {
+      setPublishing(false);
+    }
   }
 
   return (
@@ -127,12 +152,18 @@ export function NationalRecordPublicationPanel(props: NationalRecordPublicationP
           <Divider />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentResult.status}</DescriptionListEntry>
-            {currentResult.publicationId && <DescriptionListEntry term="SHR Record ID">{currentResult.publicationId}</DescriptionListEntry>}
-            {currentResult.bundleEntryCount != null && (
+            {currentResult.publicationId && (
+              <DescriptionListEntry term="SHR Record ID">{currentResult.publicationId}</DescriptionListEntry>
+            )}
+            {currentResult.bundleEntryCount !== undefined && currentResult.bundleEntryCount !== null && (
               <DescriptionListEntry term="Bundle Entries">{currentResult.bundleEntryCount}</DescriptionListEntry>
             )}
-            {currentResult.message && <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>}
-            {currentResult.publishedAt && <DescriptionListEntry term="Published">{currentResult.publishedAt}</DescriptionListEntry>}
+            {currentResult.message && (
+              <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>
+            )}
+            {currentResult.publishedAt && (
+              <DescriptionListEntry term="Published">{currentResult.publishedAt}</DescriptionListEntry>
+            )}
             {currentResult.task?.reference && (
               <DescriptionListEntry term="Task">
                 <MedplumLink to={`/${currentResult.task.reference}`}>{currentResult.task.reference}</MedplumLink>

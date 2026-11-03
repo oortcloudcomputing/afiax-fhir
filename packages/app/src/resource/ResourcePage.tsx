@@ -18,18 +18,18 @@ import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, u
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Outlet, useParams } from 'react-router';
-import { ClaimBillingPanel } from './ClaimBillingPanel';
-import { ClaimNationalSubmissionPanel } from './ClaimNationalSubmissionPanel';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
 import { SpecimenHeader } from '../components/SpecimenHeader';
 import { getPatient, getSpecimen } from '../utils';
+import { ClaimBillingPanel } from './ClaimBillingPanel';
+import { ClaimNationalSubmissionPanel } from './ClaimNationalSubmissionPanel';
 import { CoverageEligibilityPanel } from './CoverageEligibilityPanel';
-import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
-import { PractitionerAuthorityVerificationPanel } from './PractitionerAuthorityVerificationPanel';
-import { PatientIdentityPanel } from './PatientIdentityPanel';
 import { NationalRecordPublicationPanel } from './NationalRecordPublicationPanel';
+import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
+import { PatientIdentityPanel } from './PatientIdentityPanel';
+import { PractitionerAuthorityVerificationPanel } from './PractitionerAuthorityVerificationPanel';
 import { cleanResource } from './utils';
 
 function getTabs(resourceType: string): string[] {
@@ -151,7 +151,9 @@ export function ResourcePage(): JSX.Element | null {
       {value?.resourceType === 'Claim' && <ClaimNationalSubmissionPanel claim={value as Claim} />}
       {value?.resourceType === 'Claim' && <ClaimBillingPanel claim={value as Claim} />}
       {value?.resourceType === 'Coverage' && <CoverageEligibilityPanel coverage={value as Coverage} />}
-      {value?.resourceType === 'Organization' && <OrganizationFacilityVerificationPanel organization={value as Organization} />}
+      {value?.resourceType === 'Organization' && (
+        <OrganizationFacilityVerificationPanel organization={value as Organization} />
+      )}
       {value?.resourceType === 'Practitioner' && (
         <PractitionerAuthorityVerificationPanel practitioner={value as Practitioner} />
       )}

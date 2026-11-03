@@ -3,8 +3,8 @@
 import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
-  getKenyaNationalClaimSubmissionSnapshot,
   getKenyaNationalClaimStatusSnapshot,
+  getKenyaNationalClaimSubmissionSnapshot,
   getKenyaShaClaimsEnvironment,
   getProjectSettingString,
   normalizeErrorString,
@@ -93,7 +93,7 @@ function getClaimStatusResult(parameters: Parameters | undefined): ClaimStatusRe
     claimId: getParameter(parameters, 'claimId')?.valueString,
     claimState: getParameter(parameters, 'claimState')?.valueString,
     rawResponse: getParameter(parameters, 'rawResponse')?.valueString,
-    claimResponse: getParameter(parameters, 'claimResponse')?.valueReference as Reference | undefined,
+    claimResponse: getParameter(parameters, 'claimResponse')?.valueReference,
     workflowBot: getParameter(parameters, 'workflowBot')?.valueString,
     workflowBotStatus: getParameter(parameters, 'workflowBotStatus')?.valueCode,
     workflowBotMessage: getParameter(parameters, 'workflowBotMessage')?.valueString,
@@ -102,16 +102,30 @@ function getClaimStatusResult(parameters: Parameters | undefined): ClaimStatusRe
 }
 
 function claimStatusBadge(status: string | undefined): JSX.Element | null {
-  if (!status) return null;
+  if (!status) {
+    return null;
+  }
   const map: Record<string, string> = { submitted: 'blue', adjudicated: 'green', rejected: 'yellow', error: 'red' };
-  return <Badge color={map[status] ?? 'gray'} variant="filled" size="sm">{status.toUpperCase()}</Badge>;
+  return (
+    <Badge color={map[status] ?? 'gray'} variant="filled" size="sm">
+      {status.toUpperCase()}
+    </Badge>
+  );
 }
 
 export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanelProps): JSX.Element | null {
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!props.claim.id || countryPack !== 'kenya') return null;
+  if (!props.claim.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <ClaimNationalSubmissionPanelContent {...props} />;
+}
+
+function ClaimNationalSubmissionPanelContent(props: ClaimNationalSubmissionPanelProps): JSX.Element | null {
+  const medplum = useMedplum();
+  const project = medplum.getProject();
 
   const env = getKenyaShaClaimsEnvironment(project);
   const [submitting, setSubmitting] = useState(false);
@@ -125,33 +139,50 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
   const canCheckStatus = !!currentSubmission?.bundleId;
 
   async function handleSubmit(): Promise<void> {
-    setSubmitting(true); setError(undefined);
+    setSubmitting(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Claim', props.claim.id as string, '$submit-national-claim'))) as Parameters;
+      const params = await medplum.post(medplum.fhirUrl('Claim', props.claim.id as string, '$submit-national-claim'));
       const r = getClaimSubmissionResult(params);
       setSubmissionResult(r);
       const color = r.status === 'error' ? 'red' : 'green';
-      showNotification({ color, message: r.message ?? (r.status === 'submitted' ? 'Claim submitted' : 'Bundle prepared'), autoClose: r.status === 'error' ? false : undefined });
+      showNotification({
+        color,
+        message: r.message ?? (r.status === 'submitted' ? 'Claim submitted' : 'Bundle prepared'),
+        autoClose: r.status === 'error' ? false : undefined,
+      });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleCheckStatus(): Promise<void> {
-    setCheckingStatus(true); setError(undefined);
+    setCheckingStatus(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Claim', props.claim.id as string, '$check-national-claim-status'))) as Parameters;
+      const params = await medplum.post(
+        medplum.fhirUrl('Claim', props.claim.id as string, '$check-national-claim-status')
+      );
       const r = getClaimStatusResult(params);
       setStatusResult(r);
-      const color = r.status === 'adjudicated' ? 'green' : r.status === 'rejected' ? 'yellow' : r.status === 'error' ? 'red' : 'blue';
-      showNotification({ color, message: r.message ?? `Status: ${r.status}`, autoClose: r.status === 'error' ? false : undefined });
+      const colors: Record<string, string> = { adjudicated: 'green', rejected: 'yellow', error: 'red' };
+      const color = colors[r.status ?? ''] ?? 'blue';
+      showNotification({
+        color,
+        message: r.message ?? `Status: ${r.status}`,
+        autoClose: r.status === 'error' ? false : undefined,
+      });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setCheckingStatus(false); }
+    } finally {
+      setCheckingStatus(false);
+    }
   }
 
   return (
@@ -160,11 +191,18 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
       <Group justify="space-between" align="center">
         <Group gap="xs">
           <Title order={3}>Kenya SHA Claim</Title>
-          <Badge color="gray" variant="outline" size="sm">{env === 'production' ? 'PRODUCTION' : 'UAT'}</Badge>
+          <Badge color="gray" variant="outline" size="sm">
+            {env === 'production' ? 'PRODUCTION' : 'UAT'}
+          </Badge>
           {claimStatusBadge(currentStatus?.status ?? currentSubmission?.status)}
         </Group>
         <Group>
-          <Button variant="default" onClick={() => handleCheckStatus().catch(console.error)} loading={checkingStatus} disabled={!canCheckStatus}>
+          <Button
+            variant="default"
+            onClick={() => handleCheckStatus().catch(console.error)}
+            loading={checkingStatus}
+            disabled={!canCheckStatus}
+          >
             Check Status
           </Button>
           <Button onClick={() => handleSubmit().catch(console.error)} loading={submitting}>
@@ -174,7 +212,9 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
       </Group>
 
       {!canCheckStatus && (
-        <Alert color="yellow" variant="light">Submit the claim to enable status checking.</Alert>
+        <Alert color="yellow" variant="light">
+          Submit the claim to enable status checking.
+        </Alert>
       )}
       {error && <Alert color="red">{error}</Alert>}
 
@@ -184,9 +224,13 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
           <Divider label="Submission" labelPosition="left" />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentSubmission.status}</DescriptionListEntry>
-            {currentSubmission.message && <DescriptionListEntry term="Message">{currentSubmission.message}</DescriptionListEntry>}
-            {currentSubmission.bundleId && <DescriptionListEntry term="Bundle ID">{currentSubmission.bundleId}</DescriptionListEntry>}
-            {currentSubmission.bundleEntryCount != null && (
+            {currentSubmission.message && (
+              <DescriptionListEntry term="Message">{currentSubmission.message}</DescriptionListEntry>
+            )}
+            {currentSubmission.bundleId && (
+              <DescriptionListEntry term="Bundle ID">{currentSubmission.bundleId}</DescriptionListEntry>
+            )}
+            {currentSubmission.bundleEntryCount !== undefined && currentSubmission.bundleEntryCount !== null && (
               <DescriptionListEntry term="Bundle Entries">{currentSubmission.bundleEntryCount}</DescriptionListEntry>
             )}
             {currentSubmission.task?.reference && (
@@ -199,18 +243,40 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
           <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
             <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Submission details</summary>
             <DescriptionList>
-              {currentSubmission.submissionEndpoint && <DescriptionListEntry term="Endpoint">{currentSubmission.submissionEndpoint}</DescriptionListEntry>}
-              {currentSubmission.responseStatusCode != null && <DescriptionListEntry term="HTTP Status">{currentSubmission.responseStatusCode}</DescriptionListEntry>}
-              {currentSubmission.correlationId && <DescriptionListEntry term="Correlation ID">{currentSubmission.correlationId}</DescriptionListEntry>}
-              {currentSubmission.workflowBot && <DescriptionListEntry term="Workflow Bot">{currentSubmission.workflowBot}</DescriptionListEntry>}
-              {currentSubmission.workflowBotStatus && <DescriptionListEntry term="Bot Status">{currentSubmission.workflowBotStatus}</DescriptionListEntry>}
+              {currentSubmission.submissionEndpoint && (
+                <DescriptionListEntry term="Endpoint">{currentSubmission.submissionEndpoint}</DescriptionListEntry>
+              )}
+              {currentSubmission.responseStatusCode !== undefined && currentSubmission.responseStatusCode !== null && (
+                <DescriptionListEntry term="HTTP Status">{currentSubmission.responseStatusCode}</DescriptionListEntry>
+              )}
+              {currentSubmission.correlationId && (
+                <DescriptionListEntry term="Correlation ID">{currentSubmission.correlationId}</DescriptionListEntry>
+              )}
+              {currentSubmission.workflowBot && (
+                <DescriptionListEntry term="Workflow Bot">{currentSubmission.workflowBot}</DescriptionListEntry>
+              )}
+              {currentSubmission.workflowBotStatus && (
+                <DescriptionListEntry term="Bot Status">{currentSubmission.workflowBotStatus}</DescriptionListEntry>
+              )}
             </DescriptionList>
           </details>
 
           {submissionResult?.rawResponse && (
             <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
               <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw SHA response</summary>
-              <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+              <Text
+                component="pre"
+                size="xs"
+                style={{
+                  padding: '8px',
+                  borderRadius: 6,
+                  backgroundColor: 'var(--mantine-color-gray-0)',
+                  overflowX: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  marginTop: 4,
+                }}
+              >
                 {submissionResult.rawResponse}
               </Text>
             </details>
@@ -219,7 +285,19 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
           {submissionResult?.rawBundle && (
             <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
               <summary style={{ cursor: 'pointer', userSelect: 'none' }}>SHA claim bundle</summary>
-              <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+              <Text
+                component="pre"
+                size="xs"
+                style={{
+                  padding: '8px',
+                  borderRadius: 6,
+                  backgroundColor: 'var(--mantine-color-gray-0)',
+                  overflowX: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  marginTop: 4,
+                }}
+              >
                 {submissionResult.rawBundle}
               </Text>
             </details>
@@ -232,12 +310,20 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
         <>
           <Divider label="Payer Status" labelPosition="left" />
           <DescriptionList>
-            <DescriptionListEntry term="Claim State">{currentStatus.claimState ?? currentStatus.status}</DescriptionListEntry>
-            {currentStatus.message && <DescriptionListEntry term="Message">{currentStatus.message}</DescriptionListEntry>}
-            {currentStatus.checkedAt && <DescriptionListEntry term="Checked">{currentStatus.checkedAt}</DescriptionListEntry>}
+            <DescriptionListEntry term="Claim State">
+              {currentStatus.claimState ?? currentStatus.status}
+            </DescriptionListEntry>
+            {currentStatus.message && (
+              <DescriptionListEntry term="Message">{currentStatus.message}</DescriptionListEntry>
+            )}
+            {currentStatus.checkedAt && (
+              <DescriptionListEntry term="Checked">{currentStatus.checkedAt}</DescriptionListEntry>
+            )}
             {currentStatus.claimResponse?.reference && (
               <DescriptionListEntry term="ClaimResponse">
-                <MedplumLink to={currentStatus.claimResponse.reference}>{currentStatus.claimResponse.reference}</MedplumLink>
+                <MedplumLink to={currentStatus.claimResponse.reference}>
+                  {currentStatus.claimResponse.reference}
+                </MedplumLink>
               </DescriptionListEntry>
             )}
             {currentStatus.task?.reference && (
@@ -250,7 +336,19 @@ export function ClaimNationalSubmissionPanel(props: ClaimNationalSubmissionPanel
           {statusResult?.rawResponse && (
             <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
               <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw status response</summary>
-              <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+              <Text
+                component="pre"
+                size="xs"
+                style={{
+                  padding: '8px',
+                  borderRadius: 6,
+                  backgroundColor: 'var(--mantine-color-gray-0)',
+                  overflowX: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  marginTop: 4,
+                }}
+              >
                 {statusResult.rawResponse}
               </Text>
             </details>

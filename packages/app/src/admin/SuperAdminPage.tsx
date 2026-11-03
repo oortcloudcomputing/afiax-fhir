@@ -34,8 +34,8 @@ import {
 } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { startAsyncJob } from './SuperAdminStartAsyncJob';
 import { SuperAdminKenyaCredentialsForm } from './SuperAdminKenyaCredentialsForm';
+import { startAsyncJob } from './SuperAdminStartAsyncJob';
 import { WsSubStatsWidget } from './WsSubStatsWidget';
 
 export function SuperAdminPage(): JSX.Element {

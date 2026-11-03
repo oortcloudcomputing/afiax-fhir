@@ -20,9 +20,11 @@ export function ProjectDetailsPage(): JSX.Element {
         <DescriptionListEntry term="ID">{result.project.id}</DescriptionListEntry>
         <DescriptionListEntry term="Name">{result.project.name}</DescriptionListEntry>
         <DescriptionListEntry term="Country Pack">
-          {countryPackEntry ? formatCountryPackLabel(countryPackEntry) : countryPack ?? 'Not configured'}
+          {countryPackEntry ? formatCountryPackLabel(countryPackEntry) : (countryPack ?? 'Not configured')}
         </DescriptionListEntry>
-        <DescriptionListEntry term="Project Settings">{String(result.project.setting?.length ?? 0)}</DescriptionListEntry>
+        <DescriptionListEntry term="Project Settings">
+          {String(result.project.setting?.length ?? 0)}
+        </DescriptionListEntry>
       </DescriptionList>
     </>
   );

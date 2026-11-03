@@ -80,16 +80,29 @@ function getVerificationResult(parameters: Parameters | undefined): FacilityVeri
 
 function getLookupMessage(response: KenyaFacilityLookupResponse | undefined): KenyaFacilityLookupMessage | undefined {
   const result = response?.result;
-  if (!result) return undefined;
-  if (result.message) return result.message;
-  if ('facility_name' in result || 'found' in result) return result;
+  if (!result) {
+    return undefined;
+  }
+  if (result.message) {
+    return result.message;
+  }
+  if ('facility_name' in result || 'found' in result) {
+    return result;
+  }
   return undefined;
 }
 
 function statusBadge(status: string | undefined): JSX.Element | null {
-  if (!status) return null;
-  const color = status === 'verified' ? 'green' : status === 'error' ? 'red' : 'yellow';
-  return <Badge color={color} variant="filled" size="sm">{status.toUpperCase()}</Badge>;
+  if (!status) {
+    return null;
+  }
+  const colors: Record<string, string> = { verified: 'green', error: 'red' };
+  const color = colors[status] ?? 'yellow';
+  return (
+    <Badge color={color} variant="filled" size="sm">
+      {status.toUpperCase()}
+    </Badge>
+  );
 }
 
 export function OrganizationFacilityVerificationPanel(
@@ -98,10 +111,24 @@ export function OrganizationFacilityVerificationPanel(
   const medplum = useMedplum();
   const project = medplum.getProject();
   const countryPack = getProjectSettingString(project, 'countryPack');
-  if (!props.organization.id || countryPack !== 'kenya') return null;
+  if (!props.organization.id || countryPack !== 'kenya') {
+    return null;
+  }
+  return <OrganizationFacilityVerificationPanelContent {...props} />;
+}
+
+function OrganizationFacilityVerificationPanelContent(
+  props: OrganizationFacilityVerificationPanelProps
+): JSX.Element | null {
+  const medplum = useMedplum();
+  const project = medplum.getProject();
 
   const currentFacilityIdentifier = getKenyaFacilityAuthorityIdentifier(props.organization);
-  const syncKey = JSON.stringify({ id: props.organization.id, identifier: props.organization.identifier, extension: props.organization.extension });
+  const syncKey = JSON.stringify({
+    id: props.organization.id,
+    identifier: props.organization.identifier,
+    extension: props.organization.extension,
+  });
 
   const [mflCode, setMflCode] = useState(currentFacilityIdentifier?.value ?? '');
   const [savedMflCode, setSavedMflCode] = useState(currentFacilityIdentifier?.value ?? '');
@@ -115,8 +142,15 @@ export function OrganizationFacilityVerificationPanel(
   const [registryOverride, setRegistryOverride] = useState(getKenyaFacilityRegistrySnapshot(props.organization));
   const [resultOverride, setResultOverride] = useState<FacilityVerificationResult | null>();
 
-  const registry = registryOverride === undefined ? getKenyaFacilityRegistrySnapshot(props.organization) : registryOverride ?? undefined;
-  const currentResult = result ?? (resultOverride === undefined ? getKenyaFacilityVerificationSnapshot(props.organization) : resultOverride ?? undefined);
+  const registry =
+    registryOverride === undefined
+      ? getKenyaFacilityRegistrySnapshot(props.organization)
+      : (registryOverride ?? undefined);
+  const currentResult =
+    result ??
+    (resultOverride === undefined
+      ? getKenyaFacilityVerificationSnapshot(props.organization)
+      : (resultOverride ?? undefined));
 
   useEffect(() => {
     if (loadedKey !== syncKey) {
@@ -131,29 +165,45 @@ export function OrganizationFacilityVerificationPanel(
 
   async function handleSave(): Promise<void> {
     const code = mflCode.trim();
-    if (!code) { setError('Facility code is required.'); return; }
-    setSaving(true); setError(undefined);
+    if (!code) {
+      setError('Facility code is required.');
+      return;
+    }
+    setSaving(true);
+    setError(undefined);
     try {
       const saved = await medplum.updateResource(
-        clearKenyaFacilityRegistrySnapshot(clearKenyaFacilityVerificationSnapshot(setKenyaFacilityAuthorityIdentifier(props.organization, code)))
+        clearKenyaFacilityRegistrySnapshot(
+          clearKenyaFacilityVerificationSnapshot(setKenyaFacilityAuthorityIdentifier(props.organization, code))
+        )
       );
       setSavedMflCode(code);
       setRegistryOverride(getKenyaFacilityRegistrySnapshot(saved));
-      setLookupDebug(undefined); setResult(undefined); setResultOverride(null);
+      setLookupDebug(undefined);
+      setResult(undefined);
+      setResultOverride(null);
       showNotification({ color: 'green', message: 'Facility code saved' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLookup(): Promise<void> {
     const code = mflCode.trim();
-    if (!code) { setError('Facility code is required.'); return; }
-    setLookingUp(true); setError(undefined);
+    if (!code) {
+      setError('Facility code is required.');
+      return;
+    }
+    setLookingUp(true);
+    setError(undefined);
     try {
-      const resp = (await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/facility-lookup`, { facilityCode: code })) as KenyaFacilityLookupResponse;
+      const resp = await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/facility-lookup`, {
+        facilityCode: code,
+      });
       const msg = getLookupMessage(resp);
       setLookupDebug(resp);
       const saved = await medplum.updateResource(
@@ -181,27 +231,39 @@ export function OrganizationFacilityVerificationPanel(
       );
       setSavedMflCode(code);
       setRegistryOverride(getKenyaFacilityRegistrySnapshot(saved));
-      setResult(undefined); setResultOverride(null);
-      showNotification({ color: msg?.found === 1 ? 'green' : 'yellow', message: msg?.found === 1 ? 'Facility found in Kenya HIE' : `No match for code ${code}` });
+      setResult(undefined);
+      setResultOverride(null);
+      showNotification({
+        color: msg?.found === 1 ? 'green' : 'yellow',
+        message: msg?.found === 1 ? 'Facility found in Kenya HIE' : `No match for code ${code}`,
+      });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setLookingUp(false); }
+    } finally {
+      setLookingUp(false);
+    }
   }
 
   async function handleVerify(): Promise<void> {
-    setVerifying(true); setError(undefined);
+    setVerifying(true);
+    setError(undefined);
     try {
-      const params = (await medplum.post(medplum.fhirUrl('Organization', props.organization.id as string, '$verify-facility-authority'))) as Parameters;
+      const params = await medplum.post(
+        medplum.fhirUrl('Organization', props.organization.id as string, '$verify-facility-authority')
+      );
       const r = getVerificationResult(params);
-      setResult(r); setResultOverride(r);
+      setResult(r);
+      setResultOverride(r);
       showNotification({ color: 'green', message: 'Verification complete' });
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);
       showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally { setVerifying(false); }
+    } finally {
+      setVerifying(false);
+    }
   }
 
   const codeUnsaved = mflCode.trim() !== savedMflCode.trim();
@@ -214,10 +276,19 @@ export function OrganizationFacilityVerificationPanel(
           {statusBadge(currentResult?.status)}
         </Group>
         <Group>
-          <Button variant="light" onClick={() => handleLookup().catch(console.error)} loading={lookingUp} disabled={!mflCode.trim() || saving || verifying}>
+          <Button
+            variant="light"
+            onClick={() => handleLookup().catch(console.error)}
+            loading={lookingUp}
+            disabled={!mflCode.trim() || saving || verifying}
+          >
             Lookup
           </Button>
-          <Button onClick={() => handleVerify().catch(console.error)} loading={verifying} disabled={!savedMflCode.trim() || saving || lookingUp || codeUnsaved}>
+          <Button
+            onClick={() => handleVerify().catch(console.error)}
+            loading={verifying}
+            disabled={!savedMflCode.trim() || saving || lookingUp || codeUnsaved}
+          >
             Verify
           </Button>
         </Group>
@@ -231,13 +302,26 @@ export function OrganizationFacilityVerificationPanel(
           value={mflCode}
           onChange={(e) => setMflCode(e.currentTarget.value)}
         />
-        <Button variant="light" onClick={() => handleSave().catch(console.error)} loading={saving} disabled={!mflCode.trim() || !codeUnsaved}>
+        <Button
+          variant="light"
+          onClick={() => handleSave().catch(console.error)}
+          loading={saving}
+          disabled={!mflCode.trim() || !codeUnsaved}
+        >
           Save Code
         </Button>
       </Group>
 
-      {!mflCode.trim() && <Alert color="yellow" variant="light">Enter the MFL code to start verification.</Alert>}
-      {mflCode.trim() && codeUnsaved && <Alert color="blue" variant="light">Save the code before running lookup or verify.</Alert>}
+      {!mflCode.trim() && (
+        <Alert color="yellow" variant="light">
+          Enter the MFL code to start verification.
+        </Alert>
+      )}
+      {mflCode.trim() && codeUnsaved && (
+        <Alert color="blue" variant="light">
+          Save the code before running lookup or verify.
+        </Alert>
+      )}
       {error && <Alert color="red">{error}</Alert>}
 
       {currentResult?.status && (
@@ -245,11 +329,17 @@ export function OrganizationFacilityVerificationPanel(
           <Divider />
           <DescriptionList>
             <DescriptionListEntry term="Status">{currentResult.status}</DescriptionListEntry>
-            {currentResult.message && <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>}
-            {currentResult.facilityAuthorityIdentifier && (
-              <DescriptionListEntry term="Authority ID">{currentResult.facilityAuthorityIdentifier}</DescriptionListEntry>
+            {currentResult.message && (
+              <DescriptionListEntry term="Message">{currentResult.message}</DescriptionListEntry>
             )}
-            {currentResult.verifiedAt && <DescriptionListEntry term="Verified">{currentResult.verifiedAt}</DescriptionListEntry>}
+            {currentResult.facilityAuthorityIdentifier && (
+              <DescriptionListEntry term="Authority ID">
+                {currentResult.facilityAuthorityIdentifier}
+              </DescriptionListEntry>
+            )}
+            {currentResult.verifiedAt && (
+              <DescriptionListEntry term="Verified">{currentResult.verifiedAt}</DescriptionListEntry>
+            )}
             {currentResult.task?.reference && (
               <DescriptionListEntry term="Task">
                 <MedplumLink to={`/${currentResult.task.reference}`}>{currentResult.task.reference}</MedplumLink>
@@ -263,25 +353,47 @@ export function OrganizationFacilityVerificationPanel(
         <>
           <Divider />
           <DescriptionList>
-            {registry.facilityName && <DescriptionListEntry term="Facility Name">{registry.facilityName}</DescriptionListEntry>}
+            {registry.facilityName && (
+              <DescriptionListEntry term="Facility Name">{registry.facilityName}</DescriptionListEntry>
+            )}
             {registry.county && <DescriptionListEntry term="County">{registry.county}</DescriptionListEntry>}
-            {registry.facilityLevel && <DescriptionListEntry term="Level">{registry.facilityLevel}</DescriptionListEntry>}
-            {registry.operationalStatus && <DescriptionListEntry term="Operational Status">{registry.operationalStatus}</DescriptionListEntry>}
-            {registry.registrationNumber && <DescriptionListEntry term="Reg. Number">{registry.registrationNumber}</DescriptionListEntry>}
-            {registry.lookedUpAt && <DescriptionListEntry term="Last Lookup">{registry.lookedUpAt}</DescriptionListEntry>}
+            {registry.facilityLevel && (
+              <DescriptionListEntry term="Level">{registry.facilityLevel}</DescriptionListEntry>
+            )}
+            {registry.operationalStatus && (
+              <DescriptionListEntry term="Operational Status">{registry.operationalStatus}</DescriptionListEntry>
+            )}
+            {registry.registrationNumber && (
+              <DescriptionListEntry term="Reg. Number">{registry.registrationNumber}</DescriptionListEntry>
+            )}
+            {registry.lookedUpAt && (
+              <DescriptionListEntry term="Last Lookup">{registry.lookedUpAt}</DescriptionListEntry>
+            )}
           </DescriptionList>
 
           <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
             <summary style={{ cursor: 'pointer', userSelect: 'none' }}>All registry fields</summary>
             <DescriptionList>
               {registry.regulator && <DescriptionListEntry term="Regulator">{registry.regulator}</DescriptionListEntry>}
-              {registry.facilityCategory && <DescriptionListEntry term="Category">{registry.facilityCategory}</DescriptionListEntry>}
-              {registry.facilityOwner && <DescriptionListEntry term="Owner">{registry.facilityOwner}</DescriptionListEntry>}
-              {registry.facilityType && <DescriptionListEntry term="Type">{registry.facilityType}</DescriptionListEntry>}
-              {registry.subCounty && <DescriptionListEntry term="Sub-County">{registry.subCounty}</DescriptionListEntry>}
+              {registry.facilityCategory && (
+                <DescriptionListEntry term="Category">{registry.facilityCategory}</DescriptionListEntry>
+              )}
+              {registry.facilityOwner && (
+                <DescriptionListEntry term="Owner">{registry.facilityOwner}</DescriptionListEntry>
+              )}
+              {registry.facilityType && (
+                <DescriptionListEntry term="Type">{registry.facilityType}</DescriptionListEntry>
+              )}
+              {registry.subCounty && (
+                <DescriptionListEntry term="Sub-County">{registry.subCounty}</DescriptionListEntry>
+              )}
               {registry.ward && <DescriptionListEntry term="Ward">{registry.ward}</DescriptionListEntry>}
-              {registry.approvalStatus != null && <DescriptionListEntry term="Approval">{String(registry.approvalStatus)}</DescriptionListEntry>}
-              {registry.currentLicenseExpiryDate && <DescriptionListEntry term="License Expiry">{registry.currentLicenseExpiryDate}</DescriptionListEntry>}
+              {registry.approvalStatus !== undefined && registry.approvalStatus !== null && (
+                <DescriptionListEntry term="Approval">{String(registry.approvalStatus)}</DescriptionListEntry>
+              )}
+              {registry.currentLicenseExpiryDate && (
+                <DescriptionListEntry term="License Expiry">{registry.currentLicenseExpiryDate}</DescriptionListEntry>
+              )}
             </DescriptionList>
           </details>
         </>
@@ -290,7 +402,19 @@ export function OrganizationFacilityVerificationPanel(
       {lookupDebug && (
         <details style={{ fontSize: 13, color: 'var(--mantine-color-dimmed)' }}>
           <summary style={{ cursor: 'pointer', userSelect: 'none' }}>Raw HIE response</summary>
-          <Text component="pre" size="xs" style={{ padding: '8px', borderRadius: 6, backgroundColor: 'var(--mantine-color-gray-0)', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 4 }}>
+          <Text
+            component="pre"
+            size="xs"
+            style={{
+              padding: '8px',
+              borderRadius: 6,
+              backgroundColor: 'var(--mantine-color-gray-0)',
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              marginTop: 4,
+            }}
+          >
             {JSON.stringify(lookupDebug, null, 2)}
           </Text>
         </details>

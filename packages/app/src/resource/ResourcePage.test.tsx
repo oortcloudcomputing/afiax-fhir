@@ -138,14 +138,16 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Organization/${organization.id}`, medplum);
-    expect(await screen.findByText('Verify Facility')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Verify' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Verify Facility'));
+      fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
     });
 
-    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Organization', organization.id as string, '$verify-facility-authority'));
-    expect(await screen.findByText('verified')).toBeInTheDocument();
+    expect(postSpy).toHaveBeenCalledWith(
+      medplum.fhirUrl('Organization', organization.id, '$verify-facility-authority')
+    );
+    expect((await screen.findAllByText('verified')).length).toBeGreaterThan(0);
     expect(screen.getByText('Facility verified in Kenya HIE')).toBeInTheDocument();
     expect(screen.getByText('Task/task-123')).toBeInTheDocument();
   });
@@ -166,15 +168,15 @@ describe('ResourcePage', () => {
     const updateResourceSpy = jest.spyOn(medplum, 'updateResource');
 
     await setup(`/Organization/${organization.id}`, medplum);
-    expect(await screen.findByText('Save Facility Code')).toBeInTheDocument();
-    expect(screen.getByText(/Verification stays disabled until the code is saved/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Save Code' })).toBeInTheDocument();
+    expect(screen.getByText(/Enter the MFL code to start verification/i)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya Facility Code / MFL Code'), { target: { value: '24749' } });
+      fireEvent.change(screen.getByLabelText('MFL Code'), { target: { value: '24749' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Save Facility Code'));
+      fireEvent.click(screen.getByRole('button', { name: 'Save Code' }));
     });
 
     await waitFor(() =>
@@ -224,14 +226,14 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Organization/${organization.id}`, medplum);
-    expect(await screen.findByText('Lookup Facility')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Lookup' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya Facility Code / MFL Code'), { target: { value: '15409' } });
+      fireEvent.change(screen.getByLabelText('MFL Code'), { target: { value: '15409' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Lookup Facility'));
+      fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
     });
 
     expect(postSpy).toHaveBeenCalledWith('admin/projects/project-123/kenya/afyalink/facility-lookup', {
@@ -254,8 +256,8 @@ describe('ResourcePage', () => {
         ]),
       })
     );
-    expect(await screen.findByText('Raw Kenya HIE Response')).toBeInTheDocument();
-    expect(screen.getByText('https://uat.dha.go.ke')).toBeInTheDocument();
+    expect(await screen.findByText('Raw HIE response')).toBeInTheDocument();
+    expect(screen.getByText(/"baseUrl": "https:\/\/uat\.dha\.go\.ke"/)).toBeInTheDocument();
     expect(screen.getByText(/"facility_code": "15409"/)).toBeInTheDocument();
   });
 
@@ -274,15 +276,19 @@ describe('ResourcePage', () => {
     const updateResourceSpy = jest.spyOn(medplum, 'updateResource');
 
     await setup(`/Practitioner/${practitioner.id}`, medplum);
-    expect(await screen.findByText('Save Identification')).toBeInTheDocument();
-    expect(screen.getByText(/Verification stays disabled until it is saved/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
+    expect(screen.getByText(/Enter the practitioner identification document/i)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Identification Number'), { target: { value: '12345678' } });
+      fireEvent.change(screen.getByLabelText('Registry'), { target: { value: 'ID' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Save Identification'));
+      fireEvent.change(screen.getByLabelText('National ID / Passport'), { target: { value: '12345678' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     });
 
     await waitFor(() =>
@@ -329,14 +335,18 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Practitioner/${practitioner.id}`, medplum);
-    expect(await screen.findByText('Lookup Practitioner')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Lookup' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Identification Number'), { target: { value: '12345678' } });
+      fireEvent.change(screen.getByLabelText('Registry'), { target: { value: 'ID' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Lookup Practitioner'));
+      fireEvent.change(screen.getByLabelText('National ID / Passport'), { target: { value: '12345678' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
     });
 
     expect(postSpy).toHaveBeenCalledWith('admin/projects/project-123/kenya/afyalink/practitioner-lookup', {
@@ -359,7 +369,7 @@ describe('ResourcePage', () => {
         ]),
       })
     );
-    expect(await screen.findByText('Raw Kenya HIE Response')).toBeInTheDocument();
+    expect(await screen.findByText('Raw HIE response')).toBeInTheDocument();
     expect(screen.getByText(/"registration_number": 40675898/)).toBeInTheDocument();
   });
 
@@ -391,14 +401,14 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Practitioner/${practitioner.id}`, medplum);
-    expect(await screen.findByText('Verify Practitioner')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Verify' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Verify Practitioner'));
+      fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
     });
 
     expect(postSpy).toHaveBeenCalledWith(
-      medplum.fhirUrl('Practitioner', practitioner.id as string, '$verify-practitioner-authority')
+      medplum.fhirUrl('Practitioner', practitioner.id, '$verify-practitioner-authority')
     );
     expect(await screen.findByText('Practitioner verified in Kenya HIE')).toBeInTheDocument();
     expect(screen.getAllByText('40675898').length).toBeGreaterThan(0);
@@ -423,14 +433,14 @@ describe('ResourcePage', () => {
     const updateResourceSpy = jest.spyOn(medplum, 'updateResource');
 
     await setup(`/Coverage/${coverage.id}`, medplum);
-    expect(await screen.findByText('Save Eligibility Lookup')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Eligibility Identification Number'), { target: { value: '12345678' } });
+      fireEvent.change(screen.getByLabelText('ID Number'), { target: { value: '12345678' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Save Eligibility Lookup'));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     });
 
     await waitFor(() =>
@@ -478,7 +488,7 @@ describe('ResourcePage', () => {
         { name: 'possibleSolution', valueString: 'Proceed to service delivery' },
         { name: 'coverageEndDate', valueString: '2026-12-31' },
         { name: 'requestId', valueString: 'dha-req-123' },
-        { name: 'rawResponse', valueString: '{\n  \"message\": {\n    \"eligible\": 1\n  }\n}' },
+        { name: 'rawResponse', valueString: '{\n  "message": {\n    "eligible": 1\n  }\n}' },
         { name: 'coverageEligibilityRequest', valueReference: { reference: 'CoverageEligibilityRequest/req-123' } },
         { name: 'coverageEligibilityResponse', valueReference: { reference: 'CoverageEligibilityResponse/res-123' } },
         { name: 'task', valueReference: { reference: 'Task/task-cov-123' } },
@@ -492,7 +502,7 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('Check Coverage'));
     });
 
-    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Coverage', coverage.id as string, '$check-coverage'));
+    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Coverage', coverage.id, '$check-coverage'));
     expect(await screen.findByText('Coverage is active')).toBeInTheDocument();
     expect(screen.getByText('CoverageEligibilityRequest/req-123')).toBeInTheDocument();
     expect(screen.getByText('CoverageEligibilityResponse/res-123')).toBeInTheDocument();
@@ -541,8 +551,8 @@ describe('ResourcePage', () => {
         { name: 'responseStatusCode', valueInteger: 200 },
         { name: 'bundleId', valueString: 'bundle-123' },
         { name: 'bundleEntryCount', valueInteger: 5 },
-        { name: 'rawBundle', valueString: '{\n  \"resourceType\": \"Bundle\"\n}' },
-        { name: 'rawResponse', valueString: '{\n  \"status\": \"accepted\"\n}' },
+        { name: 'rawBundle', valueString: '{\n  "resourceType": "Bundle"\n}' },
+        { name: 'rawResponse', valueString: '{\n  "status": "accepted"\n}' },
         { name: 'workflowBot', valueString: 'Bot/kenya-claim-bot' },
         { name: 'workflowBotStatus', valueCode: 'triggered' },
         { name: 'workflowBotMessage', valueString: 'Configured Kenya claim workflow bot executed successfully.' },
@@ -551,19 +561,18 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Claim/${claim.id}`, medplum);
-    expect(await screen.findByText('Submit Kenya SHA Claim')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Submit Claim' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Submit Kenya SHA Claim'));
+      fireEvent.click(screen.getByRole('button', { name: 'Submit Claim' }));
     });
 
-    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Claim', claim.id as string, '$submit-national-claim'));
-    expect(await screen.findByText('Kenya SHA claim bundle submitted successfully.')).toBeInTheDocument();
+    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Claim', claim.id, '$submit-national-claim'));
+    expect((await screen.findAllByText('Kenya SHA claim bundle submitted successfully.')).length).toBeGreaterThan(0);
     expect(screen.getByText('https://qa-mis.apeiro-digital.com/v1/shr-med/bundle')).toBeInTheDocument();
-    expect(
-      screen.getByText('https://qa-mis.apeiro-digital.com/v1/shr-med/claim-status?claim_id=bundle-123')
-    ).toBeInTheDocument();
     expect(screen.getByText('bundle-123')).toBeInTheDocument();
+    // A submitted bundle enables payer status checks
+    expect(screen.getByRole('button', { name: 'Check Status' })).toBeEnabled();
     expect(screen.getByText('Bot/kenya-claim-bot')).toBeInTheDocument();
     expect(screen.getByText('triggered')).toBeInTheDocument();
     expect(screen.getByText(/"status": "accepted"/)).toBeInTheDocument();
@@ -633,18 +642,18 @@ describe('ResourcePage', () => {
         { name: 'workflowBotStatus', valueCode: 'triggered' },
         { name: 'workflowBotMessage', valueString: 'Configured Kenya claim workflow bot executed successfully.' },
         { name: 'task', valueReference: { reference: 'Task/task-claim-status-123' } },
-        { name: 'rawResponse', valueString: '{\n  \"claim_state\": \"Payment Approved\"\n}' },
+        { name: 'rawResponse', valueString: '{\n  "claim_state": "Payment Approved"\n}' },
       ],
     });
 
     await setup(`/Claim/${claim.id}`, medplum);
-    expect(await screen.findByText('Check Kenya SHA Claim Status')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Check Status' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Check Kenya SHA Claim Status'));
+      fireEvent.click(screen.getByRole('button', { name: 'Check Status' }));
     });
 
-    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Claim', claim.id as string, '$check-national-claim-status'));
+    expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('Claim', claim.id, '$check-national-claim-status'));
     expect((await screen.findAllByText('Claim approved for payment')).length).toBeGreaterThan(0);
     expect(screen.getByText('Payment Approved')).toBeInTheDocument();
     expect(screen.getByText('ClaimResponse/claim-response-123')).toBeInTheDocument();

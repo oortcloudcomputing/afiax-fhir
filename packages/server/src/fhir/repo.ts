@@ -94,7 +94,9 @@ import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
+import { enforceKenyaDataValidation, enforceKenyaPatientDelete } from '../country-pack/kenya/data-validation';
 import { enforceKenyaIcd11Diagnosis } from '../country-pack/kenya/icd11-diagnosis';
+import { assertNotAppendOnly } from './append-only';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -812,6 +814,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
+      assertNotAppendOnly(resourceType, 'updated');
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
       if (!this.canPerformInteraction(interaction, existing)) {
         // Check before the update
@@ -852,6 +855,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.validateResource(result);
     // Kenya country pack: diagnoses must be ICD-11 MMS coded (MoH / DHA national standard)
     await enforceKenyaIcd11Diagnosis(this.currentProject(), result, existing, this.isSuperAdmin());
+    // Kenya country pack: reject impossible values (future dates of birth, malformed IDs, negative vitals)
+    enforceKenyaDataValidation(this.currentProject(), result, this.isSuperAdmin());
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       await this.checkWebSocketSubscriptionLimit(result);
@@ -1366,9 +1371,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     try {
+      assertNotAppendOnly(resourceType, 'deleted');
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
+
+      // Kenya country pack: a patient with clinical records cannot be deleted
+      await enforceKenyaPatientDelete(this.currentProject(), resource, this.isSuperAdmin(), this.getSystemRepo());
 
       await preCommitValidation(this, resource, 'delete');
 
@@ -1512,6 +1521,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    assertNotAppendOnly(resourceType, 'expunged');
     if (ids.length === 0) {
       return;
     }

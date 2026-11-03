@@ -5,6 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { isAppendOnlyResourceType } from '../append-only';
 import type { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildBinaryIds } from './utils/binary';
@@ -53,6 +54,10 @@ export class Expunger {
   async expunge(): Promise<void> {
     const resourceTypes = getResourceTypes();
     for (const resourceType of resourceTypes) {
+      if (isAppendOnlyResourceType(resourceType)) {
+        // The audit trail outlives the project: it is kept for its full retention period
+        continue;
+      }
       await this.expungeByResourceType(resourceType);
     }
   }

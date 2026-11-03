@@ -143,7 +143,7 @@ describe('FHIR Repo', () => {
     );
   });
 
-  test('Read AuditEvent after update', async () => {
+  test('AuditEvent cannot be updated, and reads still return the original', async () => {
     const projectId = randomUUID();
     const resource = await systemRepo.createResource({ resourceType: 'Patient', meta: { project: projectId } });
     const data = createAuditEvent(
@@ -160,12 +160,15 @@ describe('FHIR Repo', () => {
     // Read resource to load into cache
     auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
 
-    const updatedEvent = await systemRepo.updateResource({ ...auditEvent, outcomeDesc: 'foo' });
-    expect(updatedEvent.outcomeDesc).not.toStrictEqual(auditEvent.outcomeDesc);
+    // AuditEvents are append-only (see append-only.ts)
+    await expect(systemRepo.updateResource({ ...auditEvent, outcomeDesc: 'foo' })).rejects.toThrow(
+      'AuditEvent resources are append-only and cannot be updated'
+    );
 
-    // Re-read resource; should get the updated data
-    auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
-    expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
+    // Re-read resource; should get the original data
+    const reread = await systemRepo.readResource('AuditEvent', auditEvent.id);
+    expect(reread.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
+    expect(reread.meta?.versionId).toStrictEqual(auditEvent.meta?.versionId);
   });
 
   test('Repo read malformed reference', async () => {

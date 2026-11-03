@@ -19,6 +19,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type {
+  AuditEvent,
   Binary,
   BundleEntry,
   ElementDefinition,
@@ -166,7 +167,7 @@ describe('FHIR Repo', () => {
     );
 
     // Re-read resource; should get the original data
-    const reread = await systemRepo.readResource('AuditEvent', auditEvent.id);
+    const reread = await systemRepo.readResource<AuditEvent>('AuditEvent', auditEvent.id);
     expect(reread.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
     expect(reread.meta?.versionId).toStrictEqual(auditEvent.meta?.versionId);
   });

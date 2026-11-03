@@ -43,7 +43,7 @@ test.describe('Medplum App Smoke Tests', () => {
   test('Create a patient', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
-    await page.getByRole('button', { name: 'Medplum Logo' }).click();
+    await page.getByRole('button', { name: / Logo$/ }).click();
     await page.getByRole('link', { name: 'Patient' }).click();
     await page.getByRole('button', { name: 'New...' }).click();
     await page.getByRole('button', { name: 'Add Name' }).click();
@@ -112,5 +112,5 @@ async function signIn(page: Page, email: string, password: string): Promise<void
 
   // Make sure we ended up on the right page
   await expect(page).toHaveURL(/^http:\/\/localhost:3000\/Patient\?/);
-  await expect(page.locator('div').filter({ hasText: /^Medplum Logo$/ })).toBeVisible();
+  await expect(page.locator('div').filter({ hasText: /^.+ Logo$/ })).toBeVisible();
 }

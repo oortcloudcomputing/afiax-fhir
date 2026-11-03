@@ -76,10 +76,11 @@ describe('project settings helpers', () => {
   test('formatCountryPackLabel', () => {
     const kenya = getCountryPackCatalogEntry('kenya');
     const uganda = getCountryPackCatalogEntry('uganda');
-    expect(kenya).toBeDefined();
-    expect(uganda).toBeDefined();
-    expect(formatCountryPackLabel(kenya!)).toBe('Kenya');
-    expect(formatCountryPackLabel(uganda!)).toBe('Uganda (Placeholder)');
+    if (!kenya || !uganda) {
+      throw new Error('Expected Kenya and Uganda country pack catalog entries');
+    }
+    expect(formatCountryPackLabel(kenya)).toBe('Kenya');
+    expect(formatCountryPackLabel(uganda)).toBe('Uganda (Placeholder)');
   });
 
   test('Kenya helpers', () => {

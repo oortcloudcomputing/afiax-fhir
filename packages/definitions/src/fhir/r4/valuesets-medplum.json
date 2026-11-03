@@ -222,6 +222,11 @@
             "code": "fission",
             "display": "Fission",
             "definition": "Fission"
+          },
+          {
+            "code": "knative",
+            "display": "Knative",
+            "definition": "Knative"
           }
         ]
       }

@@ -14,7 +14,9 @@ import type { FhirResponse } from '@medplum/fhir-router';
 import type { Condition } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequestContext } from '../../context';
+import { getLogger } from '../../logger';
 import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from './idsr';
+import { flagKenyaIhrCondition } from './ihr';
 
 /**
  * Called in the FHIR write path after a successful Condition create or update.
@@ -72,4 +74,31 @@ export function maybeAutoTriggerIdsr(ctx: AuthenticatedRequestContext, method: s
     .catch(() => {
       // Errors are already logged inside handleKenyaIdsrNotification via AuditEvent.
     });
+}
+
+/**
+ * Called in the FHIR write path after a successful Condition create or update.
+ * Flags IHR (2005) Annex 2 diseases for WHO notification or assessment (DHA REP-IHR-001).
+ * Non-blocking: never delays the HTTP response or fails the write.
+ * @param ctx - The authenticated request context of the write.
+ * @param method - The HTTP method of the write.
+ * @param result - The FHIR response returned by the write.
+ */
+export function maybeAutoFlagIhr(ctx: AuthenticatedRequestContext, method: string, result: FhirResponse): void {
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+    return;
+  }
+  if (result.length < 2) {
+    return;
+  }
+  const resource = result[1];
+  if (resource?.resourceType !== 'Condition' || !resource.id) {
+    return;
+  }
+  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') {
+    return;
+  }
+  flagKenyaIhrCondition(ctx, resource as Condition & { id: string }).catch((err) => {
+    getLogger().error('IHR flagging failed', { condition: resource.id, err });
+  });
 }

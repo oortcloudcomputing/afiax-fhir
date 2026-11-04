@@ -9,6 +9,8 @@ import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
+import { maybeAutoFlagIhr, maybeAutoTriggerIdsr } from '../country-pack/kenya/auto-idsr';
+import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
@@ -24,16 +26,12 @@ import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
-import { capturePreauthorizationHandler } from './operations/capture-preauthorization';
-import { checkCoverageHandler } from './operations/check-coverage';
-import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
-import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
-import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { breakGlassHandler } from './operations/break-glass';
-import { resolvePatientIdentityHandler } from './operations/resolve-patient-identity';
-import { publishNationalRecordHandler } from './operations/publish-national-record';
+import { capturePreauthorizationHandler } from './operations/capture-preauthorization';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
+import { checkCoverageHandler } from './operations/check-coverage';
+import { checkNationalClaimStatusHandler } from './operations/check-national-claim-status';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
@@ -63,29 +61,32 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
+import { ihrAssessmentHandler, ihrEscalateHandler } from './operations/ihr';
+import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
+import { postPatientPaymentHandler } from './operations/post-patient-payment';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { publishNationalRecordHandler } from './operations/publish-national-record';
+import { pushToErpNextHandler } from './operations/push-to-erpnext';
+import { recordInsurancePaymentHandler } from './operations/record-insurance-payment';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { reportIdsrNotificationHandler } from './operations/report-idsr-notification';
+import { requestPreauthorizationHandler } from './operations/request-preauthorization';
+import { resolvePatientIdentityHandler } from './operations/resolve-patient-identity';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
-import { codeSystemSubsumesOperation } from './operations/subsumes';
-import { postPatientPaymentHandler } from './operations/post-patient-payment';
-import { pushToErpNextHandler } from './operations/push-to-erpnext';
-import { recordInsurancePaymentHandler } from './operations/record-insurance-payment';
 import { submitNationalClaimHandler } from './operations/submit-national-claim';
-import { requestPreauthorizationHandler } from './operations/request-preauthorization';
+import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
+import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { verifyFacilityAuthorityHandler } from './operations/verify-facility-authority';
 import { verifyPractitionerAuthorityHandler } from './operations/verify-practitioner-authority';
-import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
-import { maybeAutoTriggerIdsr } from '../country-pack/kenya/auto-idsr';
-import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import type { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
@@ -408,6 +409,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Condition/:id/$report-idsr-notification', reportIdsrNotificationHandler);
   router.add('POST', '/Condition/$report-idsr-notification', reportIdsrNotificationHandler);
 
+  // IHR (2005) notification of events of international concern (Kenya, DHA REP-IHR-001)
+  router.add('POST', '/Condition/:id/$ihr-assessment', ihrAssessmentHandler);
+  router.add('POST', '/Task/:id/$ihr-escalate', ihrEscalateHandler);
+
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)
   router.add('GET', '/$khis-weekly-export', khisWeeklyExportHandler);
   router.add('POST', '/$khis-weekly-export', khisWeeklyExportHandler);
@@ -551,6 +556,8 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
 
   // Kenya: auto-trigger IDSR notification on Condition create/update (s.57 Kenya Health Act 2017)
   maybeAutoTriggerIdsr(ctx, request.method, result);
+  // Kenya: flag IHR (2005) Annex 2 diseases for WHO notification or assessment
+  maybeAutoFlagIhr(ctx, request.method, result);
 
   // Kenya: enforce FHIR Confidentiality security labels on read responses
   result = await enforceKenyaSecurityLabels(ctx, result);

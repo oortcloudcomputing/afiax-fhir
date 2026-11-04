@@ -10,10 +10,11 @@
 
 import type { WithId } from '@medplum/core';
 import { getProjectSettingString, Operator, toKhisWeekPeriod } from '@medplum/core';
-import type { Organization, Project, Task } from '@medplum/fhirtypes';
+import type { Project, Task } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
+import { getKenyaFacilities } from '../country-pack/kenya/facility-attribution';
 import { retryFailedKenyaIdsrDeliveries } from '../country-pack/kenya/idsr-delivery';
 import { buildKenyaJobContext } from '../country-pack/kenya/job-context';
 import { getKhisCredentials } from '../country-pack/kenya/khis';
@@ -133,14 +134,7 @@ export async function runWeeklyIdsrForProject(project: WithId<Project>, now: Dat
   const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const period = toKhisWeekPeriod(lastWeek);
 
-  const organizations = await ctx.systemRepo.searchResources<Organization>({
-    resourceType: 'Organization',
-    filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id }],
-    count: 1000,
-  });
-  const facilities = organizations.filter((o) =>
-    o.identifier?.some((i) => i.system === 'https://afiax.africa/kenya/identifier/mfl-code' && i.value)
-  );
+  const facilities = await getKenyaFacilities(ctx);
 
   const submitted: string[] = [];
   for (const facility of facilities) {

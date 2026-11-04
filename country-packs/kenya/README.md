@@ -78,6 +78,9 @@ Implemented in this repo now:
     notification Task records the DHIS2 event UID, and failed sends are retried hourly
   - the MOH 505 weekly report is submitted every Monday 06:00 EAT (03:00 UTC) for each
     Organization with an MFL code; a week already submitted is skipped
+  - each case is reported under the facility of its encounter (`Encounter.serviceProvider`); with a
+    single facility in the project, cases without an encounter count under it. Otherwise they are
+    not reported, and the export Task / notification Task says so
   - settings: `kenyaKhisMoh505DataSetUid`, `kenyaKhisDataElementMapping`,
     `kenyaKhisIdsrEventProgram` (JSON: `{"program","programStage","dataElements":{"disease",
     "icd11Code","verificationStatus","onsetDate","sex","ageYears","county","subCounty","outcome",

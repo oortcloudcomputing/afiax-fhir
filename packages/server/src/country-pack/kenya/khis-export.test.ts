@@ -14,15 +14,28 @@ function condition(codings: { system: string; code: string }[], verification = '
   };
 }
 
-function ctxWith(conditions: Condition[]): AuthenticatedRequestContext {
+const mfl = (code: string): { system: string; value: string }[] => [
+  { system: 'https://afiax.africa/kenya/identifier/mfl-code', value: code },
+];
+const facility1 = { resourceType: 'Organization', id: 'facility-1', identifier: mfl('10001') };
+const facility2 = { resourceType: 'Organization', id: 'facility-2', identifier: mfl('10002') };
+
+function ctxWith(conditions: Condition[], facilities: object[] = [facility1]): AuthenticatedRequestContext {
   return {
     project: { resourceType: 'Project', id: 'project-1' },
     systemRepo: {
-      readReference: jest.fn(async ({ reference }: { reference: string }) => ({
-        resourceType: 'Patient',
-        id: reference.split('/')[1],
-        ...(reference === 'Patient/died' ? { deceasedBoolean: true } : {}),
-      })),
+      searchResources: jest.fn(async () => facilities),
+      readReference: jest.fn(async ({ reference }: { reference: string }) => {
+        if (reference.startsWith('Encounter/')) {
+          // Encounter/at-facility-2 -> serviceProvider Organization/facility-2
+          return { resourceType: 'Encounter', serviceProvider: { reference: `Organization/${reference.slice(22)}` } };
+        }
+        return {
+          resourceType: 'Patient',
+          id: reference.split('/')[1],
+          ...(reference === 'Patient/died' ? { deceasedBoolean: true } : {}),
+        };
+      }),
     },
     repo: {
       search: jest.fn(async (req: { count: number; offset?: number }) => {
@@ -57,6 +70,30 @@ describe('aggregateConditionsForWeek', () => {
       code: '_project',
       value: 'project-1',
     });
+  });
+
+  test('with several facilities, counts each case under its encounter facility only', async () => {
+    const cholera = [{ system: KenyaIcd11System, code: '1A00' }];
+    const atFacility1 = { ...condition(cholera), encounter: { reference: 'Encounter/at-facility-facility-1' } };
+    const atFacility2 = { ...condition(cholera), encounter: { reference: 'Encounter/at-facility-facility-2' } };
+    const noEncounter = condition(cholera);
+    const ctx = ctxWith([atFacility1, atFacility2, atFacility2, noEncounter], [facility1, facility2]);
+
+    const stats = { unattributed: 0 };
+    const f1 = nonZero(await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd, undefined, stats));
+    expect(f1).toEqual([expect.objectContaining({ code: '1A00', confirmed: 1 })]);
+    expect(stats.unattributed).toBe(1);
+
+    const f2 = nonZero(await aggregateConditionsForWeek(ctx, 'facility-2', weekStart, weekEnd));
+    expect(f2).toEqual([expect.objectContaining({ code: '1A00', confirmed: 2 })]);
+  });
+
+  test('with one facility, cases without an encounter count under it', async () => {
+    const ctx = ctxWith([condition([{ system: KenyaIcd11System, code: '1A00' }])]);
+    const stats = { unattributed: 0 };
+    const rows = nonZero(await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd, undefined, stats));
+    expect(rows).toEqual([expect.objectContaining({ code: '1A00', confirmed: 1 })]);
+    expect(stats.unattributed).toBe(0);
   });
 
   test('counts a Condition coded in both ICD-11 and ICD-10 once', async () => {

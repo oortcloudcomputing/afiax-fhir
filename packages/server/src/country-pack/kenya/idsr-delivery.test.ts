@@ -200,4 +200,48 @@ describe('IDSR reporting to KHIS', () => {
     expect(second).toHaveLength(0);
     expect(mockKhisCalls).toHaveLength(0);
   });
+
+  test('With two facilities, a case is reported under its encounter facility', async () => {
+    const second = await withTestContext(() =>
+      getGlobalSystemRepo().createResource<Organization>({
+        resourceType: 'Organization',
+        meta: { project: project.id },
+        name: 'Kisumu Annex Clinic',
+        identifier: [{ system: 'https://afiax.africa/kenya/identifier/mfl-code', value: '13999' }],
+      })
+    );
+    const patient = await fhir('post', 'Patient').send({ resourceType: 'Patient', gender: 'male' });
+    const encounter = await fhir('post', 'Encounter').send({
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
+      subject: createReference(patient.body),
+      serviceProvider: createReference(second),
+    });
+    expect(encounter.status).toBe(201);
+
+    const atAnnex = await fhir('post', 'Condition').send({
+      resourceType: 'Condition',
+      subject: createReference(patient.body),
+      encounter: createReference(encounter.body),
+      code: { coding: [{ system: KenyaIcd11System, code: '1A00', display: 'Cholera' }] },
+      onsetDateTime: '2026-11-04',
+    } satisfies Condition);
+    expect(await waitForNotificationTask(atAnnex.body, 'reported')).toBeDefined();
+    const event = mockKhisCalls.find((c) => c.url.includes('/api/tracker'))?.body.events[0];
+    expect(event.orgUnit).toBe('13999');
+
+    // Without an encounter, the facility is ambiguous: not sent to KHIS, but the county is still emailed
+    mockKhisCalls.length = 0;
+    const ambiguous = await fhir('post', 'Condition').send({
+      resourceType: 'Condition',
+      subject: createReference(patient.body),
+      code: { coding: [{ system: KenyaIcd11System, code: '1A00', display: 'Cholera' }] },
+      onsetDateTime: '2026-11-04',
+    } satisfies Condition);
+    const failed = await waitForNotificationTask(ambiguous.body, 'delivery-failed');
+    expect(failed?.note?.at(-1)?.text).toContain('link the Condition to an encounter');
+    expect(mockKhisCalls.filter((c) => c.url.includes('/api/tracker'))).toHaveLength(0);
+    expect(sendEmail).toHaveBeenCalled();
+  });
 });

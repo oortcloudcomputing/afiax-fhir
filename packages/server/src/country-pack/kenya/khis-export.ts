@@ -28,6 +28,7 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
+import { KenyaFacilityAttribution } from './facility-attribution';
 import type { KenyaContext } from './job-context';
 import type { KhisConditionAggregate, KhisDataValueSet } from './khis';
 import { buildKhisDataValueSet, getKhisCredentials, pushKhisDataValueSet } from './khis';
@@ -88,8 +89,9 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
 
   // 3. Aggregate Condition resources for the week
   let aggregates: KhisConditionAggregate[];
+  const attributionStats: KhisWeeklyAttributionStats = { unattributed: 0 };
   try {
-    aggregates = await aggregateConditionsForWeek(ctx, facilityId, weekStart, weekEnd);
+    aggregates = await aggregateConditionsForWeek(ctx, facilityId, weekStart, weekEnd, undefined, attributionStats);
   } catch (err) {
     return makeErrorResult(
       correlationId,
@@ -162,6 +164,11 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
     status = 'error';
     message = `KHIS push failed: ${normalizeErrorString(err)}`;
   }
+  if (attributionStats.unattributed > 0) {
+    message +=
+      ` ${attributionStats.unattributed} notifiable case(s) this week have no encounter at a facility and were not` +
+      ' reported under any facility; link them to an encounter with a service provider.';
+  }
 
   // 6. Persist export artifact as DocumentReference
   try {
@@ -203,12 +210,30 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   };
 }
 
+/** Cases found for the week that could not be attributed to any facility (see facility-attribution.ts). */
+export interface KhisWeeklyAttributionStats {
+  unattributed: number;
+}
+
+/**
+ * Counts the week's notifiable cases reported under one facility.
+ * @param ctx - The context.
+ * @param facilityId - The facility Organization id.
+ * @param weekStart - First day of the week.
+ * @param weekEnd - Last day of the week.
+ * @param attribution - Facility attribution for the project (loaded if omitted).
+ * @param stats - Receives the number of notifiable cases not attributed to any facility.
+ * @returns One aggregate per weekly notifiable condition, zeros included.
+ */
 export async function aggregateConditionsForWeek(
   ctx: KenyaContext,
   facilityId: string,
   weekStart: Date,
-  weekEnd: Date
+  weekEnd: Date,
+  attribution?: KenyaFacilityAttribution,
+  stats?: KhisWeeklyAttributionStats
 ): Promise<KhisConditionAggregate[]> {
+  const facilities = attribution ?? (await KenyaFacilityAttribution.load(ctx));
   const startStr = weekStart.toISOString().slice(0, 10);
   const endStr = weekEnd.toISOString().slice(0, 10);
 
@@ -227,6 +252,17 @@ export async function aggregateConditionsForWeek(
   for await (const condition of searchConditionsInWeek(ctx, startStr, endStr)) {
     const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
     if (verificationStatus === 'refuted' || verificationStatus === 'entered-in-error') {
+      continue;
+    }
+
+    if (!condition.code?.coding?.some((coding) => findKenyaKhisWeeklyCondition(coding))) {
+      continue;
+    }
+    const caseFacilityId = await facilities.getFacilityId(condition);
+    if (caseFacilityId !== facilityId) {
+      if (!caseFacilityId && stats) {
+        stats.unattributed++;
+      }
       continue;
     }
 

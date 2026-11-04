@@ -18,7 +18,7 @@ import {
   normalizeErrorString,
   Operator,
 } from '@medplum/core';
-import type { AuditEvent, Condition, Encounter, Organization, Patient, Project, Task } from '@medplum/fhirtypes';
+import type { AuditEvent, Condition, Organization, Patient, Project, Task } from '@medplum/fhirtypes';
 import { sendEmail } from '../../email/email';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
@@ -29,11 +29,11 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
+import { getMflCode, KenyaFacilityAttribution } from './facility-attribution';
 import type { KenyaContext } from './job-context';
 import type { KhisDataValue } from './khis';
 import { getKhisConnection, pushKhisTrackerEvent } from './khis';
 
-export const KenyaMflCodeSystem = 'https://afiax.africa/kenya/identifier/mfl-code';
 export const KenyaIdsrDeliveryStatusSystem = 'https://afiax.africa/CodeSystem/kenya-idsr-delivery-status';
 export type KenyaIdsrDeliveryStatus = 'reported' | 'delivery-failed';
 
@@ -64,7 +64,7 @@ export async function deliverKenyaIdsrNotification(
   // Secrets are not on the cached auth-state project, so re-read it
   const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
   const patient = await readPatient(ctx, condition);
-  const facility = await resolveFacility(ctx, condition);
+  const facility = await (await KenyaFacilityAttribution.load(ctx)).getFacility(condition);
 
   let khisEventUid: string | undefined;
   let khisError: string | undefined;
@@ -76,9 +76,12 @@ export async function deliverKenyaIdsrNotification(
           'with the program UID and data element UIDs from your KHIS administrator.'
       );
     }
-    const orgUnit = facility?.identifier?.find((i) => i.system === KenyaMflCodeSystem)?.value;
+    const orgUnit = getMflCode(facility);
     if (!orgUnit) {
-      throw new Error('No facility with an MFL code found for this Condition; KHIS needs it as the org unit.');
+      throw new Error(
+        'Cannot tell which facility this case belongs to: link the Condition to an encounter whose service ' +
+          'provider is a facility with an MFL code (needed as the KHIS org unit).'
+      );
     }
     const values = buildIdsrValues(condition, patient, facility, code, disease, now);
     const dataValues: KhisDataValue[] = [];
@@ -200,32 +203,6 @@ async function readPatient(ctx: KenyaContext, condition: Condition): Promise<Pat
   } catch {
     return undefined;
   }
-}
-
-/**
- * Finds the reporting facility: the Condition's encounter service provider, or else the project's
- * facility with an MFL code.
- * @param ctx - The context.
- * @param condition - The Condition.
- * @returns The facility Organization, if found.
- */
-async function resolveFacility(ctx: KenyaContext, condition: Condition): Promise<Organization | undefined> {
-  if (condition.encounter?.reference) {
-    try {
-      const encounter = await ctx.systemRepo.readReference<Encounter>(condition.encounter as { reference: string });
-      if (encounter.serviceProvider?.reference) {
-        return await ctx.systemRepo.readReference<Organization>(encounter.serviceProvider as { reference: string });
-      }
-    } catch {
-      // fall through to the project facility
-    }
-  }
-  const organizations = await ctx.systemRepo.searchResources<Organization>({
-    resourceType: 'Organization',
-    filters: [{ code: '_project', operator: Operator.EQUALS, value: ctx.project.id }],
-    count: 100,
-  });
-  return organizations.find((o) => o.identifier?.some((i) => i.system === KenyaMflCodeSystem && i.value));
 }
 
 async function emailCountyContacts(

@@ -62,46 +62,48 @@ describe('DICOM', () => {
     await app.start();
 
     const client = new dimse.Client();
+    try {
+      //
+      // C-ECHO
+      //
+      const echoResponse = await new Promise<dimse.responses.CEchoResponse>((resolve, reject) => {
+        const request = new dimse.requests.CEchoRequest();
+        request.on('response', resolve);
+        client.on('networkError', reject);
+        client.addRequest(request);
+        client.send('localhost', 8104, 'SCU', 'ANY-SCP');
+      });
 
-    //
-    // C-ECHO
-    //
-    const echoResponse = await new Promise<dimse.responses.CEchoResponse>((resolve, reject) => {
-      const request = new dimse.requests.CEchoRequest();
-      request.on('response', resolve);
-      client.on('networkError', reject);
-      client.addRequest(request);
-      client.send('localhost', 8104, 'SCU', 'ANY-SCP');
-    });
+      expect(echoResponse).toBeDefined();
 
-    expect(echoResponse).toBeDefined();
+      const echoCommandDataset = echoResponse.getCommandDataset();
+      expect(echoCommandDataset).toBeDefined();
+      expect(echoCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
+      expect(echoCommandDataset?.getElement('Status')).toStrictEqual(0);
 
-    const echoCommandDataset = echoResponse.getCommandDataset();
-    expect(echoCommandDataset).toBeDefined();
-    expect(echoCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(echoCommandDataset?.getElement('Status')).toStrictEqual(0);
+      //
+      // C-STORE
+      //
 
-    //
-    // C-STORE
-    //
+      const storeResponse = await new Promise<dimse.responses.CStoreResponse>((resolve, reject) => {
+        const request = new dimse.requests.CStoreRequest(path.resolve(__dirname, '../testdata/sample-sr.dcm'));
+        request.on('response', resolve);
+        client.on('networkError', reject);
+        client.addRequest(request);
+        client.send('localhost', 8104, 'SCU', 'ANY-SCP');
+      });
 
-    const storeResponse = await new Promise<dimse.responses.CStoreResponse>((resolve, reject) => {
-      const request = new dimse.requests.CStoreRequest(path.resolve(__dirname, '../testdata/sample-sr.dcm'));
-      request.on('response', resolve);
-      client.on('networkError', reject);
-      client.addRequest(request);
-      client.send('localhost', 8104, 'SCU', 'ANY-SCP');
-    });
+      expect(storeResponse).toBeDefined();
 
-    expect(storeResponse).toBeDefined();
-
-    const storeCommandDataset = storeResponse.getCommandDataset();
-    expect(storeCommandDataset).toBeDefined();
-    expect(storeCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
-
-    client.clearRequests();
-    await app.stop();
-    mockServer.stop();
+      const storeCommandDataset = storeResponse.getCommandDataset();
+      expect(storeCommandDataset).toBeDefined();
+      expect(storeCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
+      expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
+    } finally {
+      // Always release the DICOM port, or a failed assertion leaves Jest unable to exit
+      client.clearRequests();
+      await app.stop();
+      mockServer.stop();
+    }
   }, 10000);
 });

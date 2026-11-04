@@ -104,7 +104,10 @@ export class AgentDicomChannel extends BaseChannel {
             });
 
             // Parse the DICOM file into DICOM JSON
-            const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+            // Pass exactly this file's bytes. A Buffer can be a view into a larger shared ArrayBuffer
+            // (Node 24.22+ readFileSync does this), so buffer.buffer alone may start at the wrong offset.
+            const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+            const dicomDict = dcmjs.data.DicomMessage.readFile(arrayBuffer);
             dicomJson = {
               ...dicomDict.meta,
               ...dicomDict.dict,

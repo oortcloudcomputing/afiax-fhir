@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MEDPLUM_VERSION } from '@medplum/core';
+import { getProjectSettingString, MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
@@ -11,6 +11,7 @@ import {
   IconFolder,
   IconForms,
   IconId,
+  IconListCheck,
   IconLock,
   IconLockAccess,
   IconMicroscope,
@@ -45,7 +46,7 @@ export function App(): JSX.Element {
       pathname={location.pathname}
       searchParams={searchParams}
       version={MEDPLUM_VERSION}
-      menus={userConfigToMenu(config)}
+      menus={userConfigToMenu(config, getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya')}
       displayAddBookmark={!!config?.id}
     >
       <Suspense fallback={<Loading />}>
@@ -55,7 +56,7 @@ export function App(): JSX.Element {
   );
 }
 
-function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
+function userConfigToMenu(config: UserConfiguration | undefined, isKenya: boolean): NavbarMenu[] {
   const result =
     config?.menu?.map((menu) => ({
       title: menu.title,
@@ -66,6 +67,13 @@ function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
           icon: getIcon(link.target),
         })) || [],
     })) || [];
+
+  if (isKenya) {
+    result.push({
+      title: 'Clinical',
+      links: [{ label: 'Department queues', href: '/kenya/queue', icon: <IconListCheck /> }],
+    });
+  }
 
   result.push({
     title: 'Settings',

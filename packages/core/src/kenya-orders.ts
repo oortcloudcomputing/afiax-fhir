@@ -364,3 +364,34 @@ export function buildKenyaVitalSignObservations(
   }
   return observations;
 }
+
+// ─── Visit types ─────────────────────────────────────────────────────────────
+
+/** Healthcare facility encounter types (KNHTS MOH-KENYA ORG-00001-SRC-027), including MCH visits. */
+export const KenyaEncounterTypes: readonly { readonly code: string; readonly display: string }[] = [
+  { code: 'OPD-VISIT', display: 'Outpatient Visit' },
+  { code: 'EMERGENCY-VISIT', display: 'Emergency Encounter' },
+  { code: 'MCH-VISIT', display: 'Maternal and Child Health Visit' },
+  { code: 'ANC-VISIT', display: 'Antenatal Visit' },
+  { code: 'PNC-VISIT', display: 'Postnatal Visit' },
+  { code: 'CWC-VISIT', display: 'Child Welfare Clinic' },
+  { code: 'HIV-CLINIC-VISIT', display: 'HIV Clinic Visit' },
+  { code: 'TB-VISIT', display: 'TB Clinic Visit' },
+  { code: 'NCD-VISIT', display: 'Chronic Disease Clinic Visit' },
+  { code: 'LAB-VISIT', display: 'Laboratory Encounter' },
+  { code: 'PHARM-VISIT', display: 'Pharmacy Encounter' },
+];
+
+/** Family relationships for family history (HL7 v3 RoleCode). */
+export const KenyaFamilyRelationships: readonly { readonly code: string; readonly display: string }[] = [
+  { code: 'MTH', display: 'Mother' },
+  { code: 'FTH', display: 'Father' },
+  { code: 'SIS', display: 'Sister' },
+  { code: 'BRO', display: 'Brother' },
+  { code: 'DAU', display: 'Daughter' },
+  { code: 'SON', display: 'Son' },
+  { code: 'GRMTH', display: 'Grandmother' },
+  { code: 'GRFTH', display: 'Grandfather' },
+  { code: 'AUNT', display: 'Aunt' },
+  { code: 'UNCLE', display: 'Uncle' },
+];

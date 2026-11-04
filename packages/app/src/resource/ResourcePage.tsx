@@ -7,6 +7,7 @@ import type {
   Claim,
   Condition,
   Coverage,
+  Encounter,
   OperationOutcome,
   Organization,
   Patient,
@@ -23,6 +24,8 @@ import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
 import { SpecimenHeader } from '../components/SpecimenHeader';
+import { EncounterOrdersPanel } from '../kenya/EncounterOrdersPanel';
+import { PatientClinicalSummaryPanel } from '../kenya/PatientClinicalSummaryPanel';
 import { getPatient, getSpecimen } from '../utils';
 import { ClaimBillingPanel } from './ClaimBillingPanel';
 import { ClaimNationalSubmissionPanel } from './ClaimNationalSubmissionPanel';
@@ -162,6 +165,8 @@ export function ResourcePage(): JSX.Element | null {
       )}
       {value?.resourceType === 'Patient' && <PatientIdentityPanel patient={value as Patient} />}
       {value?.resourceType === 'Patient' && <NationalRecordPublicationPanel patient={value as Patient} />}
+      {value?.resourceType === 'Patient' && <PatientClinicalSummaryPanel patient={value as Patient} />}
+      {value?.resourceType === 'Encounter' && <EncounterOrdersPanel encounter={value as Encounter} />}
       {value && (
         <Paper>
           {patient && <PatientHeader patient={patient} />}

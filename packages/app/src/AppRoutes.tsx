@@ -25,6 +25,7 @@ import { CreateResourcePage } from './CreateResourcePage';
 import { ErrorPage } from './ErrorPage';
 import { FormPage } from './FormPage';
 import { HomePage } from './HomePage';
+import { DepartmentQueuePage } from './kenya/DepartmentQueuePage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
 import { MfaPage } from './MfaPage';
@@ -101,6 +102,8 @@ export function AppRoutes(): JSX.Element {
           <Route path="secrets" element={<SecretsPage />} />
           <Route path="sites" element={<SitesPage />} />
         </Route>
+        <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />
+        <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />
         <Route path="/lab/assays" element={<AssaysPage />} />
         <Route path="/lab/panels" element={<PanelsPage />} />
         <Route path="/:resourceType/new" element={<CreateResourcePage />}>

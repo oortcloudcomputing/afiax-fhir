@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   Operator,
 } from '@medplum/core';
-import type { Bot, ProjectMembership, ProjectSetting, Reference, User } from '@medplum/fhirtypes';
+import type { ProjectMembership, ProjectSetting, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -222,110 +222,6 @@ projectAdminRouter.post('/:projectId/kenya/afyalink/patient-lookup', async (req:
     sendOutcome(res, badRequest(normalizeErrorString(err)));
   }
 });
-
-projectAdminRouter.post('/:projectId/kenya/provision-khis-scheduler', async (req: Request, res: Response) => {
-  const ctx = getAuthenticatedContext();
-
-  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') {
-    sendOutcome(res, badRequest('Kenya country pack is not enabled for this project'));
-    return;
-  }
-
-  try {
-    // Bot source: iterate all active Organizations and call $khis-weekly-export for each.
-    // Computes last week's period so the Monday run always covers the week just ended.
-    const botCode = `
-import { toKhisWeekPeriod } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
-import type { BotEvent, Organization } from '@medplum/fhirtypes';
-
-export async function handler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-  const period = toKhisWeekPeriod(lastWeek);
-
-  const organizations = await medplum.searchResources('Organization', { active: 'true', _count: '100' });
-  const results: Array<{ facilityId: string; status: string; message: string }> = [];
-
-  for (const org of organizations as Organization[]) {
-    if (!org.id) continue;
-    try {
-      const result = await medplum.post('fhir/R4/$khis-weekly-export', {
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'facilityId', valueString: org.id },
-          { name: 'period', valueString: period },
-        ],
-      });
-      results.push({ facilityId: org.id, status: 'ok', message: String(result?.parameter?.find((p: any) => p.name === 'message')?.valueString ?? 'submitted') });
-    } catch (err) {
-      results.push({ facilityId: org.id, status: 'error', message: String(err) });
-    }
-  }
-
-  console.log(JSON.stringify({ period, facilityCount: organizations.length, results }));
-}
-`.trim();
-
-    // Create or update the KHIS scheduler Bot
-    const existingBotId = getProjectSettingString(ctx.project, 'kenyaKhisSchedulerBotId');
-
-    let bot;
-    if (existingBotId) {
-      try {
-        const existing = await ctx.repo.readResource<Bot>('Bot', existingBotId);
-        bot = await ctx.repo.updateResource({
-          ...existing,
-          cronString: '0 3 * * 1',
-          sourceCode: {
-            contentType: 'application/typescript',
-            url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}`,
-          },
-        });
-      } catch {
-        // If the bot no longer exists, fall through and create a new one
-        bot = undefined;
-      }
-    }
-
-    if (!bot) {
-      bot = await ctx.repo.createResource<Bot>({
-        resourceType: 'Bot',
-        name: 'Kenya KHIS Weekly Scheduler',
-        description:
-          'Runs every Monday at 06:00 EAT (03:00 UTC) to export MOH 505 weekly aggregate data for all active facilities to KHIS.',
-        cronString: '0 3 * * 1',
-        sourceCode: {
-          contentType: 'application/typescript',
-          url: `data:application/typescript;base64,${Buffer.from(botCode).toString('base64')}`,
-        },
-      });
-    }
-
-    // Enable cron project feature and save bot ID
-    const features = ctx.project.features ?? [];
-    const updatedProject = await ctx.repo.updateResource({
-      ...ctx.project,
-      features: features.includes('cron') ? features : ([...features, 'cron'] as typeof features),
-      setting: upsertProjectSetting(ctx.project.setting ?? [], 'kenyaKhisSchedulerBotId', bot.id),
-    });
-
-    res.json({
-      ok: true,
-      botId: bot.id,
-      cronString: '0 3 * * 1',
-      message: 'KHIS weekly scheduler provisioned. Bot will run every Monday at 06:00 EAT (03:00 UTC).',
-      projectFeatures: updatedProject.features,
-    });
-  } catch (err) {
-    sendOutcome(res, badRequest(normalizeErrorString(err)));
-  }
-});
-
-function upsertProjectSetting(settings: ProjectSetting[], name: string, valueString: string): ProjectSetting[] {
-  const filtered = settings.filter((s) => s.name !== name);
-  return [...filtered, { name, valueString }];
-}
 
 projectAdminRouter.post('/:projectId/sites', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();

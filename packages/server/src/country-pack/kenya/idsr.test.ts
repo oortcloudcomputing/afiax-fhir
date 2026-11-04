@@ -12,6 +12,15 @@ jest.mock('../../util/auditevent', () => ({
   OperationInteraction: { code: 'operation', system: 'http://hl7.org/fhir/restful-interaction' },
 }));
 
+// Delivery to KHIS is tested in idsr-delivery.test.ts
+jest.mock('./idsr-delivery', () => ({
+  deliverKenyaIdsrNotification: jest.fn(async () => ({
+    delivered: false,
+    emailedTo: [],
+    message: 'KHIS delivery failed: not configured. Will retry hourly.',
+  })),
+}));
+
 describe('handleKenyaIdsrNotification', () => {
   const mockProject: Project = {
     resourceType: 'Project',

@@ -16,6 +16,14 @@ function condition(codings: { system: string; code: string }[], verification = '
 
 function ctxWith(conditions: Condition[]): AuthenticatedRequestContext {
   return {
+    project: { resourceType: 'Project', id: 'project-1' },
+    systemRepo: {
+      readReference: jest.fn(async ({ reference }: { reference: string }) => ({
+        resourceType: 'Patient',
+        id: reference.split('/')[1],
+        ...(reference === 'Patient/died' ? { deceasedBoolean: true } : {}),
+      })),
+    },
     repo: {
       search: jest.fn(async (req: { count: number; offset?: number }) => {
         const offset = req.offset ?? 0;
@@ -35,6 +43,21 @@ function nonZero<T extends { suspected: number; confirmed: number; deaths: numbe
 describe('aggregateConditionsForWeek', () => {
   const weekStart = new Date('2026-10-05');
   const weekEnd = new Date('2026-10-11');
+
+  test('counts a case as a death when the patient has died, and filters by project', async () => {
+    const died: Condition = {
+      ...condition([{ system: 'http://id.who.int/icd/release/11/mms', code: '1A00' }]),
+      subject: { reference: 'Patient/died' },
+    };
+    const alive = condition([{ system: 'http://id.who.int/icd/release/11/mms', code: '1A00' }]);
+    const ctx = ctxWith([died, alive]);
+    const [cholera] = nonZero(await aggregateConditionsForWeek(ctx, 'facility-1', weekStart, weekEnd));
+    expect(cholera).toMatchObject({ code: '1A00', deaths: 1 });
+    expect((ctx.repo.search as jest.Mock).mock.calls[0][0].filters[0]).toMatchObject({
+      code: '_project',
+      value: 'project-1',
+    });
+  });
 
   test('counts a Condition coded in both ICD-11 and ICD-10 once', async () => {
     const ctx = ctxWith([

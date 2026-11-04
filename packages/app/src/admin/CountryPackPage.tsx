@@ -12,7 +12,10 @@ import {
   getKenyaHieAgentId,
   getKenyaHieCredentialMode,
   getKenyaHieEnvironment,
-  getKenyaKhisSchedulerBotId,
+  getKenyaIdsrNotificationEmails,
+  getKenyaKhisCredentialMode,
+  getKenyaKhisIdsrEventProgram,
+  getKenyaKhisMoh505DataSetUid,
   getKenyaShaClaimsCredentialMode,
   getKenyaShaClaimsEnvironment,
   getProjectSettingString,
@@ -96,9 +99,6 @@ export function CountryPackPage(): JSX.Element {
   const [loadingOrganizations, setLoadingOrganizations] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
-  const [provisioningScheduler, setProvisioningScheduler] = useState(false);
-  const [schedulerResult, setSchedulerResult] = useState<string | undefined>();
-  const [schedulerError, setSchedulerError] = useState<string | undefined>();
   const lookupMessage = getLookupMessage(lookupResponse);
   const organizationOptions = useMemo(
     () => [
@@ -310,23 +310,6 @@ export function CountryPackPage(): JSX.Element {
     );
   }
 
-  async function handleProvisionKhisScheduler(): Promise<void> {
-    setProvisioningScheduler(true);
-    setSchedulerResult(undefined);
-    setSchedulerError(undefined);
-    try {
-      const resp = await medplum.post(`admin/projects/${projectId}/kenya/provision-khis-scheduler`, {});
-      setSchedulerResult(`Bot ${resp.botId} provisioned. Cron: ${resp.cronString}. ${resp.message}`);
-      showNotification({ color: 'green', message: 'KHIS weekly scheduler provisioned' });
-    } catch (err) {
-      const msg = normalizeErrorString(err);
-      setSchedulerError(msg);
-      showNotification({ color: 'red', message: msg, autoClose: false });
-    } finally {
-      setProvisioningScheduler(false);
-    }
-  }
-
   if (countryPackEntry.id === 'kenya') {
     const kenyaHieEnvironment = getKenyaHieEnvironment(project);
     const kenyaShaClaimsEnvironment = getKenyaShaClaimsEnvironment(project);
@@ -335,7 +318,18 @@ export function CountryPackPage(): JSX.Element {
     const kenyaHieAgentId = getKenyaHieAgentId(project);
     const kenyaClaimSubmitWorkflowBotId = getKenyaClaimSubmitWorkflowBotId(project);
     const kenyaClaimStatusWorkflowBotId = getKenyaClaimStatusWorkflowBotId(project);
-    const kenyaKhisSchedulerBotId = getKenyaKhisSchedulerBotId(project);
+    const khisManaged = getKenyaKhisCredentialMode(project) === 'afiax-managed';
+    const khisCredentialsSet =
+      khisManaged ||
+      (!!getProjectSettingString(project.secret, 'kenyaKhisUsername') &&
+        !!getProjectSettingString(project.secret, 'kenyaKhisPassword'));
+    let khisCredentialStatus = khisCredentialsSet ? 'Configured' : 'Missing';
+    if (khisManaged) {
+      khisCredentialStatus = 'Managed by Afiax platform operations';
+    }
+    const khisMoh505DataSetUid = getKenyaKhisMoh505DataSetUid(project);
+    const khisIdsrEventProgram = getKenyaKhisIdsrEventProgram(project);
+    const idsrNotificationEmails = getKenyaIdsrNotificationEmails(project);
     const configuredHieSecretCount = kenyaAfyaLinkSecretNames.filter((name) =>
       getProjectSettingString(project.secret, name)
     ).length;
@@ -375,9 +369,6 @@ export function CountryPackPage(): JSX.Element {
           </DescriptionListEntry>
           <DescriptionListEntry term="Kenya Claim Status Workflow Bot">
             {kenyaClaimStatusWorkflowBotId ?? kenyaClaimSubmitWorkflowBotId ?? 'Not configured'}
-          </DescriptionListEntry>
-          <DescriptionListEntry term="KHIS Weekly Scheduler Bot">
-            {kenyaKhisSchedulerBotId ?? 'Not provisioned'}
           </DescriptionListEntry>
           <DescriptionListEntry term="HIE Credential Status">
             {kenyaHieCredentialMode === 'afiax-managed'
@@ -435,28 +426,31 @@ export function CountryPackPage(): JSX.Element {
         )}
         <Divider />
         <Stack gap="sm">
-          <Title order={3}>KHIS Weekly Scheduler</Title>
+          <Title order={3}>KHIS IDSR Reporting</Title>
           <Text size="sm" c="dimmed">
-            Provisions a Bot that runs every Monday at 06:00 EAT (03:00 UTC) and exports MOH 505 weekly aggregate data
-            for all active facilities to KHIS. The project cron feature is enabled automatically.
+            Automatic once configured. IDSR immediate notifications are sent to KHIS and emailed to the county as soon
+            as an immediately notifiable disease is diagnosed; failed sends are retried every hour. The MOH 505 weekly
+            report is submitted every Monday at 06:00 EAT for each facility with an MFL code.
           </Text>
-          {kenyaKhisSchedulerBotId && (
-            <Alert color="teal" variant="light">
-              Scheduler active — Bot ID: <b>{kenyaKhisSchedulerBotId}</b>. Runs every Monday at 06:00 EAT.
+          <DescriptionList>
+            <DescriptionListEntry term="KHIS Credentials">{khisCredentialStatus}</DescriptionListEntry>
+            <DescriptionListEntry term="MOH 505 Dataset UID">
+              {khisMoh505DataSetUid ?? 'Not configured'}
+            </DescriptionListEntry>
+            <DescriptionListEntry term="IDSR Event Program">
+              {khisIdsrEventProgram?.program ?? 'Not configured'}
+            </DescriptionListEntry>
+            <DescriptionListEntry term="County Notification Email">
+              {idsrNotificationEmails.length > 0 ? idsrNotificationEmails.join(', ') : 'Not configured'}
+            </DescriptionListEntry>
+          </DescriptionList>
+          {(!khisCredentialsSet || !khisMoh505DataSetUid || !khisIdsrEventProgram) && (
+            <Alert color="yellow" variant="light">
+              KHIS reporting is not fully configured. Get the MOH 505 dataset UID, the IDSR event program and data
+              element UIDs from your KHIS administrator and add them in{' '}
+              <MedplumLink to="/admin/settings">Settings</MedplumLink>.
             </Alert>
           )}
-          {schedulerResult && (
-            <Alert color="green" variant="light">
-              {schedulerResult}
-            </Alert>
-          )}
-          {schedulerError && <Alert color="red">{schedulerError}</Alert>}
-          <Group>
-            <Button onClick={() => handleProvisionKhisScheduler().catch(console.error)} loading={provisioningScheduler}>
-              {kenyaKhisSchedulerBotId ? 'Re-provision Scheduler' : 'Provision KHIS Scheduler'}
-            </Button>
-            {kenyaKhisSchedulerBotId && <MedplumLink to={`/Bot/${kenyaKhisSchedulerBotId}`}>View Bot</MedplumLink>}
-          </Group>
         </Stack>
         <Divider />
         <KenyaClaimQueuePanel />

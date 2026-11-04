@@ -72,9 +72,18 @@ Implemented in this repo now:
   the MoH/DHA national standard; ICD-10 may be added only as a secondary coding. Enforced in the
   repository write path (covers create, update, PATCH and batch/transaction). Project setting
   `kenyaIcd11DiagnosisEnforcement`: `enforce` (default), `warn` or `off`
-- KHIS weekly scheduler — `POST /admin/projects/:projectId/kenya/provision-khis-scheduler`
-  creates a Bot with `cronString: "0 3 * * 1"` (Monday 06:00 EAT) that iterates all active
-  Organizations and calls `$khis-weekly-export` for each; enables `cron` project feature
+- IDSR reporting to KHIS (built into the server, `kenya-surveillance` worker; no provisioning):
+  - immediate notifications are sent to KHIS as a DHIS2 event (`/api/tracker`) as soon as an
+    immediately notifiable Condition is saved, and emailed to `kenyaIdsrNotificationEmail`; the
+    notification Task records the DHIS2 event UID, and failed sends are retried hourly
+  - the MOH 505 weekly report is submitted every Monday 06:00 EAT (03:00 UTC) for each
+    Organization with an MFL code; a week already submitted is skipped
+  - settings: `kenyaKhisMoh505DataSetUid`, `kenyaKhisDataElementMapping`,
+    `kenyaKhisIdsrEventProgram` (JSON: `{"program","programStage","dataElements":{"disease",
+    "icd11Code","verificationStatus","onsetDate","sex","ageYears","county","subCounty","outcome",
+    "reportingFacility","notifiedAt"}}`, UIDs from the KHIS administrator), `kenyaIdsrNotificationEmail`
+- IHR (2005) notification — `Condition/$ihr-assessment` and `Task/$ihr-escalate`; Annex 2
+  diseases are flagged automatically on save
 - Break-glass emergency access declaration — `Patient/$break-glass` creates a `Flag`, writes a
   snapshot extension on the `Patient`, emits an `AuditEvent` with `purposeOfEvent: ETREAT`, and
   sends a security alert email; satisfies Kenya DPA 2019 s.25 and Digital Health Act 2023 s.19
@@ -156,7 +165,6 @@ Current admin routes that support the Kenya UX:
 - `POST /admin/projects/:projectId/kenya/afyalink/facility-lookup`
 - `POST /admin/projects/:projectId/kenya/afyalink/practitioner-lookup`
 - `POST /admin/projects/:projectId/kenya/afyalink/patient-lookup`
-- `POST /admin/projects/:projectId/kenya/provision-khis-scheduler`
 
 Current public routes (no Medplum auth — verified by SHA shared secret):
 
@@ -182,7 +190,6 @@ kenyaShaClaimsCredentialMode=tenant-managed|afiax-managed
 kenyaHieAgentId=<agent-id>              # required for v3 client-registry fetch-client
 kenyaClaimSubmitWorkflowBotId=Bot/<id>  # optional
 kenyaClaimStatusWorkflowBotId=Bot/<id>  # optional
-kenyaKhisSchedulerBotId=Bot/<id>        # set automatically by provision-khis-scheduler
 ```
 
 ### 2. Configure credentials

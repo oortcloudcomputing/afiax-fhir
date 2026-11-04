@@ -11,10 +11,7 @@ import {
 import type { Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 
-export interface KhisCredentials {
-  readonly baseUrl: string;
-  readonly username: string;
-  readonly password: string;
+export interface KhisCredentials extends KhisConnection {
   readonly moh505DataSetUid: string;
   readonly dataElementMapping: Record<string, { suspected?: string; confirmed?: string; deaths?: string }>;
 }
@@ -62,7 +59,20 @@ function getProjectSecretValue(project: Project, name: string): string | undefin
   );
 }
 
-export function getKhisCredentials(project: Project): KhisCredentials {
+/** KHIS (DHIS2) API connection details. */
+export interface KhisConnection {
+  readonly baseUrl: string;
+  readonly username: string;
+  readonly password: string;
+}
+
+/**
+ * Returns the KHIS API connection for a project.
+ * @param project - The project, with its secrets.
+ * @returns The connection.
+ * @throws If the username or password is not configured.
+ */
+export function getKhisConnection(project: Project): KhisConnection {
   const credentialMode = getKenyaKhisCredentialMode(project);
   const envKey = getKhisBaseUrlKey(project);
 
@@ -77,6 +87,11 @@ export function getKhisCredentials(project: Project): KhisCredentials {
       `KHIS credentials (${KenyaKhisSecretNames.username}, ${KenyaKhisSecretNames.password}) not found in ${source}.`
     );
   }
+  return { baseUrl, username, password };
+}
+
+export function getKhisCredentials(project: Project): KhisCredentials {
+  const connection = getKhisConnection(project);
 
   const moh505DataSetUid = getKenyaKhisMoh505DataSetUid(project) ?? '';
   if (!moh505DataSetUid) {
@@ -87,7 +102,7 @@ export function getKhisCredentials(project: Project): KhisCredentials {
 
   const dataElementMapping = getKenyaKhisDataElementMapping(project) ?? {};
 
-  return { baseUrl, username, password, moh505DataSetUid, dataElementMapping };
+  return { ...connection, moh505DataSetUid, dataElementMapping };
 }
 
 function getKhisBaseUrlKey(project: Project): 'uat' | 'production' {
@@ -175,4 +190,75 @@ export async function pushKhisDataValueSet(
 
 function isKhisImportSummary(value: unknown): value is KhisImportSummary {
   return !!value && typeof value === 'object' && 'status' in (value as Record<string, unknown>);
+}
+
+/** A DHIS2 tracker event (program without registration). */
+export interface KhisTrackerEvent {
+  readonly program: string;
+  readonly programStage?: string;
+  readonly orgUnit: string;
+  readonly occurredAt: string;
+  readonly status: 'ACTIVE' | 'COMPLETED';
+  readonly dataValues: KhisDataValue[];
+}
+
+/** The DHIS2 confirmation for a submitted event. */
+export interface KhisEventConfirmation {
+  readonly status: string;
+  readonly eventUid?: string;
+}
+
+/**
+ * Submits one event to the KHIS DHIS2 tracker API (synchronous import) and returns DHIS2's
+ * confirmation, including the UID DHIS2 assigned to the event.
+ * @param connection - The KHIS connection.
+ * @param event - The event.
+ * @returns The confirmation.
+ * @throws If the request fails or DHIS2 rejects the event.
+ */
+export async function pushKhisTrackerEvent(
+  connection: KhisConnection,
+  event: KhisTrackerEvent
+): Promise<KhisEventConfirmation> {
+  const url = `${connection.baseUrl.replace(/\/$/, '')}/api/tracker?async=false&importStrategy=CREATE`;
+  const authHeader = `Basic ${Buffer.from(`${connection.username}:${connection.password}`).toString('base64')}`;
+
+  let response: Awaited<ReturnType<typeof fetch>>;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ events: [event] }),
+    });
+  } catch (err) {
+    throw new Error(`KHIS API request failed: ${normalizeErrorString(err)}`);
+  }
+
+  const text = await response.text().catch(() => '');
+  let body: TrackerImportReport | undefined;
+  try {
+    body = JSON.parse(text) as TrackerImportReport;
+  } catch {
+    throw new Error(`KHIS API returned non-JSON response (HTTP ${response.status}): ${text.slice(0, 200)}`);
+  }
+
+  const errors = body?.validationReport?.errorReports ?? [];
+  if (!response.ok || body?.status === 'ERROR' || errors.length > 0) {
+    const detail = errors.map((e) => e.message).join('; ') || body?.message || text.slice(0, 200);
+    throw new Error(`KHIS rejected the event (HTTP ${response.status}): ${detail}`);
+  }
+
+  const eventUid = body?.bundleReport?.typeReportMap?.EVENT?.objectReports?.[0]?.uid;
+  return { status: body?.status ?? 'OK', eventUid };
+}
+
+interface TrackerImportReport {
+  readonly status?: string;
+  readonly message?: string;
+  readonly validationReport?: { readonly errorReports?: { readonly message?: string }[] };
+  readonly bundleReport?: {
+    readonly typeReportMap?: {
+      readonly EVENT?: { readonly objectReports?: { readonly uid?: string }[] };
+    };
+  };
 }

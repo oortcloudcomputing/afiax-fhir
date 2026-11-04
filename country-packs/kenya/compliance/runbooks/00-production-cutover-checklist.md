@@ -67,13 +67,17 @@ machine-testable items. Human verification items are marked **[HUMAN]**.
 
 ---
 
-## 5. KHIS weekly scheduler
+## 5. KHIS IDSR reporting
 
-- [ ] `provision-khis-scheduler` was called and succeeded
-- [ ] `kenyaKhisSchedulerBotId` is set in project settings
-- [ ] Bot resource exists at the stored ID
-- [ ] Bot `cronString` is `0 3 * * 1` (Monday 03:00 UTC = 06:00 EAT)
-- [ ] **[HUMAN]** DHIS2 credentials are set if KHIS export targets a live DHIS2 instance
+- [ ] The `kenya-surveillance` worker is enabled on at least one server instance (default: all workers)
+- [ ] KHIS credentials (`kenyaKhisUsername`, `kenyaKhisPassword`) are set, or credential mode is `afiax-managed`
+- [ ] `kenyaKhisMoh505DataSetUid` and `kenyaKhisDataElementMapping` are set
+- [ ] `kenyaKhisIdsrEventProgram` is set with the program and data element UIDs
+- [ ] `kenyaIdsrNotificationEmail` is set to the County Disease Surveillance Coordinator
+- [ ] Every reporting facility Organization has an MFL code
+- [ ] Admin > Country Pack > "KHIS IDSR Reporting" shows no configuration warning
+- [ ] **[HUMAN]** A test immediate notification appears in KHIS and its Task shows the DHIS2 event UID
+- [ ] **[HUMAN]** The first Monday weekly submission shows `dhis2ImportStatus` SUCCESS on its Task
 
 ---
 

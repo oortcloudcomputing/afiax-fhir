@@ -7,6 +7,7 @@ import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { addCronJobs, initCronWorker } from './cron';
 import { addDownloadJobs, initDownloadWorker } from './download';
+import { initKenyaSurveillanceWorker } from './kenya-surveillance';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
@@ -22,6 +23,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'batch', init: initBatchWorker },
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
+  { name: 'kenya-surveillance', init: initKenyaSurveillanceWorker },
 ];
 
 /**

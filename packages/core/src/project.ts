@@ -207,6 +207,11 @@ export const KenyaProjectSettingNames = {
   // DHIS2 dataset UID for MOH 505
   khisMoh505DataSetUid: 'kenyaKhisMoh505DataSetUid',
   khisSchedulerBotId: 'kenyaKhisSchedulerBotId',
+  // JSON string: KenyaKhisIdsrEventProgram. DHIS2 event program that receives IDSR immediate notifications.
+  khisIdsrEventProgram: 'kenyaKhisIdsrEventProgram',
+  // Comma-separated email addresses notified of each IDSR immediate notification (County Disease
+  // Surveillance Coordinator / County Director of Health).
+  idsrNotificationEmail: 'kenyaIdsrNotificationEmail',
   // Email address for security alerts (break-glass, unusual access). Defaults to security@afiax.africa
   securityAlertEmail: 'kenyaSecurityAlertEmail',
   // ICD-11 diagnosis coding rule: 'enforce' (default) | 'warn' | 'off'
@@ -398,6 +403,61 @@ export function getKenyaKhisDataElementMapping(
   } catch {
     return undefined;
   }
+}
+
+/** DHIS2 data element UIDs for the fields of an IDSR immediate notification event. All are optional. */
+export interface KenyaKhisIdsrEventDataElements {
+  readonly disease?: string;
+  readonly icd11Code?: string;
+  readonly verificationStatus?: string;
+  readonly onsetDate?: string;
+  readonly sex?: string;
+  readonly ageYears?: string;
+  readonly county?: string;
+  readonly subCounty?: string;
+  readonly outcome?: string;
+  readonly reportingFacility?: string;
+  readonly notifiedAt?: string;
+}
+
+/** The KHIS (DHIS2) event program that receives IDSR immediate notifications. */
+export interface KenyaKhisIdsrEventProgram {
+  readonly program: string;
+  readonly programStage?: string;
+  readonly dataElements: KenyaKhisIdsrEventDataElements;
+}
+
+/**
+ * Returns the configured KHIS IDSR immediate-notification event program, if any.
+ * @param source - The project or its settings.
+ * @returns The event program, or undefined when not configured or invalid.
+ */
+export function getKenyaKhisIdsrEventProgram(source: ProjectSettingsSource): KenyaKhisIdsrEventProgram | undefined {
+  const raw = getProjectSettingString(source, KenyaProjectSettingNames.khisIdsrEventProgram);
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<KenyaKhisIdsrEventProgram>;
+    if (!parsed.program) {
+      return undefined;
+    }
+    return { program: parsed.program, programStage: parsed.programStage, dataElements: parsed.dataElements ?? {} };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Returns the email addresses to notify of IDSR immediate notifications.
+ * @param source - The project or its settings.
+ * @returns The addresses (possibly empty).
+ */
+export function getKenyaIdsrNotificationEmails(source: ProjectSettingsSource): string[] {
+  return (getProjectSettingString(source, KenyaProjectSettingNames.idsrNotificationEmail) ?? '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
 }
 
 export function isKenyaErpNextEnabled(source: ProjectSettingsSource): boolean {

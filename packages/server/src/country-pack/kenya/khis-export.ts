@@ -16,11 +16,11 @@ import type {
   Condition,
   DocumentReference,
   Organization,
+  Patient,
   Project,
   Reference,
   Task,
 } from '@medplum/fhirtypes';
-import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -28,11 +28,12 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
+import type { KenyaContext } from './job-context';
 import type { KhisConditionAggregate, KhisDataValueSet } from './khis';
 import { buildKhisDataValueSet, getKhisCredentials, pushKhisDataValueSet } from './khis';
 
 export interface KhisWeeklyExportInput {
-  readonly ctx: AuthenticatedRequestContext;
+  readonly ctx: KenyaContext;
   readonly period: string;
   readonly facilityId: string;
   readonly correlationId: string;
@@ -203,7 +204,7 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
 }
 
 export async function aggregateConditionsForWeek(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   facilityId: string,
   weekStart: Date,
   weekEnd: Date
@@ -220,6 +221,8 @@ export async function aggregateConditionsForWeek(
       counts.set(c.icd11, { legacyCode: c.icd10, suspected: 0, confirmed: 0, deaths: 0 });
     }
   }
+
+  const deceasedByPatient = new Map<string, boolean>();
 
   for await (const condition of searchConditionsInWeek(ctx, startStr, endStr)) {
     const verificationStatus = condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed';
@@ -245,6 +248,9 @@ export async function aggregateConditionsForWeek(
         agg.confirmed++;
       } else {
         agg.suspected++;
+      }
+      if (await isSubjectDeceased(ctx, condition, deceasedByPatient)) {
+        agg.deaths++;
       }
       counts.set(weeklyCondition.icd11, agg);
     }
@@ -272,11 +278,36 @@ const CONDITION_MAX_OFFSET = 10_000;
  * @param endStr - Last day of the week (YYYY-MM-DD).
  * @yields Each Condition in the week.
  */
-async function* searchConditionsInWeek(
-  ctx: AuthenticatedRequestContext,
-  startStr: string,
-  endStr: string
-): AsyncGenerator<Condition> {
+/**
+ * Returns true if the Condition's patient is recorded as deceased. Results are cached per patient.
+ * @param ctx - The context.
+ * @param condition - The Condition.
+ * @param cache - Deceased status by patient reference.
+ * @returns True if the patient has died.
+ */
+async function isSubjectDeceased(
+  ctx: KenyaContext,
+  condition: Condition,
+  cache: Map<string, boolean>
+): Promise<boolean> {
+  const ref = condition.subject?.reference;
+  if (!ref?.startsWith('Patient/')) {
+    return false;
+  }
+  let deceased = cache.get(ref);
+  if (deceased === undefined) {
+    try {
+      const patient = await ctx.systemRepo.readReference<Patient>({ reference: ref });
+      deceased = !!(patient.deceasedBoolean || patient.deceasedDateTime);
+    } catch {
+      deceased = false;
+    }
+    cache.set(ref, deceased);
+  }
+  return deceased;
+}
+
+async function* searchConditionsInWeek(ctx: KenyaContext, startStr: string, endStr: string): AsyncGenerator<Condition> {
   for (let offset = 0; ; offset += CONDITION_PAGE_SIZE) {
     if (offset > CONDITION_MAX_OFFSET) {
       throw new Error(`More than ${CONDITION_MAX_OFFSET} Conditions in the week; weekly counts would be incomplete`);
@@ -284,6 +315,8 @@ async function* searchConditionsInWeek(
     const bundle = await ctx.repo.search<Condition>({
       resourceType: 'Condition',
       filters: [
+        // Explicit project filter: scheduled jobs search with a system repo that spans projects
+        { code: '_project', operator: Operator.EQUALS, value: ctx.project.id },
         { code: 'onset-date', operator: Operator.GREATER_THAN_OR_EQUALS, value: startStr },
         { code: 'onset-date', operator: Operator.LESS_THAN_OR_EQUALS, value: endStr },
       ],
@@ -304,7 +337,7 @@ async function* searchConditionsInWeek(
 }
 
 async function createExportTask(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   facility: Organization & { id: string },
   period: string,
   correlationId: string,
@@ -330,12 +363,28 @@ async function createExportTask(
       text: 'khis-weekly-export',
     },
     businessStatus: { text: 'in-progress' },
-    identifier: [{ system: KenyaKhisCorrelationIdSystem, value: correlationId }],
+    identifier: [
+      { system: KenyaKhisCorrelationIdSystem, value: correlationId },
+      { system: KenyaKhisWeeklyPeriodSystem, value: getKhisWeeklyPeriodKey(facility.id, period) },
+    ],
   });
 }
 
+/** Identifier system on export Tasks, valued "<facility id>|<period>", so a week is not submitted twice. */
+export const KenyaKhisWeeklyPeriodSystem = 'https://afiax.africa/identifier/khis-weekly-period';
+
+/**
+ * Returns the identifier value marking a facility's export for a period.
+ * @param facilityId - The facility Organization id.
+ * @param period - The DHIS2 weekly period, e.g. 2026W44.
+ * @returns The identifier value.
+ */
+export function getKhisWeeklyPeriodKey(facilityId: string, period: string): string {
+  return `${facilityId}|${period}`;
+}
+
 async function updateExportTask(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   task: Task & { id: string },
   status: KhisWeeklyExportStatus,
   message: string,
@@ -363,7 +412,7 @@ async function updateExportTask(
 }
 
 async function createExportDocumentReference(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   facility: Organization & { id: string },
   task: Task & { id: string },
   period: string,
@@ -420,7 +469,7 @@ async function createExportDocumentReference(
 }
 
 async function createExportAuditEvent(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   facility: Organization & { id: string },
   task: Task & { id: string },
   period: string,

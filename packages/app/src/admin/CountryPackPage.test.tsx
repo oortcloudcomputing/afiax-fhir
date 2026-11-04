@@ -72,6 +72,8 @@ describe('CountryPackPage', () => {
     expect(screen.getByText('Production')).toBeInTheDocument();
     expect(screen.getAllByText('Bot/kenya-claim-submit-bot').length).toBeGreaterThan(0);
     expect(screen.getByText('1 of 3 required HIE credentials configured')).toBeInTheDocument();
+    expect(screen.getByText('KHIS IDSR Reporting')).toBeInTheDocument();
+    expect(screen.getByText(/KHIS reporting is not fully configured/)).toBeInTheDocument();
     expect(screen.getByText(/2 Kenya HIE credentials still missing/)).toBeInTheDocument();
     expect(screen.getByText('1 of 3 required SHA credentials configured')).toBeInTheDocument();
     expect(screen.getByText(/2 Kenya SHA credentials still missing/)).toBeInTheDocument();

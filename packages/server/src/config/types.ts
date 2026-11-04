@@ -307,7 +307,8 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'kenya-surveillance';
 
 export interface MedplumWorkersConfig {
   /**

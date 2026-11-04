@@ -10,7 +10,6 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import type { AuditEvent, Condition, Reference, Task } from '@medplum/fhirtypes';
-import type { AuthenticatedRequestContext } from '../../context';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -18,9 +17,11 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
+import { deliverKenyaIdsrNotification } from './idsr-delivery';
+import type { KenyaContext } from './job-context';
 
 export interface IdsrNotificationInput {
-  readonly ctx: AuthenticatedRequestContext;
+  readonly ctx: KenyaContext;
   readonly condition: Condition & { id: string };
   readonly correlationId: string;
 }
@@ -90,8 +91,10 @@ export async function handleKenyaIdsrNotification(input: IdsrNotificationInput):
       identifier: [{ system: KenyaIdsrCorrelationIdSystem, value: correlationId }],
     });
 
-    status = 'pending';
-    message = `IDSR immediate notification task created for ${conditionDisplay} (${conditionCode}). Notification must reach the County Director of Health within 24 hours (Kenya Health Act 2017 s.57).`;
+    // Send to KHIS and the county contacts straight away (real-time reporting, DHA REP-IMM-001)
+    const delivery = await deliverKenyaIdsrNotification(ctx, condition, task);
+    status = delivery.delivered ? 'reported' : 'pending';
+    message = `IDSR immediate notification for ${conditionDisplay} (${conditionCode}). ${delivery.message}`;
   } catch (err) {
     status = 'error';
     message = `IDSR notification task creation failed: ${normalizeErrorString(err)}`;
@@ -111,7 +114,7 @@ export async function handleKenyaIdsrNotification(input: IdsrNotificationInput):
 }
 
 async function createIdsrAuditEvent(
-  ctx: AuthenticatedRequestContext,
+  ctx: KenyaContext,
   condition: Condition & { id: string },
   task: (Task & { id: string }) | undefined,
   conditionCode: string,

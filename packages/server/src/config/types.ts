@@ -106,6 +106,13 @@ export interface MedplumServerConfig {
   defaultAuthRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
+  /**
+   * Absolute lifetime of an interactive login session in seconds, counted from sign-in (Login.authTime).
+   * After this, access tokens stop working and refresh is refused, regardless of activity, so the user
+   * must sign in again. Machine logins (client credentials, bots) are exempt. Defaults to 28800 (8 hours);
+   * set to 0 to disable.
+   */
+  maxSessionLifetimeSeconds?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
   defaultMaxUserWebSocketSubscriptions?: number;
 

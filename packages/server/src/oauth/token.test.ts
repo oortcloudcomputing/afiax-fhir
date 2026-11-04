@@ -1062,6 +1062,51 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token revoked');
   });
 
+  test('Session older than the absolute limit cannot refresh or call the API', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Still inside the 8-hour limit: the access token works
+    const res3 = await request(app).get('/auth/me').set('Authorization', 'Bearer ' + res2.body.access_token);
+    expect(res3.status).toBe(200);
+
+    // Move the sign-in time 9 hours into the past
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...login,
+        authTime: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+      })
+    );
+
+    const res4 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res4.status).toBe(400);
+    expect(res4.body.error).toBe('invalid_grant');
+    expect(res4.body.error_description).toBe('Session expired');
+
+    // The unexpired access token is refused too
+    const res5 = await request(app).get('/auth/me').set('Authorization', 'Bearer ' + res2.body.access_token);
+    expect(res5.status).toBe(401);
+  });
+
   test('Refresh token Basic auth success', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,

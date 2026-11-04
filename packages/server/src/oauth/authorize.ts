@@ -10,7 +10,7 @@ import { getLogger } from '../logger';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
-import { getClientApplication } from './utils';
+import { getClientApplication, isLoginSessionExpired } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -196,7 +196,7 @@ async function isValidLaunch(launch: string): Promise<boolean> {
 async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
   const login = (await getExistingLoginFromIdTokenHint(req)) || (await getExistingLoginFromCookie(req, client));
 
-  if (!login) {
+  if (!login || isLoginSessionExpired(login)) {
     return undefined;
   }
 

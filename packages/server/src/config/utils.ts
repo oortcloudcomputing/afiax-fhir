@@ -48,6 +48,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
+  config.maxSessionLifetimeSeconds ??= 8 * 60 * 60; // DHA: 8-hour absolute session limit
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
@@ -101,7 +102,8 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota';
+  | 'defaultFhirQuota'
+  | 'maxSessionLifetimeSeconds';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -115,6 +117,7 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'maxSessionLifetimeSeconds',
   'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',

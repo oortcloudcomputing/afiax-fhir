@@ -909,6 +909,28 @@ export async function verifyMultipleMatchingException(
 }
 
 /**
+ * Returns true if an interactive login has outlived the absolute session limit
+ * (`maxSessionLifetimeSeconds`, counted from `Login.authTime`), regardless of activity.
+ * Machine logins (client credentials, bots) are never expired by this check.
+ * @param login - The login to check.
+ * @returns True if the session has expired and the user must sign in again.
+ */
+export function isLoginSessionExpired(login: Login): boolean {
+  const maxLifetime = getConfig().maxSessionLifetimeSeconds;
+  if (!maxLifetime || maxLifetime <= 0) {
+    return false;
+  }
+  if (login.authMethod === 'client' || login.authMethod === 'execute') {
+    return false;
+  }
+  const authTime = login.authTime ? Date.parse(login.authTime) : Number.NaN;
+  if (Number.isNaN(authTime)) {
+    return false;
+  }
+  return Date.now() - authTime > maxLifetime * 1000;
+}
+
+/**
  * Verifies the access token and returns the corresponding login, membership, and project.
  * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
  * @param req - The incoming HTTP request.
@@ -941,7 +963,7 @@ export async function getLoginForAccessToken(
     return undefined;
   }
 
-  if (!login?.membership || login.revoked) {
+  if (!login?.membership || login.revoked || isLoginSessionExpired(login)) {
     return undefined;
   }
 

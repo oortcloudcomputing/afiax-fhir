@@ -36,6 +36,7 @@ import {
   getClientApplicationMembership,
   getExternalUserInfo,
   hashCode,
+  isLoginSessionExpired,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
@@ -292,6 +293,11 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.revoked) {
     sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
+  if (isLoginSessionExpired(login)) {
+    sendTokenError(res, 'invalid_grant', 'Session expired');
     return;
   }
 

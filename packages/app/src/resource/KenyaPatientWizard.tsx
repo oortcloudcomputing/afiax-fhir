@@ -17,22 +17,24 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { KenyaPatientIdentificationType } from '@medplum/core';
-import { KenyaPatientIdentificationTypes, normalizeErrorString } from '@medplum/core';
-import type { Bundle, HumanName, Patient } from '@medplum/fhirtypes';
+import {
+  getKenyaIdentifierError,
+  getKenyaToday,
+  KenyaCounties,
+  KenyaNextOfKinRelationships,
+  KenyaPatientIdentificationTypes,
+  KenyaPatientIdentifierSystems,
+  normalizeErrorString,
+} from '@medplum/core';
+import type { Bundle, Patient } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import type { Gender, KenyaPatientRegistration } from './KenyaPatientRegistration';
+import { buildKenyaPatient, getRegistrationErrors } from './KenyaPatientRegistration';
 
-type Gender = 'male' | 'female' | 'other' | 'unknown';
-
-const ID_SYSTEM_MAP: Record<KenyaPatientIdentificationType, string> = {
-  'National ID': 'https://afiax.africa/kenya/identifier/national-id',
-  'Alien ID': 'https://afiax.africa/kenya/identifier/alien-id',
-  Passport: 'https://afiax.africa/kenya/identifier/passport',
-  'Birth Certificate': 'https://afiax.africa/kenya/identifier/birth-certificate',
-  'Refugee ID': 'https://afiax.africa/kenya/identifier/refugee-id',
-};
+const ID_SYSTEM_MAP = KenyaPatientIdentifierSystems;
 
 interface DhaPatientMessage {
   readonly found?: number | string | boolean | null;
@@ -108,16 +110,53 @@ export function KenyaPatientWizard(): JSX.Element {
   const [familyName, setFamilyName] = useState('');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState<Gender>('unknown');
+  const [phone, setPhone] = useState('');
+  const [county, setCounty] = useState('');
+  const [subCounty, setSubCounty] = useState('');
+  const [ward, setWard] = useState('');
+  const [village, setVillage] = useState('');
+  const [passportNumber, setPassportNumber] = useState('');
+  const [birthCertificateNumber, setBirthCertificateNumber] = useState('');
+  const [nokName, setNokName] = useState('');
+  const [nokRelationship, setNokRelationship] = useState('');
+  const [nokPhone, setNokPhone] = useState('');
   const [creating, setCreating] = useState(false);
 
   const [error, setError] = useState<string | undefined>();
 
   const dhaVerified = isDhaFound(dhaPatient);
+  const idNumberError = idNumber.trim() ? getKenyaIdentifierError(ID_SYSTEM_MAP[idType], idNumber.trim()) : undefined;
+
+  const registration: KenyaPatientRegistration = {
+    idType,
+    idNumber,
+    clientRegistryId: dhaPatient?.client_registry_id ?? undefined,
+    givenName,
+    familyName,
+    birthDate: dob,
+    gender,
+    phone,
+    county,
+    subCounty,
+    ward,
+    village,
+    passportNumber,
+    birthCertificateNumber,
+    nokName,
+    nokRelationship,
+    nokPhone,
+  };
+  const fieldErrors = getRegistrationErrors(registration);
+  const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
   async function handleDhaLookup(): Promise<void> {
     const number = idNumber.trim();
     if (!number) {
       setError('Enter an ID number.');
+      return;
+    }
+    if (idNumberError) {
+      setError(idNumberError);
       return;
     }
     setSearching(true);
@@ -172,40 +211,15 @@ export function KenyaPatientWizard(): JSX.Element {
     if (!dhaVerified) {
       return;
     } // should never reach here, but guard anyway
-    const family = familyName.trim();
-    if (!family) {
-      setError('Family name is required.');
+    if (hasFieldErrors) {
+      setError('Correct the highlighted fields before creating the patient.');
       return;
     }
     setCreating(true);
     setError(undefined);
     try {
-      const name: HumanName = { family, ...(givenName.trim() ? { given: [givenName.trim()] } : {}) };
-      const patient: Patient = {
-        resourceType: 'Patient',
-        name: [name],
-        gender,
-        ...(dob ? { birthDate: dob } : {}),
-        identifier: [
-          {
-            system: ID_SYSTEM_MAP[idType],
-            value: idNumber.trim(),
-            type: { text: idType },
-            ...(dhaPatient?.client_registry_id
-              ? {
-                  extension: [
-                    {
-                      url: 'https://afiax.africa/fhir/StructureDefinition/client-registry-id',
-                      valueString: dhaPatient.client_registry_id,
-                    },
-                  ],
-                }
-              : {}),
-          },
-        ],
-      };
-      const created = await medplum.createResource(patient);
-      showNotification({ color: 'green', message: `Patient created: ${family}` });
+      const created = await medplum.createResource(buildKenyaPatient(registration));
+      showNotification({ color: 'green', message: `Patient created: ${familyName.trim()}` });
       navigate(`/Patient/${created.id}`)?.catch(console.error);
     } catch (err) {
       const msg = normalizeErrorString(err);
@@ -245,6 +259,7 @@ export function KenyaPatientWizard(): JSX.Element {
                 label="ID Number"
                 placeholder="12345678"
                 value={idNumber}
+                error={idNumberError}
                 onChange={(e) => {
                   setIdNumber(e.currentTarget.value);
                   setDhaPatient(undefined);
@@ -304,7 +319,7 @@ export function KenyaPatientWizard(): JSX.Element {
                 <Button
                   onClick={() => handleDhaLookup().catch(console.error)}
                   loading={searching}
-                  disabled={!idNumber.trim()}
+                  disabled={!idNumber.trim() || !!idNumberError}
                 >
                   Search DHA Registry
                 </Button>
@@ -405,6 +420,7 @@ export function KenyaPatientWizard(): JSX.Element {
                   placeholder="Kamau"
                   required
                   value={familyName}
+                  error={familyName ? fieldErrors.familyName : undefined}
                   onChange={(e) => setFamilyName(e.currentTarget.value)}
                 />
               </Group>
@@ -412,7 +428,9 @@ export function KenyaPatientWizard(): JSX.Element {
                 <TextInput
                   label="Date of Birth"
                   type="date"
+                  max={getKenyaToday()}
                   value={dob}
+                  error={fieldErrors.birthDate}
                   onChange={(e) => setDob(e.currentTarget.value)}
                 />
                 <NativeSelect
@@ -436,6 +454,83 @@ export function KenyaPatientWizard(): JSX.Element {
                 />
                 <TextInput label="ID Number" value={idNumber} disabled />
               </Group>
+              <Group grow>
+                {idType !== 'Passport' && (
+                  <TextInput
+                    label="Passport Number"
+                    placeholder="Optional"
+                    value={passportNumber}
+                    error={fieldErrors.passportNumber}
+                    onChange={(e) => setPassportNumber(e.currentTarget.value)}
+                  />
+                )}
+                {idType !== 'Birth Certificate' && (
+                  <TextInput
+                    label="Birth Certificate Number"
+                    placeholder="Optional"
+                    value={birthCertificateNumber}
+                    error={fieldErrors.birthCertificateNumber}
+                    onChange={(e) => setBirthCertificateNumber(e.currentTarget.value)}
+                  />
+                )}
+              </Group>
+
+              <Divider label="Contact" labelPosition="left" />
+              <TextInput
+                label="Phone Number"
+                placeholder="+254712345678"
+                type="tel"
+                value={phone}
+                error={fieldErrors.phone}
+                onChange={(e) => setPhone(e.currentTarget.value)}
+              />
+
+              <Divider label="Residence" labelPosition="left" />
+              <Group grow>
+                <NativeSelect
+                  label="County"
+                  data={[{ value: '', label: 'Select county' }, ...KenyaCounties.map((c) => c.name)]}
+                  value={county}
+                  onChange={(e) => setCounty(e.currentTarget.value)}
+                />
+                <TextInput label="Sub-county" value={subCounty} onChange={(e) => setSubCounty(e.currentTarget.value)} />
+              </Group>
+              <Group grow>
+                <TextInput label="Ward" value={ward} onChange={(e) => setWard(e.currentTarget.value)} />
+                <TextInput
+                  label="Village / Estate"
+                  value={village}
+                  onChange={(e) => setVillage(e.currentTarget.value)}
+                />
+              </Group>
+
+              <Divider label="Next of Kin" labelPosition="left" />
+              <Group grow>
+                <TextInput
+                  label="Next of Kin Name"
+                  value={nokName}
+                  error={fieldErrors.nokName}
+                  onChange={(e) => setNokName(e.currentTarget.value)}
+                />
+                <NativeSelect
+                  label="Relationship"
+                  data={[
+                    { value: '', label: 'Select relationship' },
+                    ...KenyaNextOfKinRelationships.map((r) => ({ value: r.code, label: r.display })),
+                  ]}
+                  value={nokRelationship}
+                  error={fieldErrors.nokRelationship}
+                  onChange={(e) => setNokRelationship(e.currentTarget.value)}
+                />
+              </Group>
+              <TextInput
+                label="Next of Kin Phone"
+                placeholder="+254712345678"
+                type="tel"
+                value={nokPhone}
+                error={fieldErrors.nokPhone}
+                onChange={(e) => setNokPhone(e.currentTarget.value)}
+              />
 
               {error && <Alert color="red">{error}</Alert>}
 
@@ -446,7 +541,7 @@ export function KenyaPatientWizard(): JSX.Element {
                 <Button
                   onClick={() => handleCreate().catch(console.error)}
                   loading={creating}
-                  disabled={!familyName.trim()}
+                  disabled={hasFieldErrors}
                 >
                   Create Patient
                 </Button>

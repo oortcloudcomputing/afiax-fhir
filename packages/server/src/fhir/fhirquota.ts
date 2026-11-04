@@ -153,12 +153,19 @@ export class FhirRateLimiter {
    */
   async block(points: number, result: RateLimiterRes): Promise<void> {
     if (this.enabled) {
-      blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
+      const resetTimestamp = Date.now() + result.msBeforeNext;
+      blockedUsers.set(this.userKey, { result, resetTimestamp });
 
       if (this.async) {
         // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
         const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
         await sleep(waitMs);
+        // setTimeout is scheduled from the event loop's cached clock, so under load it can fire a few ms
+        // before Date.now() passes resetTimestamp. Retrying then would hit our own in-memory block and
+        // wait a second time, so sleep off any remainder first.
+        while (Date.now() <= resetTimestamp) {
+          await sleep(resetTimestamp - Date.now() + 1);
+        }
         await this.consumeImpl(points);
       } else {
         // Block synchronous request

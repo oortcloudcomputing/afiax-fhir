@@ -94,9 +94,9 @@ import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
+import { enforceKenyaMedicationSafety } from '../country-pack/kenya/cds';
 import { enforceKenyaDataValidation, enforceKenyaPatientDelete } from '../country-pack/kenya/data-validation';
 import { enforceKenyaIcd11Diagnosis } from '../country-pack/kenya/icd11-diagnosis';
-import { assertNotAppendOnly } from './append-only';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -127,6 +127,7 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { assertNotAppendOnly } from './append-only';
 import { decryptStoredContent, encryptStoredContent, isEncryptedResourceType, parseStoredResource } from './encryption';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
@@ -857,6 +858,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await enforceKenyaIcd11Diagnosis(this.currentProject(), result, existing, this.isSuperAdmin());
     // Kenya country pack: reject impossible values (future dates of birth, malformed IDs, negative vitals)
     enforceKenyaDataValidation(this.currentProject(), result, this.isSuperAdmin());
+    // Kenya country pack: block prescriptions that conflict with allergies, medicines or results (CDS)
+    await enforceKenyaMedicationSafety(
+      this.currentProject(),
+      result,
+      existing,
+      this.isSuperAdmin(),
+      this.getSystemRepo()
+    );
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       await this.checkWebSocketSubscriptionLimit(result);

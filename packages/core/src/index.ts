@@ -33,6 +33,7 @@ export * from './format';
 export * from './hl7';
 export * from './jwt';
 export * from './kenya';
+export * from './kenya-cds';
 export * from './kenya-ihr';
 export * from './kenya-validation';
 export * from './keyvalue';

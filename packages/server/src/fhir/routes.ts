@@ -10,6 +10,7 @@ import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { maybeAutoFlagIhr, maybeAutoTriggerIdsr } from '../country-pack/kenya/auto-idsr';
+import { maybeRecordKenyaCdsAlerts } from '../country-pack/kenya/cds';
 import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -62,6 +63,7 @@ import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { ihrAssessmentHandler, ihrEscalateHandler } from './operations/ihr';
+import { kenyaCdsCheckHandler } from './operations/kenyacds';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -412,6 +414,7 @@ function initInternalFhirRouter(): FhirRouter {
   // IHR (2005) notification of events of international concern (Kenya, DHA REP-IHR-001)
   router.add('POST', '/Condition/:id/$ihr-assessment', ihrAssessmentHandler);
   router.add('POST', '/Task/:id/$ihr-escalate', ihrEscalateHandler);
+  router.add('POST', '/MedicationRequest/$cds-check', kenyaCdsCheckHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)
   router.add('GET', '/$khis-weekly-export', khisWeeklyExportHandler);
@@ -558,6 +561,8 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   maybeAutoTriggerIdsr(ctx, request.method, result);
   // Kenya: flag IHR (2005) Annex 2 diseases for WHO notification or assessment
   maybeAutoFlagIhr(ctx, request.method, result);
+  // Kenya: record clinical decision support alerts for critical results and overridden prescriptions
+  maybeRecordKenyaCdsAlerts(ctx, request.method, result);
 
   // Kenya: enforce FHIR Confidentiality security labels on read responses
   result = await enforceKenyaSecurityLabels(ctx, result);

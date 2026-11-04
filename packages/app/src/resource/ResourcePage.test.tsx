@@ -5,6 +5,7 @@ import { buildKenyaNationalClaimSubmissionExtension, getReferenceString } from '
 import type {
   Bot,
   Claim,
+  Condition,
   Coverage,
   Organization,
   Practitioner,
@@ -14,6 +15,7 @@ import type {
   ValueSet,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { within } from '@testing-library/react';
 import { act, fireEvent, renderAppRoutes, screen, userEvent, waitFor } from '../test-utils/render';
 
 describe('ResourcePage', () => {
@@ -109,6 +111,68 @@ describe('ResourcePage', () => {
 
     await setup(`/ValueSet/${valueSet.id}`, medplum);
     expect(await screen.findByText('Preview')).toBeInTheDocument();
+  });
+
+  test('Condition IHR panel runs the Annex 2 assessment for a novel coronavirus', async () => {
+    const medplum = new MockClient();
+    const condition = await medplum.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/123' },
+      code: { coding: [{ system: 'http://id.who.int/icd/release/11/mms', code: 'RA01', display: 'COVID-19' }] },
+    });
+    jest.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-123',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    } as Project);
+    const postSpy = jest.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'notifiable', valueBoolean: true },
+        { name: 'rationale', valueString: 'IHR (2005) Annex 2: 3 of 4 criteria met' },
+      ],
+    });
+
+    await setup(`/Condition/${condition.id}`, medplum);
+    expect(await screen.findByText('IHR: assessment required')).toBeInTheDocument();
+
+    for (const label of [
+      'Is the public health impact of the event serious?',
+      'Is the event unusual or unexpected?',
+      'Is there a significant risk of international spread?',
+    ]) {
+      const group = screen.getByRole('radiogroup', { name: label });
+      await act(async () => {
+        fireEvent.click(within(group).getByLabelText('Yes'));
+      });
+    }
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Run IHR assessment' }));
+    });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      medplum.fhirUrl('Condition', condition.id, '$ihr-assessment'),
+      expect.objectContaining({
+        parameter: expect.arrayContaining([
+          { name: 'seriousImpact', valueBoolean: true },
+          { name: 'unusualOrUnexpected', valueBoolean: true },
+          { name: 'internationalSpread', valueBoolean: true },
+        ]),
+      })
+    );
+    expect(await screen.findByText('IHR (2005) Annex 2: 3 of 4 criteria met')).toBeInTheDocument();
+  });
+
+  test('Condition IHR panel is hidden outside Kenya projects', async () => {
+    const medplum = new MockClient();
+    const condition = await medplum.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/123' },
+      code: { coding: [{ system: 'http://id.who.int/icd/release/11/mms', code: 'RA01' }] },
+    });
+    await setup(`/Condition/${condition.id}`, medplum);
+    expect(await screen.findByText('Details')).toBeInTheDocument();
+    expect(screen.queryByTestId('ihr-panel')).not.toBeInTheDocument();
   });
 
   test('Organization verification panel runs Kenya facility verification', async () => {

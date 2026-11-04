@@ -5,6 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import type {
   Claim,
+  Condition,
   Coverage,
   OperationOutcome,
   Organization,
@@ -25,6 +26,7 @@ import { SpecimenHeader } from '../components/SpecimenHeader';
 import { getPatient, getSpecimen } from '../utils';
 import { ClaimBillingPanel } from './ClaimBillingPanel';
 import { ClaimNationalSubmissionPanel } from './ClaimNationalSubmissionPanel';
+import { ConditionIhrPanel } from './ConditionIhrPanel';
 import { CoverageEligibilityPanel } from './CoverageEligibilityPanel';
 import { NationalRecordPublicationPanel } from './NationalRecordPublicationPanel';
 import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
@@ -151,6 +153,7 @@ export function ResourcePage(): JSX.Element | null {
       {value?.resourceType === 'Claim' && <ClaimNationalSubmissionPanel claim={value as Claim} />}
       {value?.resourceType === 'Claim' && <ClaimBillingPanel claim={value as Claim} />}
       {value?.resourceType === 'Coverage' && <CoverageEligibilityPanel coverage={value as Coverage} />}
+      {value?.resourceType === 'Condition' && <ConditionIhrPanel condition={value as Condition} />}
       {value?.resourceType === 'Organization' && (
         <OrganizationFacilityVerificationPanel organization={value as Organization} />
       )}

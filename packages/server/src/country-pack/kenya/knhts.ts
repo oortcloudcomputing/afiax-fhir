@@ -125,3 +125,59 @@ export async function lookupKnhtsConcept(
 export function clearKnhtsCache(): void {
   cache.clear();
 }
+
+/** A concept returned by a KNHTS search. */
+export interface KnhtsSearchResult {
+  readonly code: string;
+  readonly display: string;
+  readonly extras?: Record<string, unknown>;
+}
+
+export interface KnhtsSearchOptions {
+  readonly count?: number;
+  /** Keep only concepts whose extras match, e.g. { domain: 'Laboratory' } for KNHTS Investigations. */
+  readonly extras?: Record<string, string>;
+  /** Keep only concepts whose code starts with one of these prefixes (e.g. "GE" for HPT generics). */
+  readonly codePrefixes?: readonly string[];
+  readonly fetchFn?: typeof fetch;
+}
+
+/**
+ * Searches a KNHTS source by text. Retired concepts are left out.
+ * @param source - The KNHTS source.
+ * @param query - The search text.
+ * @param options - Filters and result count.
+ * @returns The matching concepts.
+ */
+export async function searchKnhtsConcepts(
+  source: KnhtsSource,
+  query: string,
+  options: KnhtsSearchOptions = {}
+): Promise<KnhtsSearchResult[]> {
+  const count = Math.min(Math.max(options.count ?? 20, 1), 50);
+  const filtered = !!options.extras || !!options.codePrefixes;
+  const params = new URLSearchParams({ q: query, limit: String(filtered ? 100 : count), verbose: 'true' });
+  const url = `${getKnhtsBaseUrl()}/orgs/${encodeURIComponent(source.owner)}/sources/${encodeURIComponent(
+    source.source
+  )}/concepts/?${params}`;
+  const response = await (options.fetchFn ?? fetch)(url, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(TIMEOUT_MS * 2),
+  });
+  if (!response.ok) {
+    throw new Error(`KNHTS search failed: HTTP ${response.status}`);
+  }
+  const concepts = (await response.json()) as {
+    id: string;
+    display_name?: string;
+    retired?: boolean;
+    extras?: Record<string, unknown>;
+  }[];
+  return concepts
+    .filter((c) => !c.retired)
+    .filter((c) => !options.codePrefixes || options.codePrefixes.some((p) => c.id.startsWith(p)))
+    .filter((c) => !options.extras || Object.entries(options.extras).every(([k, v]) => c.extras?.[k] === v))
+    .filter((c) => c.extras?.status !== 'RETIRED')
+    .slice(0, count)
+    .map((c) => ({ code: c.id, display: c.display_name ?? c.id, extras: c.extras }));
+}

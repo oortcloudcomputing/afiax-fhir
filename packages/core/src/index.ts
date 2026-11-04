@@ -35,6 +35,7 @@ export * from './jwt';
 export * from './kenya';
 export * from './kenya-cds';
 export * from './kenya-ihr';
+export * from './kenya-orders';
 export * from './kenya-validation';
 export * from './keyvalue';
 export * from './logger';

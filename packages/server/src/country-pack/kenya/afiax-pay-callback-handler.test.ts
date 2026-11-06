@@ -70,10 +70,11 @@ function mockAfiaxPayLookup(state: Record<string, unknown>): void {
 function makeNotice(
   paymentRequestId: string,
   claimRef = 'Claim/claim-001',
-  paymentStatus: 'pending' | 'confirmed' | 'failed' = 'pending'
+  paymentStatus: 'pending' | 'confirmed' | 'failed' = 'pending',
+  method: 'afiax-pay' | 'mpesa-stk' = 'afiax-pay'
 ): PaymentNotice {
   const ext = buildKenyaPatientPaymentExtension({
-    method: 'afiax-pay',
+    method,
     paymentStatus,
     amount: 1500,
     currency: 'KES',
@@ -200,6 +201,47 @@ describe('handleKenyaAfiaxPayCallback', () => {
     const snap = getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice);
     expect(snap?.paymentStatus).toBe('confirmed');
     expect(snap?.transactionRef).toBe('AFPAY-TXN-ABC');
+  });
+
+  test('confirms an M-Pesa payment taken through Afiax Pay and records it as M-Pesa', async () => {
+    const project = makeProject();
+    const notice = makeNotice('AP-MPESA-100', 'Claim/claim-001', 'pending', 'mpesa-stk');
+    const claim = makeClaimWithInvoice();
+    const projectRepo = makeProjectRepo(project, notice, claim);
+
+    mockGetGlobalRepo.mockReturnValue(makeGlobalRepo(project));
+    mockGetProjectRepo.mockReturnValue(projectRepo);
+
+    mockAfiaxPayLookup({
+      payment_request_id: 'AP-MPESA-100',
+      status: 'success',
+      amount: 1500,
+      currency: 'KES',
+      transaction_ref: 'SFC123ABC',
+      paid_at: '2026-11-06T09:00:00.000Z',
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ data: { name: 'ACC-PAY-MPESA-001' } }),
+    } as unknown as NodeFetchResponse);
+
+    const result = await handleKenyaAfiaxPayCallback('project-test', {
+      payment_request_id: 'AP-MPESA-100',
+      status: 'success',
+    });
+
+    expect(result.status).toBe('confirmed');
+    const noticeUpdate = projectRepo.updateResource.mock.calls.find(
+      (args: unknown[]) => (args[0] as { resourceType: string }).resourceType === 'PaymentNotice'
+    );
+    const snap = getKenyaPatientPaymentSnapshot(noticeUpdate?.[0] as PaymentNotice);
+    expect(snap?.method).toBe('mpesa-stk');
+    expect(snap?.paymentStatus).toBe('confirmed');
+
+    // The ERPNext Payment Entry uses the M-Pesa mode of payment.
+    const erpCall = mockFetch.mock.calls[1] as [string, { body: string }];
+    expect(JSON.parse(erpCall[1].body).mode_of_payment).toBe('M-Pesa');
   });
 
   test('marks PaymentNotice as failed for status: failed', async () => {

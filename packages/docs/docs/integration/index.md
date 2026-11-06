@@ -13,7 +13,7 @@ Delivered by the [Kenya country pack](/docs/country-packs/kenya) and included in
 | **KNHTS** (national terminology) | Every ICD-11 diagnosis and SHA intervention code checked when saved | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance) |
 | **KHIS / DHIS2** | Weekly MOH 505 disease surveillance report, with zero reporting | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance#khis-weekly-export-moh-505) |
 | **IDSR** | Immediate notification for notifiable diseases | Implemented | [Kenya terminology and surveillance](/docs/country-packs/kenya-terminology-and-surveillance#idsr-immediate-notification) |
-| **M-Pesa** (Safaricom Daraja) | Patient payments by STK push or recorded M-Pesa code | Implemented | [Afiax Pay and patient payments](/docs/integration/afiax-pay) |
+| **M-Pesa** (Safaricom Daraja, through Afiax Pay) | Patient payments by STK push or recorded M-Pesa code | Implemented | [Afiax Pay and patient payments](/docs/integration/afiax-pay) |
 | **KMPDC, NCK, PPB** | Practitioner registration checks | Implemented, through the HIE | [Kenya reference pack](/docs/country-packs/kenya) |
 | **MOH 705/711** monthly reports | Monthly facility reporting | Planned | |
 

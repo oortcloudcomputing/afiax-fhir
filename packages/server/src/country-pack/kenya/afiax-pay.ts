@@ -11,6 +11,8 @@ export interface KenyaAfiaxPayCredentials {
   readonly callbackUrl: string;
 }
 
+export type AfiaxPayChannel = 'mpesa';
+
 export interface AfiaxPayRequestResult {
   readonly paymentRequestId: string;
   readonly paymentUrl?: string;
@@ -65,6 +67,12 @@ export async function initiateAfiaxPayRequest(
     description: string;
     customerPhone?: string;
     customerEmail?: string;
+    /**
+     * Payment channel Afiax Pay should use. 'mpesa' asks Afiax Pay to send an M-Pesa STK Push to
+     * customerPhone (Afiax Pay holds the Daraja credentials, ADR-010). Omitted: Afiax Pay returns a
+     * payment link and the patient chooses how to pay.
+     */
+    channel?: AfiaxPayChannel;
   }
 ): Promise<AfiaxPayRequestResult> {
   const body = {
@@ -75,6 +83,7 @@ export async function initiateAfiaxPayRequest(
     callback_url: credentials.callbackUrl,
     customer_phone: input.customerPhone,
     customer_email: input.customerEmail,
+    ...(input.channel ? { channel: input.channel } : {}),
   };
 
   const response = await fetch(`${credentials.baseUrl}/api/v1/payment-requests`, {

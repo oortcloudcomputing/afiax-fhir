@@ -229,17 +229,8 @@ describe('handlePostPatientPayment — mpesa-manual', () => {
 describe('handlePostPatientPayment — mpesa-stk', () => {
   afterEach(() => jest.clearAllMocks());
 
-  test('initiates STK push and returns pending with checkoutRequestId', async () => {
-    // M-Pesa OAuth token
-    mockOkResponse({ access_token: 'test-mpesa-token' });
-    // STK push response
-    mockOkResponse({
-      CheckoutRequestID: 'ws_CO_18062026_001',
-      MerchantRequestID: 'MR-001',
-      ResponseCode: '0',
-      ResponseDescription: 'Success. Request accepted for processing',
-      CustomerMessage: 'Success. Request accepted for processing',
-    });
+  test('sends M-Pesa through Afiax Pay when Afiax Pay is configured (ADR-010)', async () => {
+    mockOkResponse({ payment_request_id: 'AP-MPESA-001', status: 'pending' });
 
     const repo = makeRepo();
     const result = await handlePostPatientPayment({
@@ -256,20 +247,85 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
 
     expect(result.status).toBe('pending');
     expect(result.method).toBe('mpesa-stk');
-    expect(result.checkoutRequestId).toBe('ws_CO_18062026_001');
-    expect(result.customerMessage).toBe('Success. Request accepted for processing');
+    expect(result.paymentRequestId).toBe('AP-MPESA-001');
+    expect(result.checkoutRequestId).toBeUndefined();
 
-    // PaymentNotice created with identifier for callback lookup
+    // Exactly one call, to Afiax Pay — never to Safaricom Daraja.
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0] as [string, { body: string }];
+    expect(url).toBe('https://pay.afiax.africa/api/v1/payment-requests');
+    const body = JSON.parse(init.body);
+    expect(body.channel).toBe('mpesa');
+    expect(body.customer_phone).toBe('0712345678');
+    expect(body.callback_url).toBe('https://api.afiax.africa/kenya/afiax-pay-callback/project-test');
+
+    // PaymentNotice keeps the M-Pesa method and is found by the Afiax Pay callback.
     const notices = repo.created['PaymentNotice'] as PaymentNotice[];
     expect(notices).toHaveLength(1);
+    const gatewayIdentifier = notices[0].identifier?.find(
+      (i) => i.system === 'https://afiax.africa/kenya/identifier/afiax-pay-request'
+    );
+    expect(gatewayIdentifier?.value).toBe('AP-MPESA-001');
+    const snap = getKenyaPatientPaymentSnapshot(notices[0]);
+    expect(snap?.method).toBe('mpesa-stk');
+    expect(snap?.paymentStatus).toBe('pending');
+  });
+
+  test('uses direct Daraja only when the dev/UAT setting allows it and Afiax Pay is not configured', async () => {
+    mockOkResponse({ access_token: 'test-mpesa-token' });
+    mockOkResponse({
+      CheckoutRequestID: 'ws_CO_18062026_001',
+      MerchantRequestID: 'MR-001',
+      ResponseCode: '0',
+      ResponseDescription: 'Success. Request accepted for processing',
+      CustomerMessage: 'Success. Request accepted for processing',
+    });
+
+    const project = makeProject();
+    project.systemSecret = project.systemSecret?.filter((e) => !e.name?.startsWith('afiaxPay'));
+    project.setting = [...(project.setting ?? []), { name: 'kenyaMpesaDirectDaraja', valueBoolean: true }];
+
+    const repo = makeRepo();
+    const result = await handlePostPatientPayment({
+      ctx: makeCtx(repo),
+      claim: makeClaimWithInvoice(),
+      method: 'mpesa-stk',
+      amount: 2000,
+      currency: 'KES',
+      phone: '0712345678',
+      correlationId: 'corr-stk-002',
+      project,
+      baseUrl: 'https://api.afiax.africa',
+    });
+
+    expect(result.status).toBe('pending');
+    expect(result.checkoutRequestId).toBe('ws_CO_18062026_001');
+    const notices = repo.created['PaymentNotice'] as PaymentNotice[];
     const gatewayIdentifier = notices[0].identifier?.find(
       (i) => i.system === 'https://afiax.africa/kenya/identifier/mpesa-checkout-request'
     );
     expect(gatewayIdentifier?.value).toBe('ws_CO_18062026_001');
+  });
 
-    const snap = getKenyaPatientPaymentSnapshot(notices[0]);
-    expect(snap?.paymentStatus).toBe('pending');
-    expect(snap?.gatewayReference).toBe('ws_CO_18062026_001');
+  test('refuses direct Daraja when Afiax Pay is not configured and the setting is off', async () => {
+    const project = makeProject();
+    project.systemSecret = project.systemSecret?.filter((e) => !e.name?.startsWith('afiaxPay'));
+
+    const repo = makeRepo();
+    const result = await handlePostPatientPayment({
+      ctx: makeCtx(repo),
+      claim: makeClaimWithInvoice(),
+      method: 'mpesa-stk',
+      amount: 2000,
+      currency: 'KES',
+      phone: '0712345678',
+      correlationId: 'corr-stk-003',
+      project,
+      baseUrl: 'https://api.afiax.africa',
+    });
+    expect(result.status).toBe('error');
+    expect(result.message).toContain('go through Afiax Pay');
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test('returns error when phone is missing', async () => {
@@ -280,7 +336,7 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
       method: 'mpesa-stk',
       amount: 2000,
       currency: 'KES',
-      correlationId: 'corr-stk-002',
+      correlationId: 'corr-stk-004',
       project: makeProject(),
       baseUrl: 'https://api.afiax.africa',
     });
@@ -288,7 +344,7 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
     expect(result.message).toContain('phone is required');
   });
 
-  test('returns error when M-Pesa credentials are not configured', async () => {
+  test('returns error when neither Afiax Pay nor direct Daraja is configured', async () => {
     const repo = makeRepo();
     const result = await handlePostPatientPayment({
       ctx: makeCtx(repo),
@@ -297,12 +353,12 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
       amount: 2000,
       currency: 'KES',
       phone: '0712345678',
-      correlationId: 'corr-stk-003',
+      correlationId: 'corr-stk-005',
       project: makeProject(false), // no secrets
       baseUrl: 'https://api.afiax.africa',
     });
     expect(result.status).toBe('error');
-    expect(result.message).toContain('M-Pesa credentials');
+    expect(result.message).toContain('Afiax Pay credentials are not configured');
   });
 });
 

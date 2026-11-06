@@ -10,7 +10,7 @@ This page shows how to collect what a patient owes for a visit (cash, card, M-Pe
 
 ## Before you start
 
-- Your project uses the Kenya country pack, and payments are switched on. Oortcloud configures the M-Pesa and Afiax Pay connections during [onboarding](/docs/afiax-cloud/plans-and-onboarding).
+- Your project uses the Kenya country pack, and payments are switched on. All M-Pesa payments go through Afiax Pay: Afiax Pay holds the Safaricom Daraja credentials, and Afiax FHIR never calls Safaricom itself. Oortcloud configures the M-Pesa and Afiax Pay connections during [onboarding](/docs/afiax-cloud/plans-and-onboarding).
 - The visit has a `Claim` resource. The patient's share (`patientDue`) is what remains after SHA and any insurer.
 - Your client is allowed to call `$post-patient-payment` on `Claim` (see [Environments and partner access](/docs/afiax-cloud/environments-and-access)).
 
@@ -21,7 +21,7 @@ This page shows how to collect what a patient owes for a visit (cash, card, M-Pe
 | `cash` | The cashier records cash received | Immediately |
 | `card` | The cashier records a card payment taken on the facility's terminal (pass `transactionRef`) | Immediately |
 | `mpesa-manual` | The patient paid by M-Pesa themselves; the cashier records the M-Pesa code (`transactionRef`) | Immediately |
-| `mpesa-stk` | Afiax sends an M-Pesa payment prompt (STK push) to the patient's phone (`phone`) | When the patient approves on their phone |
+| `mpesa-stk` | Afiax Pay sends an M-Pesa payment prompt (STK push) to the patient's phone (`phone`) | When the patient approves on their phone |
 | `afiax-pay` | Afiax creates an Afiax Pay payment request and returns a `paymentUrl` for the patient | When the patient pays |
 
 ## Step by step
@@ -48,8 +48,8 @@ This page shows how to collect what a patient owes for a visit (cash, card, M-Pe
    - `patientDue`, the amount still owed
    - `message`, a human-readable summary.
 
-   For `mpesa-stk` it also returns `checkoutRequestId` and `customerMessage`, which you show to the cashier. For `afiax-pay` it returns `paymentRequestId` and `paymentUrl`, which you give to the patient.
-3. **Wait for completion (STK and Afiax Pay only).** M-Pesa and Afiax Pay notify Afiax when the patient pays. Afiax verifies the notification, records the payment, and updates the follow-up `Task` returned as `task`. Watch that Task, or subscribe to it with a [Subscription](/docs/subscriptions), rather than polling the payment provider yourself.
+   For `mpesa-stk` it also returns `paymentRequestId`, the Afiax Pay request that sends the prompt. For `afiax-pay` it returns `paymentRequestId` and `paymentUrl`, which you give to the patient.
+3. **Wait for completion (STK and Afiax Pay only).** Afiax Pay notifies Afiax when the patient pays. Afiax verifies the notification, records the payment, and updates the follow-up `Task` returned as `task`. Watch that Task, or subscribe to it with a [Subscription](/docs/subscriptions), rather than polling the payment provider yourself.
 4. **Finance posting.** Each recorded payment is also posted to Afiax Billing as a payment entry (`erpNextPaymentEntry` in the response). If that posting fails, the clinical record stays correct, and the posting can be retried with `$push-to-erpnext`.
 
 ## Insurer payments

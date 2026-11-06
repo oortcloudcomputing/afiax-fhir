@@ -22,7 +22,7 @@ import {
   parseAfiaxPayCallback,
 } from './afiax-pay';
 import { createErpNextPaymentEntry, getKenyaErpNextCredentials, hasKenyaErpNextCredentials } from './erpnext';
-import { AfiaxPayRequestSystem } from './post-patient-payment';
+import { AfiaxPayRequestSystem, methodToErpNextMode, methodToErpNextModeLabel } from './post-patient-payment';
 
 export interface AfiaxPayCallbackResult {
   readonly ok: boolean;
@@ -87,6 +87,8 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     }
 
     const paymentSnap = getKenyaPatientPaymentSnapshot(notice);
+    // M-Pesa STK payments also go through Afiax Pay (ADR-010); keep the method the payment was taken with.
+    const method = paymentSnap?.method ?? 'afiax-pay';
     if (paymentSnap?.paymentStatus === 'confirmed' || paymentSnap?.paymentStatus === 'failed') {
       return {
         ok: true,
@@ -163,7 +165,7 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
     // Update PaymentNotice extension.
     const updatedExt = buildKenyaPatientPaymentExtension({
       ...(paymentSnap ?? {}),
-      method: 'afiax-pay',
+      method,
       paymentStatus: paymentSuccess ? 'confirmed' : 'failed',
       amount: paidAmount,
       currency: paidCurrency,
@@ -205,7 +207,7 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
             invoiceName: snapshot.invoiceName,
             amount: paidAmount,
             currency: paidCurrency,
-            modeOfPayment: 'Afiax Pay',
+            modeOfPayment: methodToErpNextModeLabel(method),
             partyName: patientName,
             customFields: {
               custom_fhir_claim_id: `Claim/${claimId}`,
@@ -220,7 +222,7 @@ export async function handleKenyaAfiaxPayCallback(projectId: string, body: unkno
             paymentEntryName: entry.paymentEntryName,
             amount: paidAmount,
             currency: paidCurrency,
-            modeOfPayment: 'afiax-pay',
+            modeOfPayment: methodToErpNextMode(method),
             confirmedAt,
             patientPaymentStatus: 'confirmed',
           });

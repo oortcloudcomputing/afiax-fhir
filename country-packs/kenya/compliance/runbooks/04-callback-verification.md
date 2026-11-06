@@ -121,10 +121,14 @@ If the SHA API call fails, nothing is changed and the endpoint returns 400 — r
 A callback that presents a JWT is rejected if the JWT does not verify, or if no
 `kenyaShaClaimsSecretKey` is configured.
 
-M-Pesa (`/kenya/mpesa-callback/:projectId`) and Afiax Pay (`/kenya/afiax-pay-callback/:projectId`)
-callbacks are handled the same way: the result is confirmed with the Daraja STK Push Query API or
-the Afiax Pay payment-request API before any update, the amount is never taken from the callback
-body, and callbacks for payments already confirmed or failed are ignored.
+Afiax Pay callbacks (`/kenya/afiax-pay-callback/:projectId`) are handled the same way: the result is
+confirmed with the Afiax Pay payment-request API before any update, the amount is never taken from
+the callback body, and callbacks for payments already confirmed or failed are ignored. M-Pesa STK
+payments go through Afiax Pay, so they arrive on this endpoint too.
+
+The direct M-Pesa endpoint (`/kenya/mpesa-callback/:projectId`) is used only when a dev or UAT project
+sets `kenyaMpesaDirectDaraja` and has no Afiax Pay credentials. It confirms each result with the
+Daraja STK Push Query API. Never enable `kenyaMpesaDirectDaraja` in production.
 
 If SHA is sending a JWT but verification is failing:
 1. Confirm `kenyaShaClaimsSecretKey` matches the secret SHA signed the JWT with.

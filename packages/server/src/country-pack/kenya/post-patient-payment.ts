@@ -8,6 +8,7 @@ import {
   createReference,
   getKenyaErpNextPatientSnapshot,
   getKenyaErpNextSubmissionSnapshot,
+  getProjectSettingBoolean,
   normalizeErrorString,
 } from '@medplum/core';
 import type { AuditEvent, Claim, Patient, PaymentNotice, Project, Reference, Task } from '@medplum/fhirtypes';
@@ -198,12 +199,113 @@ async function handleSynchronousPayment(
 // M-Pesa STK push (async — confirmed via callback)
 // ---------------------------------------------------------------------------
 
+/**
+ * Project setting that allows the legacy direct Safaricom Daraja STK Push client. M-Pesa goes
+ * through Afiax Pay (ADR-010, change register 3.9); the direct client exists only for dev and UAT
+ * until Afiax Pay's payment-request API is available, and must not be enabled in production.
+ */
+export const KenyaMpesaDirectDarajaSetting = 'kenyaMpesaDirectDaraja';
+
 async function handleMpesaStkPayment(
   input: PostPatientPaymentInput,
   postedAt: string
 ): Promise<PostPatientPaymentResult> {
-  const { ctx, claim, amount, currency, correlationId, project, baseUrl } = input;
+  const { project } = input;
 
+  if (!input.phone) {
+    throw new Error('phone is required for mpesa-stk payment method.');
+  }
+
+  if (hasKenyaAfiaxPayCredentials(project)) {
+    return handleMpesaStkViaAfiaxPay(input, postedAt);
+  }
+
+  if (getProjectSettingBoolean(project, KenyaMpesaDirectDarajaSetting)) {
+    return handleMpesaStkViaDaraja(input, postedAt);
+  }
+
+  throw new Error(
+    'M-Pesa payments go through Afiax Pay, and Afiax Pay credentials are not configured for this project.'
+  );
+}
+
+/**
+ * M-Pesa STK Push sent by Afiax Pay: Afiax Pay holds the Daraja credentials and calls back.
+ * @param input - The payment request.
+ * @param postedAt - When the payment was posted.
+ * @returns The pending payment result.
+ */
+async function handleMpesaStkViaAfiaxPay(
+  input: PostPatientPaymentInput,
+  postedAt: string
+): Promise<PostPatientPaymentResult> {
+  const { ctx, claim, amount, currency, correlationId, project, baseUrl } = input;
+  const phone = input.phone as string;
+
+  const credentials = getKenyaAfiaxPayCredentials(project, baseUrl, ctx.project.id);
+  const payResult = await initiateAfiaxPayRequest(credentials, {
+    amount,
+    currency,
+    reference: `Claim/${claim.id}`,
+    description: `Afiax Healthcare M-Pesa payment for claim ${claim.id}`,
+    customerPhone: phone,
+    channel: 'mpesa',
+  });
+
+  const paymentNotice = await createPaymentNotice(ctx, claim, {
+    method: 'mpesa-stk',
+    paymentStatus: 'pending',
+    amount,
+    currency,
+    gatewayReference: payResult.paymentRequestId,
+    phone,
+    correlationId,
+    identifierSystem: AfiaxPayRequestSystem,
+    identifierValue: payResult.paymentRequestId,
+  });
+
+  const task = await ctx.systemRepo.createResource<Task>({
+    resourceType: 'Task',
+    meta: { project: ctx.project.id },
+    status: 'in-progress',
+    intent: 'order',
+    authoredOn: postedAt,
+    requester: ctx.profile as Task['requester'],
+    focus: createReference(claim),
+    description: `M-Pesa payment prompt for ${currency} ${amount} to ${phone} requested through Afiax Pay`,
+    code: {
+      coding: [{ system: 'https://afiax.africa/fhir/CodeSystem/kenya-task-type', code: 'patient-payment-mpesa-stk' }],
+    },
+    businessStatus: { text: 'pending' },
+    identifier: [{ system: 'https://afiax.africa/identifier/correlation-id', value: correlationId }],
+  });
+
+  await writeAuditEvent(ctx, claim, task, correlationId, AuditEventOutcome.Success);
+
+  return {
+    status: 'pending',
+    correlationId,
+    method: 'mpesa-stk',
+    amount,
+    currency,
+    message: 'M-Pesa payment prompt requested through Afiax Pay. The patient will receive it on their phone.',
+    paymentRequestId: payResult.paymentRequestId,
+    paymentNoticeReference: createReference(paymentNotice),
+    task: createReference(task),
+  };
+}
+
+/**
+ * Legacy direct Daraja STK Push (dev/UAT only, behind KenyaMpesaDirectDarajaSetting).
+ * @param input - The payment request.
+ * @param postedAt - When the payment was posted.
+ * @returns The pending payment result.
+ */
+async function handleMpesaStkViaDaraja(
+  input: PostPatientPaymentInput,
+  postedAt: string
+): Promise<PostPatientPaymentResult> {
+  const { ctx, claim, amount, currency, correlationId, project, baseUrl } = input;
   if (!input.phone) {
     throw new Error('phone is required for mpesa-stk payment method.');
   }

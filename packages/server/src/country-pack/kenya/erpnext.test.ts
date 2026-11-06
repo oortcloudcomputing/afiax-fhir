@@ -237,6 +237,19 @@ describe('createErpNextSalesInvoice', () => {
     expect(body.items[0].item_code).toBe('CONSULT-OPD');
     expect(body.items[1].item_code).toBe('LAB-MALARIA');
     expect(body.custom_fhir_claim_id).toBe('Claim/claim-001');
+    expect(body.docstatus).toBe(1);
+  });
+
+  it('submits a draft invoice left by an earlier version before returning it', async () => {
+    mockOkResponse({ data: [{ name: 'ACC-SINV-2026-00003', grand_total: 3000, currency: 'KES', docstatus: 0 }] });
+    mockOkResponse({ data: { name: 'ACC-SINV-2026-00003', docstatus: 1 } });
+
+    const result = await createErpNextSalesInvoice(testCredentials, claim, 'Jane Wanjiku Mwangi');
+    expect(result.invoiceName).toBe('ACC-SINV-2026-00003');
+    const [url, init] = mockFetch.mock.calls[1];
+    expect(url as string).toContain('/api/resource/Sales Invoice/ACC-SINV-2026-00003');
+    expect(init?.method).toBe('PUT');
+    expect(JSON.parse(init?.body as string)).toEqual({ docstatus: 1 });
   });
 
   it('throws when ERPNext invoice creation fails', async () => {
@@ -257,7 +270,8 @@ describe('createErpNextPaymentEntry', () => {
     jest.clearAllMocks();
   });
 
-  it('creates a Payment Entry and returns the doc name', async () => {
+  it('creates a submitted Payment Entry into the mode of payment account', async () => {
+    mockOkResponse({ message: { account: 'SHA Remittances - AHL' } });
     mockOkResponse({ data: { name: 'ACC-PAY-2026-00001' } });
 
     const result = await createErpNextPaymentEntry(testCredentials, {
@@ -272,14 +286,47 @@ describe('createErpNextPaymentEntry', () => {
     expect(result.paymentEntryName).toBe('ACC-PAY-2026-00001');
     expect(result.amount).toBe(2000);
 
-    const body = JSON.parse(mockFetch.mock.calls[0][1]?.body as string);
+    expect(mockFetch.mock.calls[0][0] as string).toContain('get_bank_cash_account?mode_of_payment=SHA+Claims');
+    const body = JSON.parse(mockFetch.mock.calls[1][1]?.body as string);
+    expect(body.paid_to).toBe('SHA Remittances - AHL');
+    expect(body.docstatus).toBe(1);
+    expect(body.reference_no).toBe('ACC-SINV-2026-00002');
+    expect(body.reference_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(body.payment_type).toBe('Receive');
     expect(body.paid_amount).toBe(2000);
     expect(body.references[0].reference_name).toBe('ACC-SINV-2026-00002');
     expect(body.custom_sha_claim_state).toBe('approved');
   });
 
+  it('uses the M-Pesa receipt as the payment reference', async () => {
+    mockOkResponse({ message: { account: 'M-Pesa - AHL' } });
+    mockOkResponse({ data: { name: 'ACC-PAY-2026-00002' } });
+    await createErpNextPaymentEntry(testCredentials, {
+      invoiceName: 'ACC-SINV-2026-00002',
+      amount: 500,
+      currency: 'KES',
+      modeOfPayment: 'M-Pesa',
+      partyName: 'Jane Wanjiku Mwangi',
+      customFields: { custom_mpesa_receipt: 'SFC123ABC', custom_payment_notice_id: 'PaymentNotice/1' },
+    });
+    expect(JSON.parse(mockFetch.mock.calls[1][1]?.body as string).reference_no).toBe('SFC123ABC');
+  });
+
+  it('fails clearly when the mode of payment has no account for the company', async () => {
+    mockOkResponse({ message: {} });
+    await expect(
+      createErpNextPaymentEntry(testCredentials, {
+        invoiceName: 'ACC-SINV-2026-00002',
+        amount: 1000,
+        currency: 'KES',
+        modeOfPayment: 'Cash',
+        partyName: 'Jane Wanjiku Mwangi',
+      })
+    ).rejects.toThrow('has no default account');
+  });
+
   it('throws when ERPNext returns an error', async () => {
+    mockOkResponse({ message: { account: 'Cash - AHL' } });
     mockErrorResponse(500, 'Internal Server Error');
     await expect(
       createErpNextPaymentEntry(testCredentials, {

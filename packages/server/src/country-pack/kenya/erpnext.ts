@@ -167,12 +167,19 @@ export async function createErpNextSalesInvoice(
   currency = 'KES'
 ): Promise<ErpNextSalesInvoiceResult> {
   // Idempotency: search for an existing invoice for this claim.
-  const searchPath = `/api/resource/Sales Invoice?filters=[["custom_fhir_claim_id","=","Claim/${claim.id}"]]&fields=["name","grand_total","currency"]&limit=1`;
+  const searchPath = `/api/resource/Sales Invoice?filters=[["custom_fhir_claim_id","=","Claim/${claim.id}"],["docstatus","!=",2]]&fields=["name","grand_total","currency","docstatus"]&limit=1`;
   const existing = (await erpFetch(credentials, searchPath, { method: 'GET' })) as {
-    data?: { name: string; grand_total: number; currency: string }[];
+    data?: { name: string; grand_total: number; currency: string; docstatus?: number }[];
   };
   if (existing?.data?.length) {
     const row = existing.data[0];
+    if (row.docstatus === 0) {
+      // A draft left by an earlier version: submit it, because ERPNext refuses payments against drafts.
+      await erpFetch(credentials, `/api/resource/Sales Invoice/${encodeURIComponent(row.name)}`, {
+        method: 'PUT',
+        body: { docstatus: 1 },
+      });
+    }
     return { invoiceName: row.name, invoiceTotal: row.grand_total, currency: row.currency };
   }
 
@@ -191,6 +198,9 @@ export async function createErpNextSalesInvoice(
       rate: i.rate,
     })),
     custom_fhir_claim_id: `Claim/${claim.id}`,
+    // Submitted on creation: the claim amount is final, and payments can only be allocated to
+    // submitted invoices.
+    docstatus: 1,
   };
 
   const result = (await erpFetch(credentials, '/api/resource/Sales Invoice', { method: 'POST', body })) as {
@@ -226,16 +236,24 @@ export async function createErpNextPaymentEntry(
   credentials: KenyaErpNextCredentials,
   input: ErpNextPaymentEntryInput
 ): Promise<ErpNextPaymentEntryResult> {
+  // The REST API does not fill the receiving account from the mode of payment (the desk UI does),
+  // so ask ERPNext for the mode's default account for this company.
+  const paidTo = await getErpNextModeOfPaymentAccount(credentials, input.modeOfPayment);
   const body: Record<string, unknown> = {
     payment_type: 'Receive',
     company: credentials.company,
     mode_of_payment: input.modeOfPayment,
     party_type: 'Customer',
     party: input.partyName,
+    paid_to: paidTo,
     paid_amount: input.amount,
     received_amount: input.amount,
     target_exchange_rate: 1,
     currency: input.currency,
+    // Bank-type modes need a reference number and date before the entry can be submitted.
+    reference_no: paymentReference(input),
+    reference_date: nairobiDate(),
+    docstatus: 1,
     references: [
       {
         reference_doctype: 'Sales Invoice',
@@ -259,6 +277,39 @@ export async function createErpNextPaymentEntry(
     amount: input.amount,
     currency: input.currency,
   };
+}
+
+async function getErpNextModeOfPaymentAccount(credentials: KenyaErpNextCredentials, modeOfPayment: string): Promise<string> {
+  const params = new URLSearchParams({ mode_of_payment: modeOfPayment, company: credentials.company });
+  const result = (await erpFetch(
+    credentials,
+    `/api/method/erpnext.accounts.doctype.sales_invoice.sales_invoice.get_bank_cash_account?${params}`,
+    { method: 'GET' }
+  )) as { message?: { account?: string } };
+  const account = result?.message?.account;
+  if (!account) {
+    throw new Error(`ERPNext Mode of Payment "${modeOfPayment}" has no default account for ${credentials.company}`);
+  }
+  return account;
+}
+
+function paymentReference(input: ErpNextPaymentEntryInput): string {
+  const fields = input.customFields ?? {};
+  for (const key of ['custom_mpesa_receipt', 'custom_transaction_ref', 'custom_afiax_pay_ref', 'custom_payment_notice_id', 'custom_fhir_claim_response_id']) {
+    const value = fields[key];
+    if (typeof value === 'string' && value) {
+      return value;
+    }
+  }
+  return input.referenceDocName ?? input.invoiceName;
+}
+
+/**
+ * Today's date in East Africa Time (the ledger date of the payment).
+ * @returns The date as YYYY-MM-DD.
+ */
+function nairobiDate(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
 }
 
 // ---------------------------------------------------------------------------

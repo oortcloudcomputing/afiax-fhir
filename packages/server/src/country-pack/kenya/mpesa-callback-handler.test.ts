@@ -240,6 +240,11 @@ describe('handleKenyaMpesaCallback', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
+      text: async () => JSON.stringify({ message: { account: 'Erp Account - AHL' } }),
+    } as unknown as NodeFetchResponse);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       text: async () => JSON.stringify({ data: { name: 'ACC-PAY-MPESA-001' } }),
     } as unknown as NodeFetchResponse);
 

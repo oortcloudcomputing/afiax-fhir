@@ -120,6 +120,7 @@ describe('handlePostPatientPayment — cash', () => {
   afterEach(() => jest.clearAllMocks());
 
   test('creates PaymentNotice and ERPNext entry for cash payment', async () => {
+    mockOkResponse({ message: { account: 'Erp Account - AHL' } }); // mode of payment account
     mockOkResponse({ data: { name: 'ACC-PAY-2026-CASH-001' } }); // ERPNext
 
     const repo = makeRepo();
@@ -179,6 +180,7 @@ describe('handlePostPatientPayment — card', () => {
   afterEach(() => jest.clearAllMocks());
 
   test('confirms card payment with auth code', async () => {
+    mockOkResponse({ message: { account: 'Erp Account - AHL' } }); // mode of payment account
     mockOkResponse({ data: { name: 'ACC-PAY-CARD-001' } });
 
     const repo = makeRepo();
@@ -204,6 +206,7 @@ describe('handlePostPatientPayment — mpesa-manual', () => {
   afterEach(() => jest.clearAllMocks());
 
   test('confirms mpesa-manual with receipt code', async () => {
+    mockOkResponse({ message: { account: 'Erp Account - AHL' } }); // mode of payment account
     mockOkResponse({ data: { name: 'ACC-PAY-MPESA-MANUAL-001' } });
 
     const repo = makeRepo();

@@ -123,6 +123,7 @@ describe('handleRecordInsurancePayment', () => {
   afterEach(() => jest.clearAllMocks());
 
   test('creates ClaimResponse and ERPNext payment entry when credentials are configured', async () => {
+    mockOkResponse({ message: { account: 'Erp Account - AHL' } }); // mode of payment account
     mockOkResponse({ data: { name: 'ACC-PAY-2026-00001' } });
 
     const repo = makeRepo();
@@ -224,6 +225,7 @@ describe('handleRecordInsurancePayment', () => {
   });
 
   test('uses payer type "other" for insurer without matching KenyaInsuranceType identifier', async () => {
+    mockOkResponse({ message: { account: 'Erp Account - AHL' } }); // mode of payment account
     mockOkResponse({ data: { name: 'ACC-PAY-2026-OTHER' } });
 
     const repo = makeRepo();

@@ -176,6 +176,11 @@ describe('handleKenyaAfiaxPayCallback', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
+      text: async () => JSON.stringify({ message: { account: 'Erp Account - AHL' } }),
+    } as unknown as NodeFetchResponse);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       text: async () => JSON.stringify({ data: { name: 'ACC-PAY-AFPAY-001' } }),
     } as unknown as NodeFetchResponse);
 
@@ -223,6 +228,11 @@ describe('handleKenyaAfiaxPayCallback', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
+      text: async () => JSON.stringify({ message: { account: 'M-Pesa - AHL' } }),
+    } as unknown as NodeFetchResponse);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       text: async () => JSON.stringify({ data: { name: 'ACC-PAY-MPESA-001' } }),
     } as unknown as NodeFetchResponse);
 
@@ -240,8 +250,11 @@ describe('handleKenyaAfiaxPayCallback', () => {
     expect(snap?.paymentStatus).toBe('confirmed');
 
     // The ERPNext Payment Entry uses the M-Pesa mode of payment.
-    const erpCall = mockFetch.mock.calls[1] as [string, { body: string }];
-    expect(JSON.parse(erpCall[1].body).mode_of_payment).toBe('M-Pesa');
+    expect(mockFetch.mock.calls[1][0] as string).toContain('mode_of_payment=M-Pesa');
+    const erpCall = mockFetch.mock.calls[2] as [string, { body: string }];
+    const erpBody = JSON.parse(erpCall[1].body);
+    expect(erpBody.mode_of_payment).toBe('M-Pesa');
+    expect(erpBody.paid_to).toBe('M-Pesa - AHL');
   });
 
   test('marks PaymentNotice as failed for status: failed', async () => {

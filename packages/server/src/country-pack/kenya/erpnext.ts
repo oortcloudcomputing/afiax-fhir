@@ -149,11 +149,18 @@ export interface ErpNextInvoiceItem {
   readonly rate: number;
 }
 
+/**
+ * ERPNext Item used for a claim line that has no code. ERPNext refuses invoice lines whose item
+ * code does not exist, so the ERPNext baseline (afiax-services setup:erpnext) creates this item;
+ * the line keeps its own name. Coded lines use the KNHTS code, which is the ERPNext item code.
+ */
+export const ErpNextUncodedItemCode = 'AFIAX-UNCODED';
+
 function buildInvoiceItemsFromClaim(claim: Claim): ErpNextInvoiceItem[] {
   return (claim.item ?? []).map((item, index) => {
-    const coding = item.productOrService?.coding?.[0];
-    const itemCode = coding?.code ?? `CLAIM-ITEM-${index + 1}`;
-    const itemName = coding?.display ?? item.productOrService?.text ?? itemCode;
+    const coding = item.productOrService?.coding?.find((c) => c.code);
+    const itemCode = coding?.code ?? ErpNextUncodedItemCode;
+    const itemName = coding?.display ?? item.productOrService?.text ?? `Claim item ${index + 1}`;
     const qty = item.quantity?.value ?? 1;
     const rate = item.unitPrice?.value ?? 0;
     return { itemCode, itemName, qty, rate };

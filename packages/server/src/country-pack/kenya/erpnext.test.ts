@@ -8,6 +8,7 @@ import type { KenyaErpNextCredentials } from './erpnext';
 import {
   createErpNextPaymentEntry,
   createErpNextSalesInvoice,
+  ErpNextUncodedItemCode,
   ensureErpNextCustomer,
   getKenyaErpNextCredentials,
   hasKenyaErpNextCredentials,
@@ -195,13 +196,13 @@ describe('createErpNextSalesInvoice', () => {
     item: [
       {
         sequence: 1,
-        productOrService: { coding: [{ code: 'CONSULT-OPD', display: 'Outpatient Consultation' }] },
+        productOrService: { coding: [{ code: 'SHA-01-005', display: 'Shock states' }] },
         quantity: { value: 1 },
         unitPrice: { value: 1500, currency: 'KES' },
       },
       {
         sequence: 2,
-        productOrService: { coding: [{ code: 'LAB-MALARIA', display: 'Malaria RDT' }] },
+        productOrService: { coding: [{ code: 'INV-00000399', display: 'Complete blood count (CBC)' }] },
         quantity: { value: 1 },
         unitPrice: { value: 1500, currency: 'KES' },
       },
@@ -234,10 +235,23 @@ describe('createErpNextSalesInvoice', () => {
     expect(body.customer).toBe('Jane Wanjiku Mwangi');
     expect(body.currency).toBe('KES');
     expect(body.items).toHaveLength(2);
-    expect(body.items[0].item_code).toBe('CONSULT-OPD');
-    expect(body.items[1].item_code).toBe('LAB-MALARIA');
+    expect(body.items[0].item_code).toBe('SHA-01-005');
+    expect(body.items[1].item_code).toBe('INV-00000399');
     expect(body.custom_fhir_claim_id).toBe('Claim/claim-001');
     expect(body.docstatus).toBe(1);
+  });
+
+  it('bills a claim line without a code to the uncoded-service item, keeping its name', async () => {
+    mockOkResponse({ data: [] });
+    mockOkResponse({ data: { name: 'ACC-SINV-2026-00004', grand_total: 800, currency: 'KES' } });
+
+    await createErpNextSalesInvoice(
+      testCredentials,
+      { ...claim, item: [{ sequence: 1, productOrService: { text: 'Wound dressing' }, unitPrice: { value: 800 } }] },
+      'Jane Wanjiku Mwangi'
+    );
+    const body = JSON.parse(mockFetch.mock.calls[1][1]?.body as string);
+    expect(body.items).toEqual([{ item_code: ErpNextUncodedItemCode, item_name: 'Wound dressing', qty: 1, rate: 800 }]);
   });
 
   it('submits a draft invoice left by an earlier version before returning it', async () => {

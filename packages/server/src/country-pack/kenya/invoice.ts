@@ -66,7 +66,16 @@ export function buildKenyaInvoiceLines(chargeItems: WithId<ChargeItem>[]): {
     return {
       sequence: index + 1,
       chargeItemReference: createReference(charge) as Reference<ChargeItem>,
-      priceComponent: [{ type: 'base' as const, amount: { value: amount, currency: KenyaInvoiceCurrency } }],
+      // The base component carries the charge's code and quantity (factor) as well as the line amount,
+      // so the bill can be read, printed and posted to accounting without fetching each ChargeItem.
+      priceComponent: [
+        {
+          type: 'base' as const,
+          code: charge.code,
+          factor: charge.quantity?.value ?? 1,
+          amount: { value: amount, currency: KenyaInvoiceCurrency },
+        },
+      ],
     };
   });
   // Money in KES to the cent, without floating-point residue

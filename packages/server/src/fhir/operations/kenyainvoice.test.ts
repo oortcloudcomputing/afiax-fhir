@@ -107,6 +107,14 @@ describe('Kenya encounter billing ($kenya-invoice)', () => {
       [2, drug, 315],
     ]);
 
+    // Each line carries its code and quantity, so accounting needs only the Invoice
+    expect(invoice.lineItem?.[1]?.priceComponent?.[0]).toMatchObject({
+      type: 'base',
+      code: { coding: [{ system: KenyaHealthProductSystem, code: 'PH12907' }] },
+      factor: 21,
+      amount: { value: 315, currency: 'KES' },
+    });
+
     for (const ref of [lab, drug]) {
       expect(((await fhir('get', ref)).body as ChargeItem).status).toBe('billed');
     }

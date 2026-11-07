@@ -64,6 +64,7 @@ import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { ihrAssessmentHandler, ihrEscalateHandler } from './operations/ihr';
 import { kenyaCdsCheckHandler } from './operations/kenyacds';
+import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
@@ -418,6 +419,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/MedicationRequest/$cds-check', kenyaCdsCheckHandler);
   // Kenya CPOE: place an order, route it to the department queue and bill it (DHA FUNC-CPOE-001)
   router.add('POST', '/Encounter/:id/$kenya-order', kenyaOrderHandler);
+  router.add('POST', '/Encounter/:id/$kenya-invoice', kenyaInvoiceHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)

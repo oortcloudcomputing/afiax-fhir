@@ -2,82 +2,53 @@
 
 ### What is My Afiax?
 
-My Afiax is the Afiax patient portal, running at [myafiax.afiax.africa](https://myafiax.afiax.africa). Patients use it to see their health record and results, book appointments and message their care team.
+My Afiax is the Afiax patient portal, running at [myafiax.afiax.africa](https://myafiax.afiax.africa). Patients use it to see their health record and results, read their care plan and message their care team.
 
 It is built on Afiax FHIR and started from the open-source Foo Medical sample app (Apache 2.0). The folder and package are still called `foomedical`.
 
-### Features
+### What it does today
 
-- Completely free and open-source
-- Secure and compliant [Medplum](https://www.medplum.com) backend, which is also open source
-- Patient registration and authentication
-- Health records
-  - Lab results
-  - Medications
-  - Vaccines
-  - Vitals
-- Patient-provider messaging
-- Care plans
-- Patient scheduling
-- All data represented in [FHIR](https://hl7.org/FHIR/)
+- Patient sign-in, and sign-up when a project is configured (see Settings below)
+- Health record: lab results, medicines, vaccines, vital signs and completed forms
+- Messages with the care team
+- Care plan tasks
+- Booking a visit, where the facility has published a schedule
+- Profile, usual clinician, cover and payments
 
-Foo Medical is designed to be forked and customized for your business' needs. Register on [foomedical.com](https://foomedical.com/) to see it in action.
+Kenya features (Client Registry sign-up, ICD-11 and KNHTS records, record download, consent, correction requests, SHA cover, bills and M-Pesa) are planned in phases.
 
-### Getting Started
+### Settings
 
-First, [fork](https://github.com/medplum/foomedical/fork) and clone the repo.
+My Afiax reads its settings from environment variables when it is built. Put them in a `.env.local` file in this folder for local work (the file is not committed).
 
-Next, install the app from your terminal
+| Variable             | What it is                                                                                             | Default                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| `MEDPLUM_BASE_URL`   | The Afiax FHIR server                                                                                  | `https://fhir.afiax.africa/` |
+| `MEDPLUM_PROJECT_ID` | The Afiax project that patients sign up to. Without it, the sign-up page says sign-up is not open yet. | none                         |
+| `GOOGLE_CLIENT_ID`   | Afiax's Google sign-in client, if used                                                                 | none                         |
+| `RECAPTCHA_SITE_KEY` | Afiax's reCAPTCHA site key, if used                                                                    | none                         |
+
+Never point My Afiax at another provider's FHIR service: patient data must stay on Afiax servers in Kenya.
+
+Example `.env.local` for a server on your own machine:
 
 ```bash
-npm install
+MEDPLUM_BASE_URL=http://localhost:8103/
+MEDPLUM_PROJECT_ID=<your local Afiax project id>
 ```
 
-Then, run the app!
+### Running it
+
+From this folder:
 
 ```bash
 npm run dev
 ```
 
-This app should run on `http://localhost:3000/`
+The app runs on `http://localhost:3000/`.
 
-Log into the app on localhost using the same credentials you created on [foomedical.com](https://foomedical.com/) and you are ready to start customizing.
+### Tests
 
-### Deploying your app
-
-To get started deploying your app we recommend making an account on [Vercel](https://vercel.com/), free accounts are available.
-
-You can deploy this application by [clicking here](https://vercel.com/new/clone?s=https%3A%2F%2Fgithub.com%2Fmedplum%2Ffoomedical&showOptionalTeamCreation=false).
-
-### Account Setup
-
-By default, your locally running Foo Medical app is pointing to the hosted Medplum service. Foo Medical registers signups to a test project.
-
-To send patients to your own organization you will need to [register a new Project on Medplum](https://www.medplum.com/docs/tutorials/register) and configure your environment variables to point to your own project (see [config.ts](https://github.com/medplum/foomedical/blob/main/src/config.ts) for an example).
-
-If you are using the Medplum Hosted service, you can login to your Medplum Instance and add the following identifiers to your [Project Site Settings](https://app.medplum.com/admin/sites)
-
-- Google Client Id
-- Google Client Secret
-- Recaptcha Site Key
-- Recaptcha Secret Key
-
-Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [Discord](https://discord.gg/medplum])) with any questions.
-
-### Data Setup
-
-When you log into Foo Medical a set of sample FHIR records is created on your behalf. The ability to run automations is part of the Medplum platform using a framework called [Bots](https://www.medplum.com/docs/bots). For reference, Bot that created the records in Foo Medical can be found [here](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts).
-
-### Compliance
-
-Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set up requires registering on [medplum.com](https://www.medplum.com/). Feel free to ask us questions in real time on our [Discord Server](https://discord.gg/medplum).
-
-### About Medplum
-
-[Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code.
-
-Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). [Foo Medical](https://foomedical.com/) uses the hosted service as a backend.
-
-- Read our [documentation](https://www.medplum.com/docs/)
-- Browse our [React component library](https://storybook.medplum.com/)
-- Join our [Discord](https://discord.gg/medplum)
+```bash
+npx jest
+```

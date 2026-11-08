@@ -11,10 +11,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { App } from './App';
+import { MEDPLUM_BASE_URL } from './config';
 
 const medplum = new MedplumClient({
-  // To run My Afiax locally, you can set the baseURL in this constructor
-  // baseUrl: http://localhost:8103
+  // The Afiax FHIR server. Set MEDPLUM_BASE_URL to change it (see config.ts).
+  baseUrl: MEDPLUM_BASE_URL,
   onUnauthenticated: () => (window.location.href = '/'),
 });
 

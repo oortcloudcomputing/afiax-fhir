@@ -36,7 +36,13 @@ export const KnhtsSources = {
 } as const satisfies Record<string, KnhtsSource>;
 
 export type KnhtsLookupResult =
-  | { readonly status: 'found'; readonly display: string | undefined; readonly retired: boolean }
+  | {
+      readonly status: 'found';
+      readonly display: string | undefined;
+      readonly retired: boolean;
+      /** The concept's extra fields, e.g. SHA tariffs by facility level (level_3_tariff). */
+      readonly extras?: Readonly<Record<string, unknown>>;
+    }
   | { readonly status: 'not-found' }
   | { readonly status: 'unavailable'; readonly reason: string };
 
@@ -104,10 +110,15 @@ export async function lookupKnhtsConcept(
     } else if (!response.ok) {
       return { status: 'unavailable', reason: `KNHTS returned HTTP ${response.status}` };
     } else {
-      const body = (await response.json()) as { id?: string; display_name?: string; retired?: boolean };
+      const body = (await response.json()) as {
+        id?: string;
+        display_name?: string;
+        retired?: boolean;
+        extras?: Record<string, unknown>;
+      };
       result =
         body.id === code
-          ? { status: 'found', display: body.display_name, retired: body.retired === true }
+          ? { status: 'found', display: body.display_name, retired: body.retired === true, extras: body.extras ?? undefined }
           : { status: 'not-found' };
     }
   } catch (err) {

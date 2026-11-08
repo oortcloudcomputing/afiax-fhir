@@ -64,6 +64,7 @@ import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { ihrAssessmentHandler, ihrEscalateHandler } from './operations/ihr';
 import { kenyaCdsCheckHandler } from './operations/kenyacds';
+import { kenyaClaimHandler } from './operations/kenyaclaim';
 import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaInvoicePaymentHandler } from './operations/kenyainvoicepayment';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
@@ -422,6 +423,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Encounter/:id/$kenya-order', kenyaOrderHandler);
   router.add('POST', '/Encounter/:id/$kenya-invoice', kenyaInvoiceHandler);
   router.add('POST', '/Invoice/:id/$kenya-payment', kenyaInvoicePaymentHandler);
+  router.add('POST', '/Invoice/:id/$kenya-claim', kenyaClaimHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)

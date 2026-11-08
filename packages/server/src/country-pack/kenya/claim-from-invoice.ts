@@ -42,11 +42,13 @@ import type {
   Encounter,
   Invoice,
   Organization,
+  PaymentNotice,
   Reference,
 } from '@medplum/fhirtypes';
 import { randomBytes } from 'node:crypto';
 import type { AuthenticatedRequestContext } from '../../context';
 import { KenyaInvoiceCurrency, KenyaInvoiceNumberSystem } from './invoice';
+import { paidOnInvoice } from './invoice-payment';
 import { isKnhtsValidationEnabled, KnhtsSources, lookupKnhtsConcept } from './knhts';
 
 export const EclaimsClaimSubmissionProfile = 'https://fhir.dha.go.ke/claims/StructureDefinition/ke-eclaims-claimsubmission';
@@ -293,6 +295,20 @@ export async function createKenyaClaimFromInvoice(
   if (totalCents > billCents) {
     throw new OperationOutcomeError(
       badRequest(`The claim (KES ${fromCents(totalCents)}) is more than the bill (KES ${fromCents(billCents)})`)
+    );
+  }
+  // What the patient already paid is theirs; only the rest can be claimed from SHA
+  const payments = await ctx.repo.searchResources<PaymentNotice>({
+    resourceType: 'PaymentNotice',
+    filters: [{ code: 'request', operator: Operator.EQUALS, value: getReferenceString(invoice) }],
+    count: 1000,
+  });
+  const paidCents = toCents(paidOnInvoice(payments));
+  if (totalCents > billCents - paidCents) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `The claim (KES ${fromCents(totalCents)}) is more than the unpaid part of the bill (KES ${fromCents(billCents - paidCents)}); refund the patient first or claim less`
+      )
     );
   }
   const patientShareCents = billCents - totalCents;

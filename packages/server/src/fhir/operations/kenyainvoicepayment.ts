@@ -30,6 +30,7 @@ export const kenyaInvoicePaymentOperation: OperationDefinition = {
     { use: 'out', name: 'receiptNumber', type: 'string', min: 1, max: '1' },
     { use: 'out', name: 'paid', type: 'Money', min: 1, max: '1' },
     { use: 'out', name: 'balance', type: 'Money', min: 1, max: '1' },
+    { use: 'out', name: 'claimed', type: 'Money', min: 1, max: '1' },
   ],
 };
 
@@ -60,6 +61,7 @@ export async function kenyaInvoicePaymentHandler(req: FhirRequest): Promise<Fhir
       receiptNumber: result.paymentNotice.identifier?.find((i) => i.system === KenyaReceiptNumberSystem)?.value,
       paid: { value: result.paid, currency },
       balance: { value: result.balance, currency },
+      claimed: { value: result.claimed, currency },
     }),
   ];
 }

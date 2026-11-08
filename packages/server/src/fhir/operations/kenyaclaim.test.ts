@@ -212,6 +212,46 @@ describe('SHA claim from a bill ($kenya-claim, DHA eClaims)', () => {
     expect((noDx.body as OperationOutcome).issue?.[0]?.details?.text).toContain('ICD-11 diagnosis');
   });
 
+  test('with a claim the patient pays only their share, and the bill stays open for SHA', async () => {
+    const bill = await newBill();
+    expect((await claim(bill, [{ code: 'SHA-12-001', unitPrice: 500 }])).status).toBe(200);
+
+    const pay = (amount: number): request.Test =>
+      fhir('post', `Invoice/${bill.id}/$kenya-payment`).send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'method', valueCode: 'cash' },
+          { name: 'amount', valueDecimal: amount },
+        ],
+      });
+    const over = await pay(301);
+    expect(over.status).toBe(400);
+    expect((over.body as OperationOutcome).issue?.[0]?.details?.text).toContain('more than the balance');
+
+    const share = await pay(300);
+    expect(share.status).toBe(200);
+    expect(out(share, 'claimed')?.valueMoney).toEqual({ value: 500, currency: 'KES' });
+    expect(out(share, 'balance')?.valueMoney).toEqual({ value: 0, currency: 'KES' });
+    // Settled only when SHA pays its part
+    expect(((await fhir('get', `Invoice/${bill.id}`)).body as Invoice).status).toBe('issued');
+  });
+
+  test('cannot claim what the patient already paid', async () => {
+    const bill = await newBill();
+    const paid = await fhir('post', `Invoice/${bill.id}/$kenya-payment`).send({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'method', valueCode: 'cash' },
+        { name: 'amount', valueDecimal: 600 },
+      ],
+    });
+    expect(paid.status).toBe(200);
+    const res = await claim(bill, [{ code: 'SHA-12-001', unitPrice: 500 }]);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('unpaid part of the bill (KES 200)');
+    expect((await claim(bill, [{ code: 'SHA-12-001', unitPrice: 200 }])).status).toBe(200);
+  });
+
   test('tariffs come from KNHTS by facility level', () => {
     expect(parseKenyaFacilityLevel('Level 4')).toBe(4);
     expect(parseKenyaFacilityLevel('LEVEL 3B')).toBe(3);

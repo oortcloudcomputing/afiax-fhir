@@ -9,7 +9,8 @@
 // profile requires: identifier (the receipt number), provider, payee, paymentDate, amount and
 // paymentStatus with a code from the FHIR payment-status code system. The payment method is coded in
 // DHA's payment-method-cs (CASH, CARD, MOBILE-MONEY). When the payments reach the bill's total, the
-// Invoice becomes "balanced". Accounting (an ERPNext Payment Entry against the bill's Sales Invoice)
+// Invoice becomes "balanced". While an SHA claim made from the bill is active, the patient owes only
+// the bill less the claimed amount (their share), and the bill stays "issued" until SHA pays. Accounting (an ERPNext Payment Entry against the bill's Sales Invoice)
 // follows from the PaymentNotice in afiax-services.
 //
 // M-Pesa STK Push is not here yet: it goes through Afiax Pay (change register 3.9), whose payment
@@ -17,10 +18,13 @@
 
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
-import type { Invoice, PaymentNotice } from '@medplum/fhirtypes';
+import type { Claim, Invoice, PaymentNotice } from '@medplum/fhirtypes';
 import { randomBytes } from 'node:crypto';
 import type { AuthenticatedRequestContext } from '../../context';
 import { KenyaInvoiceCurrency } from './invoice';
+
+/** The bill a claim was made from (claim-from-invoice.ts KenyaClaimInvoiceSystem; kept here to avoid an import cycle). */
+const KenyaClaimInvoiceSystem = 'https://afiax.africa/kenya/identifier/claim-invoice';
 
 /** Receipt numbers issued by Afiax FHIR, e.g. RCT-20261108-3F9A2C. */
 export const KenyaReceiptNumberSystem = 'https://afiax.africa/kenya/identifier/receipt-number';
@@ -49,7 +53,23 @@ export interface KenyaInvoicePaymentResult {
   readonly paymentNotice: WithId<PaymentNotice>;
   readonly invoice: WithId<Invoice>;
   readonly paid: number;
+  /** What the patient still owes: the bill, less what is claimed from SHA, less what was paid. */
   readonly balance: number;
+  /** The part of the bill claimed from SHA (active claims made with Invoice/$kenya-claim). */
+  readonly claimed: number;
+}
+
+/**
+ * The amount of a bill claimed from SHA: the totals of its active claims.
+ * @param claims - Claims made from the bill.
+ * @returns The amount, in KES.
+ */
+export function claimedOnInvoice(claims: readonly Claim[]): number {
+  return (
+    claims
+      .filter((c) => c.status === 'active' && (c.use ?? 'claim') === 'claim')
+      .reduce((sum, c) => sum + toCents(c.total?.value ?? 0), 0) / 100
+  );
 }
 
 const toCents = (value: number): number => Math.round(value * 100);
@@ -124,7 +144,15 @@ export async function recordKenyaInvoicePayment(
       count: 1000,
     });
     const paidBefore = paidOnInvoice(previous);
-    const balanceBefore = (toCents(total) - toCents(paidBefore)) / 100;
+    // The part claimed from SHA is not the patient's to pay
+    const claims = await ctx.repo.searchResources<Claim>({
+      resourceType: 'Claim',
+      filters: [
+        { code: 'identifier', operator: Operator.EQUALS, value: `${KenyaClaimInvoiceSystem}|${getReferenceString(current)}` },
+      ],
+    });
+    const claimed = claimedOnInvoice(claims);
+    const balanceBefore = (toCents(total) - toCents(claimed) - toCents(paidBefore)) / 100;
     if (toCents(input.amount) > toCents(balanceBefore)) {
       throw new OperationOutcomeError(
         badRequest(`The amount (${currency} ${input.amount}) is more than the balance (${currency} ${balanceBefore})`)
@@ -164,9 +192,12 @@ export async function recordKenyaInvoicePayment(
     });
 
     const paid = (toCents(paidBefore) + toCents(input.amount)) / 100;
-    const balance = (toCents(total) - toCents(paid)) / 100;
+    const balance = (toCents(total) - toCents(claimed) - toCents(paid)) / 100;
+    // With a claim the bill is settled only when SHA pays too, so it stays issued
     const updated =
-      balance === 0 ? await ctx.repo.updateResource<Invoice>({ ...current, status: 'balanced' }) : current;
-    return { paymentNotice, invoice: updated, paid, balance };
+      balance === 0 && claimed === 0
+        ? await ctx.repo.updateResource<Invoice>({ ...current, status: 'balanced' })
+        : current;
+    return { paymentNotice, invoice: updated, paid, balance, claimed };
   });
 }

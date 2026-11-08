@@ -9,6 +9,7 @@ import {
   KenyaIcd11System,
   KenyaIchiSystem,
   KenyaInvestigationSystem,
+  KenyaShaInterventionSystem,
   normalizeErrorString,
   OperationOutcomeError,
   serverError,
@@ -104,6 +105,8 @@ const knhtsSearchKinds: Record<string, { source: KnhtsSource; system: string; op
   intervention: { source: KnhtsSources.ichi, system: KenyaIchiSystem, options: {} },
   allergy: { source: KnhtsSources.allergyCodes, system: KenyaAllergyCodeSystem, options: {} },
   diagnosis: { source: KnhtsSources.icd11, system: KenyaIcd11System, options: {} },
+  // SHA benefit packages and interventions, for SHA claim lines
+  'sha-intervention': { source: KnhtsSources.shaInterventions, system: KenyaShaInterventionSystem, options: {} },
 };
 
 /**

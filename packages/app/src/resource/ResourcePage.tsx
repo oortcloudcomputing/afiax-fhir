@@ -16,6 +16,7 @@ import type {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
+import { ClaimNationalSubmissionPanel, CoverageEligibilityPanel } from '@medplum/kenya-react';
 import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -28,9 +29,7 @@ import { EncounterOrdersPanel } from '../kenya/EncounterOrdersPanel';
 import { PatientClinicalSummaryPanel } from '../kenya/PatientClinicalSummaryPanel';
 import { getPatient, getSpecimen } from '../utils';
 import { ClaimBillingPanel } from './ClaimBillingPanel';
-import { ClaimNationalSubmissionPanel } from './ClaimNationalSubmissionPanel';
 import { ConditionIhrPanel } from './ConditionIhrPanel';
-import { CoverageEligibilityPanel } from './CoverageEligibilityPanel';
 import { NationalRecordPublicationPanel } from './NationalRecordPublicationPanel';
 import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
 import { PatientIdentityPanel } from './PatientIdentityPanel';

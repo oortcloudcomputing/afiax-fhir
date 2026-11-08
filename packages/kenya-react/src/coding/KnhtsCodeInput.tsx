@@ -15,7 +15,8 @@ export type KnhtsSearchKind =
   | 'radiology'
   | 'intervention'
   | 'allergy'
-  | 'diagnosis';
+  | 'diagnosis'
+  | 'sha-intervention';
 
 export interface KnhtsCodeInputProps {
   readonly kind: KnhtsSearchKind;
@@ -28,7 +29,7 @@ export interface KnhtsCodeInputProps {
 
 /**
  * A searchable picker for national (KNHTS) codes: medicines from the HPT registry, investigations,
- * ICHI interventions, allergy codes or ICD-11 diagnoses.
+ * ICHI interventions, allergy codes, ICD-11 diagnoses or SHA benefit codes.
  * @param props - The component props.
  * @returns The picker.
  */

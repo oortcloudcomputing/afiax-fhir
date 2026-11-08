@@ -25,6 +25,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
 import { EncounterHeader } from './EncounterHeader';
+import { KenyaBillingTab } from './KenyaBillingTab';
 import { SignAddendum } from './SignAddendum';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
@@ -268,7 +269,16 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
           {/* Kenya CPOE: KNHTS-coded orders with decision support, routed to department queues */}
           {isKenya && activeTab === 'kenya-orders' && <KenyaEncounterOrders encounter={encounter} />}
-          {activeTab === 'details' && (
+          {isKenya && activeTab === 'details' && (
+            <KenyaBillingTab
+              patient={patientResource}
+              encounter={encounter}
+              setEncounter={setEncounter}
+              practitioner={practitioner}
+              setPractitioner={setPractitioner}
+            />
+          )}
+          {!isKenya && activeTab === 'details' && (
             <BillingTab
               encounter={encounter}
               setEncounter={setEncounter}

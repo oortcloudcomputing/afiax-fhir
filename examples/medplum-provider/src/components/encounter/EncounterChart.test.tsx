@@ -752,4 +752,22 @@ describe('EncounterChart', () => {
     await waitFor(() => expect(screen.getByText('Note & Tasks')).toBeInTheDocument());
     expect(screen.queryByText('Orders')).not.toBeInTheDocument();
   });
+
+  test('Kenya: Details & Billing shows SHA cover, the bill and the SHA claim instead of US billing', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Details & Billing')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Details & Billing'));
+    });
+    expect(await screen.findByText('Insurance cover')).toBeInTheDocument();
+    expect(screen.getByText('Bill and payments')).toBeInTheDocument();
+    expect(screen.getByText('SHA claim')).toBeInTheDocument();
+    expect(screen.queryByText('Export Claim')).not.toBeInTheDocument();
+  });
 });

@@ -12,7 +12,13 @@ import type {
   Reference,
   Task,
 } from '@medplum/fhirtypes';
-import { KenyaEncounterOrders, KenyaFamilyHistory, KenyaVitalSignsForm } from '@medplum/kenya-react';
+import {
+  KenyaEncounterOrders,
+  KenyaFamilyHistory,
+  KenyaMedicationAdministrationRecord,
+  KenyaNursingNotes,
+  KenyaVitalSignsForm,
+} from '@medplum/kenya-react';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -240,6 +246,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               ? [
                   { label: 'Orders', value: 'kenya-orders' },
                   { label: 'Vitals & history', value: 'kenya-vitals' },
+                  { label: 'Nursing', value: 'kenya-nursing' },
                 ]
               : undefined
           }
@@ -276,6 +283,22 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
           {/* Kenya CPOE: KNHTS-coded orders with decision support, routed to department queues */}
           {isKenya && activeTab === 'kenya-orders' && <KenyaEncounterOrders encounter={encounter} />}
+          {isKenya && activeTab === 'kenya-nursing' && (
+            <Stack gap="lg">
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Medicines given
+                </Title>
+                <KenyaMedicationAdministrationRecord encounter={encounter} />
+              </Card>
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Nursing notes
+                </Title>
+                <KenyaNursingNotes encounter={encounter} />
+              </Card>
+            </Stack>
+          )}
           {isKenya && activeTab === 'kenya-vitals' && (
             <Stack gap="lg">
               <Card withBorder shadow="sm">

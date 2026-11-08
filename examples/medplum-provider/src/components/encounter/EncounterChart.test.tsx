@@ -786,4 +786,21 @@ describe('EncounterChart', () => {
     expect(await screen.findByRole('button', { name: 'Save vital signs' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add family history' })).toBeInTheDocument();
   });
+
+  test('Kenya: Nursing tab shows the medicines given and nursing notes', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Nursing')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Nursing'));
+    });
+    expect(await screen.findByText('Medicines given')).toBeInTheDocument();
+    expect(await screen.findByText('No medicines prescribed in this visit.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save note' })).toBeInTheDocument();
+  });
 });

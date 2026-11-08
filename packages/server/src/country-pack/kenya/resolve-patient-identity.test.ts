@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Patient, Project } from '@medplum/fhirtypes';
-import { handleResolvePatientIdentity } from './resolve-patient-identity';
+import { handleResolvePatientIdentity, matchesPatientRecord } from './resolve-patient-identity';
 
 jest.mock('../../util/auditevent', () => ({
   ...jest.requireActual('../../util/auditevent'),
@@ -39,11 +39,16 @@ const mockProject: Project = {
 };
 
 function buildCtx(
-  overrides?: Partial<{ createResource: jest.Mock; updateResource: jest.Mock; readResource: jest.Mock }>
+  overrides?: Partial<{
+    createResource: jest.Mock;
+    updateResource: jest.Mock;
+    readResource: jest.Mock;
+    profile: string;
+  }>
 ): any {
   return {
     project: mockProject,
-    profile: { reference: 'Practitioner/prac-1' },
+    profile: { reference: overrides?.profile ?? 'Practitioner/prac-1' },
     logger: { warn: jest.fn() },
     repo: {},
     systemRepo: {
@@ -195,5 +200,126 @@ describe('handleResolvePatientIdentity', () => {
 
     expect(result.status).toBe('resolved');
     expect(result.fullName).toBe('Mary Wanjiku');
+  });
+
+  describe('patient self-service (portal)', () => {
+    const self: Patient & { id: string } = {
+      resourceType: 'Patient',
+      id: 'patient-1',
+      name: [{ family: 'Kamau', given: ['Jane', 'Wanjiru'] }],
+      birthDate: '1990-05-15',
+    };
+    const registryEntry = {
+      message: {
+        found: 1,
+        client_registry_id: 'CR-12345678',
+        full_name: 'KAMAU JANE',
+        date_of_birth: '1990-05-15',
+        gender: 'Female',
+      },
+    };
+    const crIdUpdate = (updateResource: jest.Mock): unknown =>
+      updateResource.mock.calls.find((c) =>
+        c[0].identifier?.some((id: any) => id.system === 'https://afiax.africa/kenya/identifier/client-registry-id')
+      );
+
+    test('own record with matching name and date of birth: resolved, but no registry details returned', async () => {
+      (searchAfyaLinkClientRegistry as jest.Mock).mockResolvedValue(registryEntry);
+      const updateResource = jest.fn(async (r: any) => r);
+      const ctx = buildCtx({ updateResource, profile: 'Patient/patient-1' });
+
+      const result = await handleResolvePatientIdentity({
+        ctx,
+        patient: self,
+        identificationType: 'National ID',
+        identificationNumber: '12345678',
+        correlationId: 'corr-self-1',
+      });
+
+      expect(result.status).toBe('resolved');
+      expect(result.clientRegistryId).toBe('CR-12345678');
+      expect(result.fullName).toBeNull();
+      expect(result.dateOfBirth).toBeNull();
+      expect(result.gender).toBeNull();
+      expect(crIdUpdate(updateResource)).toBeDefined();
+    });
+
+    test("someone else's ID (details do not match): not linked and nothing revealed", async () => {
+      (searchAfyaLinkClientRegistry as jest.Mock).mockResolvedValue({
+        message: { ...registryEntry.message, full_name: 'Otieno Brian', date_of_birth: '1985-01-01' },
+      });
+      const updateResource = jest.fn(async (r: any) => r);
+      const ctx = buildCtx({ updateResource, profile: 'Patient/patient-1' });
+
+      const result = await handleResolvePatientIdentity({
+        ctx,
+        patient: self,
+        identificationType: 'National ID',
+        identificationNumber: '87654321',
+        correlationId: 'corr-self-2',
+      });
+
+      expect(result.status).toBe('not-found');
+      expect(result.message).toBe('The ID number does not match the name and date of birth on your record.');
+      expect(result.clientRegistryId).toBeNull();
+      expect(result.fullName).toBeNull();
+      expect(result.dateOfBirth).toBeNull();
+      expect(crIdUpdate(updateResource)).toBeUndefined();
+    });
+
+    test("a patient cannot resolve another patient's record", async () => {
+      const ctx = buildCtx({ profile: 'Patient/someone-else' });
+      await expect(
+        handleResolvePatientIdentity({
+          ctx,
+          patient: self,
+          identificationType: 'National ID',
+          identificationNumber: '12345678',
+          correlationId: 'corr-self-3',
+        })
+      ).rejects.toThrow('Forbidden');
+      expect(searchAfyaLinkClientRegistry).not.toHaveBeenCalled();
+    });
+
+    test('related persons are refused', async () => {
+      const ctx = buildCtx({ profile: 'RelatedPerson/rp-1' });
+      await expect(
+        handleResolvePatientIdentity({
+          ctx,
+          patient: self,
+          identificationType: 'National ID',
+          identificationNumber: '12345678',
+          correlationId: 'corr-self-4',
+        })
+      ).rejects.toThrow('Forbidden');
+    });
+  });
+});
+
+describe('matchesPatientRecord', () => {
+  const patient: Patient = {
+    resourceType: 'Patient',
+    name: [{ family: 'Kamau', given: ['Jane', 'Wanjiru'] }],
+    birthDate: '1990-05-15',
+  };
+  test.each([
+    [{ full_name: 'Jane Kamau', date_of_birth: '1990-05-15' }, true],
+    [{ full_name: 'KAMAU WANJIRU', date_of_birth: '1990-05-15T00:00:00' }, true],
+    [{ first_name: 'Jane', last_name: 'Kamau', date_of_birth: '1990-05-15' }, true],
+    [{ full_name: 'Jane Kamau', date_of_birth: '1990-05-16' }, false],
+    [{ full_name: 'Jane Otieno', date_of_birth: '1990-05-15' }, false],
+    [{ full_name: 'Mary Kamau', date_of_birth: '1990-05-15' }, false],
+    [{ full_name: 'Jane Kamau' }, false],
+  ])('%j -> %s', (person, expected) => {
+    expect(matchesPatientRecord(patient, person)).toBe(expected);
+  });
+
+  test('a record without a date of birth never matches', () => {
+    expect(
+      matchesPatientRecord(
+        { ...patient, birthDate: undefined },
+        { full_name: 'Jane Kamau', date_of_birth: '1990-05-15' }
+      )
+    ).toBe(false);
   });
 });

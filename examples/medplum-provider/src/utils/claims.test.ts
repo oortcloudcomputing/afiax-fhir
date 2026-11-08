@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { CPT, createReference } from '@medplum/core';
+import { CPT, createReference, KenyaIcd11System } from '@medplum/core';
 import type { ChargeItem, Claim, Coverage } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createClaimFromEncounter, getCptChargeItems } from './claims';
+import { createClaimFromEncounter, createDiagnosisArray, getCptChargeItems } from './claims';
 import * as coverageModule from './coverage';
 
 describe('claims utils', () => {
@@ -187,5 +187,29 @@ describe('claims utils', () => {
         expect.objectContaining({ resourceType: 'Patient', id: 'patient-1' })
       );
     });
+  });
+});
+
+describe('createDiagnosisArray', () => {
+  test('uses ICD-10 from ICD-10-CM, otherwise the ICD-11 MMS code', () => {
+    const diagnoses = createDiagnosisArray([
+      {
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/p1' },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51' }] },
+      },
+      {
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/p1' },
+        code: { coding: [{ system: KenyaIcd11System, code: '1F40.Z', display: 'Malaria, unspecified' }] },
+      },
+      { resourceType: 'Condition', subject: { reference: 'Patient/p1' }, code: { text: 'Uncoded' } },
+    ]);
+    expect(diagnoses.map((d) => d.diagnosisCodeableConcept?.coding)).toEqual([
+      [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'R51' }],
+      [{ system: KenyaIcd11System, code: '1F40.Z', display: 'Malaria, unspecified' }],
+      [],
+    ]);
+    expect(diagnoses.map((d) => d.type?.[0].coding?.[0].code)).toEqual(['principal', 'secondary', 'secondary']);
   });
 });

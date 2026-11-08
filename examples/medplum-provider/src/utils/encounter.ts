@@ -6,6 +6,7 @@ import type {
   Appointment,
   ChargeItem,
   ClinicalImpression,
+  CodeableConcept,
   Coding,
   Encounter,
   Patient,
@@ -22,8 +23,9 @@ export async function createEncounter(
   end: Date,
   classification: Coding,
   patient: Patient,
-  planDefinition: PlanDefinition,
-  schedule?: Schedule
+  planDefinition: PlanDefinition | undefined,
+  schedule?: Schedule,
+  type?: CodeableConcept[]
 ): Promise<Encounter> {
   const appointment = await medplum.createResource({
     resourceType: 'Appointment',
@@ -48,6 +50,8 @@ export async function createEncounter(
     statusHistory: [],
     classHistory: [],
     class: classification,
+    // Visit type (Kenya: KNHTS healthcare facility encounter types) and the visit's times
+    ...(type ? { type, period: { start: start.toISOString(), end: end.toISOString() } } : {}),
     subject: createReference(patient),
     appointment: [createReference(appointment)],
     participant: [
@@ -81,16 +85,19 @@ export async function createEncounter(
 
   await medplum.createResource(clinicalImpressionData);
 
-  await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'subject', valueString: getReferenceString(patient) },
-      { name: 'encounter', valueString: getReferenceString(encounter) },
-      { name: 'practitioner', valueString: getReferenceString(medplum.getProfile() as Practitioner) },
-    ],
-  });
+  // A care template is optional (Kenya visits start without one; orders come from the encounter chart)
+  if (planDefinition) {
+    await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'subject', valueString: getReferenceString(patient) },
+        { name: 'encounter', valueString: getReferenceString(encounter) },
+        { name: 'practitioner', valueString: getReferenceString(medplum.getProfile() as Practitioner) },
+      ],
+    });
 
-  await createChargeItemFromPlanDefinition(medplum, encounter, patient, planDefinition);
+    await createChargeItemFromPlanDefinition(medplum, encounter, patient, planDefinition);
+  }
   await handleChargeItemsFromTasks(medplum, encounter, patient);
 
   return encounter;

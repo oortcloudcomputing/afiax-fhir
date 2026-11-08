@@ -51,13 +51,13 @@ import type {
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
+import type { KnhtsSearchKind } from '@medplum/kenya-react';
+import { KnhtsCodeInput } from '@medplum/kenya-react';
 import { useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { CdsAlertList } from './CdsAlertList';
 import { parseCdsAlerts } from './clinical-utils';
-import type { KnhtsSearchKind } from './KnhtsCodeInput';
-import { KnhtsCodeInput } from './KnhtsCodeInput';
 
 export interface EncounterOrdersPanelProps {
   readonly encounter: Encounter;

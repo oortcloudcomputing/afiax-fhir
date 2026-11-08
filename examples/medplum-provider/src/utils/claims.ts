@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { CPT, createReference } from '@medplum/core';
+import { CPT, createReference, HTTP_HL7_ORG, KenyaIcd11System } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
+  ClaimDiagnosis,
   ClaimItem,
+  Coding,
+  Condition,
   Coverage,
   Encounter,
   Patient,
@@ -72,3 +75,28 @@ export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Referenc
     };
   });
 }
+
+/**
+ * Builds a claim's diagnosis list from the encounter's conditions, in rank order. Uses the ICD-10
+ * code (from ICD-10-CM) where there is one, otherwise the ICD-11 MMS code (Kenya: SHA / DHA eClaims).
+ * @param conditions - The encounter's diagnoses, principal first.
+ * @returns The Claim.diagnosis entries.
+ */
+export const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
+  return conditions.map((condition, index) => {
+    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
+    // Kenya (SHA / DHA eClaims) claims carry the ICD-11 MMS code
+    const icd11Coding = condition.code?.coding?.find((c) => c.system === KenyaIcd11System);
+    let coding: Coding[] = [];
+    if (icd10Coding) {
+      coding = [{ ...icd10Coding, system: `${HTTP_HL7_ORG}/fhir/sid/icd-10` }];
+    } else if (icd11Coding) {
+      coding = [icd11Coding];
+    }
+    return {
+      diagnosisCodeableConcept: { coding },
+      sequence: index + 1,
+      type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
+    };
+  });
+};

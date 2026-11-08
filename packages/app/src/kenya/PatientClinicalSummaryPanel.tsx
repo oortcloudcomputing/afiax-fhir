@@ -31,11 +31,11 @@ import type {
   Observation,
   Patient,
 } from '@medplum/fhirtypes';
+import { KnhtsCodeInput } from '@medplum/kenya-react';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { GrowthChart } from './GrowthChart';
-import { KnhtsCodeInput } from './KnhtsCodeInput';
 
 export interface PatientClinicalSummaryPanelProps {
   readonly patient: Patient;

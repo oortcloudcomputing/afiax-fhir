@@ -19,9 +19,9 @@ import type {
   Task,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { getGrowthPoints, parseCdsAlerts } from '@medplum/kenya-react';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
-import { getGrowthPoints, parseCdsAlerts } from './clinical-utils';
 
 const kenyaProject = {
   resourceType: 'Project',

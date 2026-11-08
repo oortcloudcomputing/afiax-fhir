@@ -39,5 +39,6 @@ describe('Kenya patient registration in the provider app', () => {
     const medplum = new MockClient();
     await setup(medplum, '/onboarding');
     expect(screen.queryByText('Kenya National Client Registry')).not.toBeInTheDocument();
-  });
+    // The default intake form checks its value sets on load, which is slow in jsdom
+  }, 20000);
 });

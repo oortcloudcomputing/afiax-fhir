@@ -3,7 +3,13 @@
 import { Button, Group, Loader, Paper, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { DEFAULT_SEARCH_COUNT, formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
+import {
+  DEFAULT_SEARCH_COUNT,
+  formatSearchQuery,
+  getProjectSettingString,
+  normalizeErrorString,
+  parseSearchRequest,
+} from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
@@ -27,7 +33,9 @@ export function MedicationsPage(): JSX.Element {
   const [syncing, setSyncing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  // DoseSpot (US e-prescribing) is not used in Kenya projects
+  const hasDoseSpot =
+    getProjectSettingString(medplum.getProject(), 'countryPack') !== 'kenya' && hasDoseSpotIdentifier(membership);
 
   const handleDoseSpotSync = useCallback(async () => {
     if (!patient?.id) {

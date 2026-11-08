@@ -73,8 +73,9 @@ export function App(): JSX.Element | null {
   }
 
   const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
   const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
+  // DoseSpot is US e-prescribing; Kenya prescribes through Kenya orders (KNHTS, CDS, pharmacy queue)
+  const hasDoseSpot = !isKenya && hasDoseSpotIdentifier(membership);
   // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
   const kenyaRoleMenus = isKenya
     ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)

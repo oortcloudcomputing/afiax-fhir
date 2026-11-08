@@ -101,4 +101,27 @@ describe('Kenya role menus', () => {
     expect(await screen.findByText('Spaces')).toBeInTheDocument();
     expect(screen.queryByText('Insurance cover')).not.toBeInTheDocument();
   });
+
+  test('Kenya hides DoseSpot even for a member with a DoseSpot identifier', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'getProject').mockReturnValue(kenyaProject);
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/project-ke' },
+      user: { reference: 'User/u1' },
+      profile: { reference: 'Practitioner/p1' },
+      identifier: [{ system: 'https://dosespot.com/clinician-id', value: '123' }],
+    });
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/Coverage']}>
+          <MedplumProvider medplum={medplum}>
+            <App />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
+    expect(await screen.findByText('Patients')).toBeInTheDocument();
+    expect(screen.queryByText('DoseSpot')).not.toBeInTheDocument();
+  });
 });

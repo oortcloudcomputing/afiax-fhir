@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, getProjectSettingString, getReferenceString } from '@medplum/core';
 import type {
   ClinicalImpression,
   Encounter,
@@ -12,6 +12,7 @@ import type {
   Reference,
   Task,
 } from '@medplum/fhirtypes';
+import { KenyaEncounterOrders } from '@medplum/kenya-react';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -50,6 +51,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const patientResource = useResource(patientReference);
 
   const [activeTab, setActiveTab] = useState<string>('notes');
+  const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
   const {
     encounter,
     claim,
@@ -232,6 +234,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
+          extraTabs={isKenya ? [{ label: 'Orders', value: 'kenya-orders' }] : undefined}
           onSign={handleSign}
         />
         <Box p="md">
@@ -263,6 +266,8 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               ))}
             </Stack>
           )}
+          {/* Kenya CPOE: KNHTS-coded orders with decision support, routed to department queues */}
+          {isKenya && activeTab === 'kenya-orders' && <KenyaEncounterOrders encounter={encounter} />}
           {activeTab === 'details' && (
             <BillingTab
               encounter={encounter}

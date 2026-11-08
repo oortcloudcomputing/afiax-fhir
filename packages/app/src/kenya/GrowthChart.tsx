@@ -3,9 +3,9 @@
 import { SimpleGrid, Stack, Text } from '@mantine/core';
 import { formatDate, KenyaBmiLoinc } from '@medplum/core';
 import type { Observation } from '@medplum/fhirtypes';
+import type { GrowthPoint as Point } from '@medplum/kenya-react';
+import { getGrowthPoints } from '@medplum/kenya-react';
 import type { JSX } from 'react';
-import type { GrowthPoint as Point } from './clinical-utils';
-import { getGrowthPoints } from './clinical-utils';
 
 interface Series {
   readonly loinc: string;

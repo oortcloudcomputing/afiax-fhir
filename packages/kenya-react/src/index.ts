@@ -5,9 +5,14 @@
 // Components take callbacks instead of using a router, so any app (staff- or patient-facing) can
 // host them; every server call goes through the FHIR API with the signed-in user's own access.
 
+export * from './clinical/CdsAlertList';
+export * from './clinical/clinical-utils';
 export * from './coding/kenya-diagnosis';
 export * from './coding/kenya-visit-type';
 export * from './coding/KenyaVisitTypeSelect';
 export * from './coding/KnhtsCodeInput';
+export * from './orders/KenyaEncounterOrders';
+export * from './orders/KenyaOrderEntry';
+export * from './orders/KenyaOrderHistory';
 export * from './registration/KenyaPatientRegistration';
 export * from './registration/KenyaPatientWizard';

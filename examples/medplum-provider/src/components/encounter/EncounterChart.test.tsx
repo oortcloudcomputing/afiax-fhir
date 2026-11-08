@@ -730,4 +730,26 @@ describe('EncounterChart', () => {
       });
     });
   });
+
+  test('Kenya projects get an Orders tab with Kenya order entry', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Orders')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Orders'));
+    });
+    expect(await screen.findByTestId('kenya-encounter-orders')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Place order' })).toBeInTheDocument();
+  });
+
+  test('no Orders tab outside Kenya', async () => {
+    setup();
+    await waitFor(() => expect(screen.getByText('Note & Tasks')).toBeInTheDocument());
+    expect(screen.queryByText('Orders')).not.toBeInTheDocument();
+  });
 });

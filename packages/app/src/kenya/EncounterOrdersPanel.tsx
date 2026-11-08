@@ -7,7 +7,6 @@
 
 import {
   Alert,
-  Badge,
   Button,
   Group,
   NumberInput,
@@ -18,60 +17,31 @@ import {
   Table,
   Tabs,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { KenyaCdsAlert, KenyaOrderCategoryCode, KenyaVitalSign } from '@medplum/core';
+import type { KenyaVitalSign } from '@medplum/core';
 import {
   buildKenyaVitalSignObservations,
   calculateKenyaBmi,
-  findKenyaOrderCategory,
-  formatDateTime,
   getKenyaBmiCategory,
-  getKenyaOrderCategory,
   getProjectSettingString,
-  KenyaDepartments,
   KenyaEncounterTypes,
   KenyaEncounterTypeSystem,
   KenyaFamilyRelationships,
-  KenyaOrderCategories,
   KenyaVitalSigns,
   normalizeErrorString,
 } from '@medplum/core';
-import type {
-  Coding,
-  Encounter,
-  FamilyMemberHistory,
-  MedicationRequest,
-  Parameters,
-  Patient,
-  Reference,
-  ServiceRequest,
-  Task,
-} from '@medplum/fhirtypes';
-import type { KnhtsSearchKind } from '@medplum/kenya-react';
-import { KnhtsCodeInput } from '@medplum/kenya-react';
+import type { Coding, Encounter, FamilyMemberHistory, Patient, Reference } from '@medplum/fhirtypes';
+import { KenyaOrderEntry, KenyaOrderHistory, KnhtsCodeInput } from '@medplum/kenya-react';
 import { useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { CdsAlertList } from './CdsAlertList';
-import { parseCdsAlerts } from './clinical-utils';
 
 export interface EncounterOrdersPanelProps {
   readonly encounter: Encounter;
 }
-
-const searchKindByCategory: Record<KenyaOrderCategoryCode, KnhtsSearchKind> = {
-  medication: 'medication',
-  laboratory: 'laboratory',
-  radiology: 'radiology',
-  physiotherapy: 'intervention',
-  nutrition: 'intervention',
-  'social-work': 'intervention',
-  counselling: 'intervention',
-};
 
 const activeStatuses = new Set<Encounter['status']>(['arrived', 'triaged', 'in-progress', 'onleave']);
 
@@ -111,7 +81,7 @@ function EncounterOrdersPanelContent({ encounter }: EncounterOrdersPanelProps): 
           <Tabs.Tab value="history">Order history</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="order" pt="sm">
-          <PlaceOrder encounter={encounter} onPlaced={refresh} />
+          <KenyaOrderEntry encounter={encounter} onPlaced={refresh} />
         </Tabs.Panel>
         <Tabs.Panel value="vitals" pt="sm">
           <VitalSigns encounter={encounter} />
@@ -120,7 +90,7 @@ function EncounterOrdersPanelContent({ encounter }: EncounterOrdersPanelProps): 
           <FamilyHistory encounter={encounter} />
         </Tabs.Panel>
         <Tabs.Panel value="history" pt="sm">
-          <OrderHistory encounter={encounter} version={historyVersion} />
+          <KenyaOrderHistory encounter={encounter} version={historyVersion} />
         </Tabs.Panel>
       </Tabs>
     </Paper>
@@ -159,173 +129,6 @@ function VisitType({ encounter }: EncounterOrdersPanelProps): JSX.Element {
       value={value}
       onChange={change}
     />
-  );
-}
-
-function PlaceOrder({ encounter, onPlaced }: EncounterOrdersPanelProps & { onPlaced: () => void }): JSX.Element {
-  const medplum = useMedplum();
-  const [categoryCode, setCategoryCode] = useState<KenyaOrderCategoryCode>('medication');
-  const [code, setCode] = useState<Coding>();
-  const [priority, setPriority] = useState<string>('routine');
-  const [note, setNote] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [quantity, setQuantity] = useState<number | string>('');
-  const [duration, setDuration] = useState<number | string>('');
-  // CDS alerts for the chosen medicine, keyed by its code so a stale result is never shown
-  const [checked, setChecked] = useState<{ code: string; alerts: KenyaCdsAlert[] }>();
-  const [override, setOverride] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const category = getKenyaOrderCategory(categoryCode);
-  const isMedication = categoryCode === 'medication';
-
-  // Check a medicine against the patient's record as soon as it is chosen (before it is signed)
-  useEffect(() => {
-    if (!isMedication || !code?.code) {
-      return;
-    }
-    const draft: MedicationRequest = {
-      resourceType: 'MedicationRequest',
-      status: 'active',
-      intent: 'order',
-      subject: encounter.subject as MedicationRequest['subject'],
-      medicationCodeableConcept: { coding: [code], text: code.display },
-    };
-    medplum
-      .post<Parameters>(medplum.fhirUrl('MedicationRequest', '$cds-check'), draft)
-      .then((result) => setChecked({ code: code.code as string, alerts: parseCdsAlerts(result) }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-  }, [medplum, encounter.subject, isMedication, code]);
-
-  const alerts = isMedication && checked && checked.code === code?.code ? checked.alerts : undefined;
-  const needsOverride = !!alerts?.some((a) => a.severity === 'high');
-  const missing =
-    !code || (isMedication && !dosage.trim()) || (needsOverride && override.trim().length < 10) || submitting;
-
-  function reset(): void {
-    setCode(undefined);
-    setNote('');
-    setDosage('');
-    setQuantity('');
-    setDuration('');
-    setOverride('');
-  }
-
-  function submit(): void {
-    if (!code || !category) {
-      return;
-    }
-    const parameter: Parameters['parameter'] = [
-      { name: 'category', valueCode: categoryCode },
-      { name: 'code', valueCoding: code },
-      { name: 'priority', valueCode: priority },
-    ];
-    if (note.trim()) {
-      parameter.push({ name: 'note', valueString: note.trim() });
-    }
-    if (isMedication) {
-      parameter.push({ name: 'dosageText', valueString: dosage.trim() });
-      if (typeof quantity === 'number') {
-        parameter.push({ name: 'quantity', valueDecimal: quantity });
-      }
-      if (typeof duration === 'number') {
-        parameter.push({ name: 'durationDays', valueInteger: duration });
-      }
-      if (needsOverride) {
-        parameter.push({ name: 'overrideReason', valueString: override.trim() });
-      }
-    }
-    setSubmitting(true);
-    medplum
-      .post(medplum.fhirUrl('Encounter', encounter.id as string, '$kenya-order'), {
-        resourceType: 'Parameters',
-        parameter,
-      })
-      .then(() => {
-        showNotification({
-          color: 'green',
-          message: `${category.display} order sent to ${KenyaDepartments[category.department]}`,
-        });
-        reset();
-        onPlaced();
-      })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
-      .finally(() => setSubmitting(false));
-  }
-
-  return (
-    <Stack gap="sm">
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Order type"
-          data={KenyaOrderCategories.map((c) => ({ value: c.code, label: c.display }))}
-          value={categoryCode}
-          onChange={(v) => {
-            setCategoryCode((v as KenyaOrderCategoryCode) ?? 'medication');
-            reset();
-          }}
-          allowDeselect={false}
-        />
-        <Select
-          label="Priority"
-          data={[
-            { value: 'routine', label: 'Routine' },
-            { value: 'urgent', label: 'Urgent' },
-            { value: 'stat', label: 'STAT (immediately)' },
-          ]}
-          value={priority}
-          onChange={(v) => setPriority(v ?? 'routine')}
-          allowDeselect={false}
-        />
-      </SimpleGrid>
-      <KnhtsCodeInput
-        key={categoryCode}
-        kind={searchKindByCategory[categoryCode]}
-        label={isMedication ? 'Medicine (KNHTS HPT registry)' : `${category?.display} (KNHTS)`}
-        required
-        value={code}
-        onChange={(value) => {
-          setCode(value);
-          setOverride('');
-        }}
-      />
-      {isMedication && (
-        <>
-          <TextInput
-            label="Dosage instructions"
-            placeholder="e.g. 500 mg three times daily for 5 days"
-            required
-            value={dosage}
-            onChange={(e) => setDosage(e.currentTarget.value)}
-          />
-          <SimpleGrid cols={2}>
-            <NumberInput label="Quantity to dispense" min={1} value={quantity} onChange={setQuantity} />
-            <NumberInput label="Duration (days)" min={1} value={duration} onChange={setDuration} />
-          </SimpleGrid>
-        </>
-      )}
-      <Textarea
-        label="Clinical note"
-        autosize
-        minRows={1}
-        value={note}
-        onChange={(e) => setNote(e.currentTarget.value)}
-      />
-      {alerts && <CdsAlertList alerts={alerts} emptyText="No allergy, interaction or contraindication alerts." />}
-      {needsOverride && (
-        <Textarea
-          label="Reason for prescribing despite the alert"
-          description="Required for high-severity alerts (at least 10 characters). Recorded with the order."
-          required
-          value={override}
-          onChange={(e) => setOverride(e.currentTarget.value)}
-        />
-      )}
-      <Group justify="flex-end">
-        <Button onClick={submit} disabled={missing} loading={submitting}>
-          {needsOverride ? 'Override and place order' : 'Place order'}
-        </Button>
-      </Group>
-    </Stack>
   );
 }
 
@@ -491,93 +294,4 @@ function FamilyHistory({ encounter }: EncounterOrdersPanelProps): JSX.Element {
       </Group>
     </Stack>
   );
-}
-
-interface OrderRow {
-  readonly order: ServiceRequest | MedicationRequest;
-  readonly task?: Task;
-}
-
-function OrderHistory({ encounter, version }: EncounterOrdersPanelProps & { version: number }): JSX.Element {
-  const medplum = useMedplum();
-  const [rows, setRows] = useState<OrderRow[]>();
-
-  useEffect(() => {
-    const ref = `Encounter/${encounter.id}`;
-    const options = { cache: 'no-cache' as const };
-    Promise.all([
-      medplum.searchResources('ServiceRequest', { encounter: ref, _count: '200' }, options),
-      medplum.searchResources('MedicationRequest', { encounter: ref, _count: '200' }, options),
-      medplum.searchResources('Task', { encounter: ref, _count: '200' }, options),
-    ])
-      .then(([services, medications, tasks]) => {
-        const orders = [...services, ...medications].sort((a, b) =>
-          (b.authoredOn ?? '').localeCompare(a.authoredOn ?? '')
-        );
-        setRows(
-          orders.map((order) => ({
-            order,
-            task: tasks.find((t) => t.focus?.reference === `${order.resourceType}/${order.id}`),
-          }))
-        );
-      })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-  }, [medplum, encounter.id, version]);
-
-  if (!rows) {
-    return <Text c="dimmed">Loading…</Text>;
-  }
-  if (rows.length === 0) {
-    return <Text c="dimmed">No orders in this encounter yet.</Text>;
-  }
-  return (
-    <Table striped data-testid="order-history">
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Ordered</Table.Th>
-          <Table.Th>Type</Table.Th>
-          <Table.Th>Order</Table.Th>
-          <Table.Th>Priority</Table.Th>
-          <Table.Th>Department</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {rows.map(({ order, task }) => (
-          <Table.Tr key={`${order.resourceType}/${order.id}`}>
-            <Table.Td>{formatDateTime(order.authoredOn)}</Table.Td>
-            <Table.Td>{findKenyaOrderCategory(order.category)?.display ?? order.resourceType}</Table.Td>
-            <Table.Td>
-              {order.resourceType === 'MedicationRequest'
-                ? `${order.medicationCodeableConcept?.text ?? ''} — ${order.dosageInstruction?.[0]?.text ?? ''}`
-                : order.code?.text}
-            </Table.Td>
-            <Table.Td>{order.priority}</Table.Td>
-            <Table.Td>
-              <Badge color={taskColor(task?.status)} variant="light">
-                {task
-                  ? `${task.performerType?.[0]?.text ?? ''}: ${task.businessStatus?.text ?? task.status}`
-                  : order.status}
-              </Badge>
-            </Table.Td>
-          </Table.Tr>
-        ))}
-      </Table.Tbody>
-    </Table>
-  );
-}
-
-function taskColor(status: Task['status'] | undefined): string {
-  switch (status) {
-    case 'completed':
-      return 'green';
-    case 'accepted':
-    case 'in-progress':
-      return 'blue';
-    case 'cancelled':
-    case 'rejected':
-    case 'failed':
-      return 'red';
-    default:
-      return 'gray';
-  }
 }

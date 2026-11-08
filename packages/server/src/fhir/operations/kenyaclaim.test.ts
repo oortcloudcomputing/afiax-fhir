@@ -252,6 +252,68 @@ describe('SHA claim from a bill ($kenya-claim, DHA eClaims)', () => {
     expect((await claim(bill, [{ code: 'SHA-12-001', unitPrice: 200 }])).status).toBe(200);
   });
 
+  test('SHA remittance: part payments, then the bill is balanced; duplicates and overpayment refused', async () => {
+    const bill = await newBill();
+    const made = await claim(bill, [{ code: 'SHA-12-001', unitPrice: 500 }]);
+    const claimRef = out(made, 'claim')?.valueReference as { reference: string };
+    const payShare = await fhir('post', `Invoice/${bill.id}/$kenya-payment`).send({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'method', valueCode: 'cash' },
+        { name: 'amount', valueDecimal: 300 },
+      ],
+    });
+    expect(payShare.status).toBe(200);
+
+    const remit = (reference: string, amount: number): request.Test =>
+      fhir('post', 'PaymentReconciliation/$kenya-sha-remittance').send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'paymentReference', valueString: reference },
+          { name: 'paymentDate', valueDate: '2026-11-30' },
+          {
+            name: 'line',
+            part: [
+              { name: 'claim', valueReference: claimRef },
+              { name: 'amount', valueDecimal: amount },
+            ],
+          },
+        ],
+      });
+    const claimOut = (res: request.Response, name: string): unknown =>
+      out(res, 'claim')?.part?.find((p) => p.name === name);
+
+    const first = await remit('SHA-PAY-0001', 200);
+    expect(first.status).toBe(200);
+    expect(out(first, 'total')?.valueMoney).toEqual({ value: 200, currency: 'KES' });
+    expect(claimOut(first, 'outstanding')).toMatchObject({ valueMoney: { value: 300, currency: 'KES' } });
+    expect(claimOut(first, 'billStatus')).toMatchObject({ valueCode: 'issued' });
+
+    const pr = (await fhir('get', out(first, 'paymentReconciliation')?.valueReference?.reference as string)).body;
+    expect(pr).toMatchObject({
+      status: 'active',
+      paymentDate: '2026-11-30',
+      paymentAmount: { value: 200, currency: 'KES' },
+      paymentIssuer: { reference: `Organization/${sha.id}` },
+      detail: [{ request: claimRef, amount: { value: 200, currency: 'KES' } }],
+    });
+
+    const duplicate = await remit('SHA-PAY-0001', 100);
+    expect(duplicate.status).toBe(400);
+    expect((duplicate.body as OperationOutcome).issue?.[0]?.details?.text).toContain('already recorded');
+
+    const over = await remit('SHA-PAY-0002', 301);
+    expect(over.status).toBe(400);
+    expect((over.body as OperationOutcome).issue?.[0]?.details?.text).toContain('more than what SHA still owes');
+
+    const rest = await remit('SHA-PAY-0003', 300);
+    expect(rest.status).toBe(200);
+    expect(claimOut(rest, 'paid')).toMatchObject({ valueMoney: { value: 500, currency: 'KES' } });
+    expect(claimOut(rest, 'outstanding')).toMatchObject({ valueMoney: { value: 0, currency: 'KES' } });
+    expect(claimOut(rest, 'billStatus')).toMatchObject({ valueCode: 'balanced' });
+    expect(((await fhir('get', `Invoice/${bill.id}`)).body as Invoice).status).toBe('balanced');
+  });
+
   test('tariffs come from KNHTS by facility level', () => {
     expect(parseKenyaFacilityLevel('Level 4')).toBe(4);
     expect(parseKenyaFacilityLevel('LEVEL 3B')).toBe(3);

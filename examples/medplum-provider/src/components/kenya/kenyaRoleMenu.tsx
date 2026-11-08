@@ -37,22 +37,37 @@ export function getKenyaStaffRole(config: UserConfiguration | undefined): string
 }
 
 /**
- * Builds the navigation for a member with a Kenya staff role.
+ * Builds the navigation for a member with a Kenya staff role. Admin-only screens (`/admin/...`) live
+ * in the admin app, so those links point there; without an admin app address they are left out.
  * @param config - The signed-in user's configuration.
+ * @param adminAppUrl - The admin app's address (MEDPLUM_ADMIN_APP_URL).
  * @returns The role's menus, or undefined when the user has no Kenya staff role (use the default menu).
  */
-export function getKenyaRoleMenus(config: UserConfiguration | undefined): NavbarMenu[] | undefined {
+export function getKenyaRoleMenus(
+  config: UserConfiguration | undefined,
+  adminAppUrl?: string
+): NavbarMenu[] | undefined {
   if (!getKenyaStaffRole(config) || !config?.menu?.length) {
     return undefined;
   }
-  return config.menu.map((menu) => ({
-    title: menu.title,
-    links: (menu.link ?? []).map((link) => ({
-      label: link.name,
-      href: link.target,
-      icon: getIcon(link.target ?? ''),
-    })),
-  }));
+  return config.menu
+    .map((menu) => ({
+      title: menu.title,
+      links: (menu.link ?? []).flatMap((link) => {
+        const href = resolveTarget(link.target ?? '', adminAppUrl);
+        return href ? [{ label: link.name, href, icon: getIcon(link.target ?? '') }] : [];
+      }),
+    }))
+    .filter((menu) => menu.links.length > 0);
+}
+
+function resolveTarget(target: string, adminAppUrl: string | undefined): string | undefined {
+  if (!target.startsWith('/admin/')) {
+    return target;
+  }
+  return adminAppUrl
+    ? new URL(target.slice(1), adminAppUrl.endsWith('/') ? adminAppUrl : adminAppUrl + '/').href
+    : undefined;
 }
 
 function getIcon(target: string): JSX.Element {

@@ -20,6 +20,7 @@ import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-rou
 import { getKenyaRoleMenus } from './components/kenya/kenyaRoleMenu';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
+import { getConfig } from './config';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -75,7 +76,7 @@ export function App(): JSX.Element | null {
   // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
   const kenyaRoleMenus =
     getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya'
-      ? getKenyaRoleMenus(medplum.getUserConfiguration())
+      ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)
       : undefined;
 
   return (

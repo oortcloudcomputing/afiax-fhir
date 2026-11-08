@@ -12,10 +12,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
+import { getConfig } from './config';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  // baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
+  baseUrl: getConfig().baseUrl,
+  clientId: getConfig().clientId,
   cacheTime: 60000,
   autoBatchTime: 100,
 });
@@ -41,7 +43,14 @@ const theme = createTheme({
 
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 
-const navigate = (path: string): Promise<void> => router.navigate(path);
+// Links to another app (for example the admin app) leave this app; everything else is routed here
+const navigate = (path: string): Promise<void> => {
+  if (/^https?:\/\//.test(path) && new URL(path).origin !== window.location.origin) {
+    window.location.assign(path);
+    return Promise.resolve();
+  }
+  return router.navigate(path);
+};
 
 const container = document.getElementById('root') as HTMLDivElement;
 const root = createRoot(container);

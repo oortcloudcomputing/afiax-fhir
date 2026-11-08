@@ -43,6 +43,24 @@ describe('Kenya role menus', () => {
     ]);
   });
 
+  test('admin screens link to the admin app, or are left out without its address', () => {
+    const admin: UserConfiguration = {
+      resourceType: 'UserConfiguration',
+      option: [{ id: 'kenyaStaffRole', valueString: 'facility-admin' }],
+      menu: [
+        { title: 'Clinical', link: [{ name: 'Patients', target: '/Patient' }] },
+        { title: 'Admin', link: [{ name: 'Staff and invites', target: '/admin/project' }] },
+      ],
+    };
+    expect(getKenyaRoleMenus(admin, 'https://app.example.org')?.[1].links?.[0].href).toBe(
+      'https://app.example.org/admin/project'
+    );
+    expect(getKenyaRoleMenus(admin, 'https://app.example.org/')?.[1].links?.[0].href).toBe(
+      'https://app.example.org/admin/project'
+    );
+    expect(getKenyaRoleMenus(admin)?.map((m) => m.title)).toEqual(['Clinical']);
+  });
+
   test('no role means the default menu', () => {
     expect(getKenyaRoleMenus(undefined)).toBeUndefined();
     expect(getKenyaRoleMenus({ resourceType: 'UserConfiguration', menu: frontDesk.menu })).toBeUndefined();

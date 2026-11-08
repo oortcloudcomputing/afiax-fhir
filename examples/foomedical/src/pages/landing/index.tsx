@@ -3,6 +3,7 @@
 import { AppShell, Box, Button, Container, Group, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { Footer } from '../../components/Footer';
 import DoctorImage from '../../img/landingPage/doctor.jpg';
 import EngineeringImage from '../../img/landingPage/engineering.jpg';
@@ -13,52 +14,62 @@ import classes from './index.module.css';
 
 const features = [
   {
-    title: 'Comprehsive Care Plans',
+    title: 'Your health record',
     description:
-      'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores impedit perferendis suscipit eaque, iste dolor cupiditate blanditiis ratione.',
+      'See your diagnoses, medicines, test results, vaccines and visits from Afiax facilities, whenever you need them.',
   },
   {
-    title: 'No hidden fees',
-    description:
-      'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores impedit perferendis suscipit eaque, iste dolor cupiditate blanditiis ratione.',
+    title: 'Message your care team',
+    description: 'Send a message to your clinic and read their replies, without a trip to the facility.',
   },
   {
-    title: '24/7 Messaging',
-    description:
-      'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores impedit perferendis suscipit eaque, iste dolor cupiditate blanditiis ratione.',
+    title: 'Your care plan',
+    description: 'Keep track of the tasks and follow-ups your clinician has set for you.',
   },
   {
-    title: 'Clinically rigorous',
+    title: 'Your data, protected',
     description:
-      'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores impedit perferendis suscipit eaque, iste dolor cupiditate blanditiis ratione.',
+      'Your record stays on Afiax servers in Kenya and is handled under the Data Protection Act, 2019. Only you and your care team can see it.',
   },
 ];
 
 export function LandingPage(): JSX.Element {
   const theme = useMantineTheme();
+  const navigate = useNavigate();
   return (
     <AppShell className={classes.outer} header={{ height: 100 }}>
       <Header />
       <AppShell.Main className={classes.outer}>
-        <img className={classes.heroImage1} src={WorkingEnvironmentImage} alt="Working Environment" />
+        <img className={classes.heroImage1} src={WorkingEnvironmentImage} alt="" />
         <Container>
           <div className={classes.inner}>
             <div className={classes.content}>
               <Title className={classes.title}>
-                An extraordinary
+                Your health,
                 <br />
-                <span className={classes.highlight}>doctor&apos;s office</span>
+                <span className={classes.highlight}>in your hands</span>
               </Title>
               <Text size="lg" c="dimmed" mt="md">
-                This is not actually a medical practice, this is a sample open source application for developers to
-                clone, customize and run.
+                My Afiax is the patient portal for facilities that use Afiax Connected Healthcare. Sign in to see your
+                health record and stay in touch with your care team.
               </Text>
               <Group mt={30}>
-                <Button radius="xl" size="md" className={classes.control}>
+                <Button
+                  radius="xl"
+                  size="md"
+                  className={classes.control}
+                  onClick={() => navigate('/register')?.catch(console.error)}
+                >
                   Get started
                 </Button>
-                <Button variant="default" radius="xl" size="md" className={classes.control}>
-                  Source code
+                <Button
+                  variant="default"
+                  radius="xl"
+                  size="md"
+                  className={classes.control}
+                  onClick={() => navigate('/signin')?.catch(console.error)}
+                >
+                  Log in
                 </Button>
               </Group>
             </div>
@@ -67,7 +78,7 @@ export function LandingPage(): JSX.Element {
         </Container>
         <Container>
           <div className={classes.inner}>
-            <div style={{ width: 500 }}>
+            <div style={{ maxWidth: 500 }}>
               <Title order={3} fw={500} c={theme.primaryColor} mb="lg">
                 Healthcare
               </Title>
@@ -75,8 +86,7 @@ export function LandingPage(): JSX.Element {
                 A better way to get care
               </Title>
               <Text size="xl" c="gray">
-                Lorem ipsum dolor sit amet consect adipisicing elit. Possimus magnam voluptatum cupiditate veritatis in
-                accusamus quisquam.
+                Your results and records from your Afiax facility, in one place, on your phone or computer.
               </Text>
             </div>
             <img className={classes.heroImage3} src={LabImage} alt="Laboratory" />
@@ -92,7 +102,7 @@ export function LandingPage(): JSX.Element {
                 </Box>
               ))}
             </Stack>
-            <img className={classes.heroImage4} src={EngineeringImage} alt="Laboratory" />
+            <img className={classes.heroImage4} src={EngineeringImage} alt="" />
           </div>
         </Container>
       </AppShell.Main>

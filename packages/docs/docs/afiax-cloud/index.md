@@ -27,7 +27,7 @@ See [Products](/docs/products) for what each product does.
 
 | Environment | Address | Data | Who uses it |
 | --- | --- | --- | --- |
-| **Production** | `https://app.afiax.africa` (web), `https://fhir.afiax.africa` (API) | Real patient data | Facilities after go-live, and approved partner integrations |
+| **Production** | `https://provider.afiax.africa` (clinical staff), `https://app.afiax.africa` (administrators), `https://myafiax.afiax.africa` (My Afiax, for patients), `https://fhir.afiax.africa` (API) | Real patient data | Facilities after go-live, and approved partner integrations |
 | **UAT (integration testing)** | `https://app.uat.afiax.africa`, `https://fhir.uat.afiax.africa` | Synthetic data only | Partners and facility teams testing integrations and new releases before production |
 
 UAT talks to the SHA and national test systems, never to their production systems. See [Environments and partner access](/docs/afiax-cloud/environments-and-access) for how to get credentials.
@@ -37,7 +37,7 @@ UAT talks to the SHA and national test systems, never to their production system
 1. **Talk to us.** Email [info@afiax.africa](mailto:info@afiax.africa) or call +254 738 000 145. We agree the products, plan and number of facilities with you.
 2. **Sign the agreements.** These are the service agreement, the data processing agreement (you are the data controller for your patients, and Oortcloud is your processor) and the support SLA.
 3. **Onboarding.** Oortcloud sets up your project, verifies your facility and practitioners against the national registries, creates your users, migrates existing records if needed, and trains your Training Champions. See [Plans and onboarding](/docs/afiax-cloud/plans-and-onboarding).
-4. **Go live.** Your staff sign in at `app.afiax.africa`, and support runs through the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla).
+4. **Go live.** Your clinical staff sign in at `provider.afiax.africa` and your administrators at `app.afiax.africa`, and support runs through the [Afiax Helpdesk](/docs/afiax-cloud/support-and-sla).
 
 ## In this section
 

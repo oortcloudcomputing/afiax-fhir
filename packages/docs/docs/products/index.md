@@ -30,7 +30,7 @@ Afiax launches in Kenya in waves. Each wave starts only when the previous one me
 | Wave | Products and modules |
 | --- | --- |
 | **Wave 1 (launch)** | Clinical Suite: Afiax FHIR, Afiax Provider, SHA revenue cycle, Afiax Billing, Afiax Pay, Afiax DICOM. Workspace: Afiax Learn, Afiax Messaging, Afiax Marketplace |
-| **Wave 2** | Afiax Patient Portal, remote patient monitoring |
+| **Wave 2** | My Afiax (patient portal), remote patient monitoring |
 | **Later waves** | Afiax AI (after its separate regulatory registration) |
 
 Ask [info@afiax.africa](mailto:info@afiax.africa) for current availability in your county.

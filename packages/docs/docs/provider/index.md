@@ -19,7 +19,7 @@ deployment.
 To use Afiax Provider, you'll need access to an Afiax FHIR project.
 
 1. Register a new account and create a new Project in the Afiax Admin App at [app.afiax.africa](https://app.afiax.africa)
-2. Sign in to your organization’s provider workspace deployment with the same credentials
+2. Sign in to Afiax Provider at [provider.afiax.africa](https://provider.afiax.africa) with the same credentials
 3. After signing in, review the local get-started flow to import sample data and more
 
 Occasionally, you may need to use the Afiax Admin App for administrative and other tasks which we note explicitly in

@@ -12,7 +12,7 @@ This page is for developers at partner organisations and facilities who connect 
 | --- | --- | --- |
 | **FHIR API base URL** | `https://fhir.uat.afiax.africa/fhir/R4/` | `https://fhir.afiax.africa/fhir/R4/` |
 | **OAuth2 token endpoint** | `https://fhir.uat.afiax.africa/oauth2/token` | `https://fhir.afiax.africa/oauth2/token` |
-| **Web app** | `https://app.uat.afiax.africa` | `https://app.afiax.africa` |
+| **Admin app** | `https://app.uat.afiax.africa` | `https://app.afiax.africa` |
 | **Data** | Synthetic only. Never load real patient data. | Real patient data |
 | **National systems** | SHA, HIE and KHIS test systems | SHA, HIE and KHIS production systems |
 | **Access** | Granted for integration development | Granted only after your integration passes testing in UAT |

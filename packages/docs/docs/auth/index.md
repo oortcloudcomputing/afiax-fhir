@@ -10,7 +10,7 @@ This page helps you choose the correct authentication method for your applicatio
 For **user-facing applications (web or mobile apps)**, use [_browser-based authentication_](#browser-based-authentication). 
 
 :::caution Patient Login
-The Afiax App (https://app.afiax.africa) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. To provide patient access, you must build a custom patient portal using the Afiax SDK.
+The Afiax App (https://app.afiax.africa) is an administrative tool for clinical users and developers. Patients **cannot** log in to this application directly. Patients use My Afiax, the patient portal, at [myafiax.afiax.africa](https://myafiax.afiax.africa), and clinical staff use [Afiax Provider](/docs/provider) at provider.afiax.africa.
 :::
 
 For applications running in a **trusted, back-end environment**, use [_server-side authentication_](#server-side-authentication). 

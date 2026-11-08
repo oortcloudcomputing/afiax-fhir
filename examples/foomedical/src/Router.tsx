@@ -24,9 +24,7 @@ import { Vitals } from './pages/health-record/Vitals';
 import { HomePage } from './pages/HomePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { ObservationPage } from './pages/ObservationPage';
-import { PatientIntakeQuestionnairePage } from './pages/PatientIntakeQuestionnairePage';
 import { QuestionnairePage } from './pages/QuestionnairePage';
-import { ScreeningQuestionnairePage } from './pages/ScreeningQuestionnairePage';
 import { SignOutPage } from './pages/SignOutPage';
 
 export function Router(): JSX.Element {
@@ -37,8 +35,6 @@ export function Router(): JSX.Element {
         <Route path=":messageId" element={<MessagesPage />} />
       </Route>
       <Route path="Questionnaire/:questionnaireId" element={<QuestionnairePage />} />
-      <Route path="screening-questionnaire" element={<ScreeningQuestionnairePage />} />
-      <Route path="patient-intake-questionnaire" element={<PatientIntakeQuestionnairePage />} />
       <Route path="health-record" element={<HealthRecord />}>
         <Route index element={<Navigate replace to="/health-record/lab-results" />} />
         <Route path="lab-results" element={<LabResults />} />

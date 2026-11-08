@@ -9,7 +9,8 @@
   },
   "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
   "moduleNameMapper": {
-    "\\.css$": "identity-obj-proxy"
+    "\\.css$": "identity-obj-proxy",
+    "^@medplum/kenya-react$": "<rootDir>/../kenya-react/src/index.ts"
   },
   "testMatch": ["**/src/**/*.test.ts", "**/src/**/*.test.tsx"],
   "setupFilesAfterEnv": ["./src/test.setup.ts"],

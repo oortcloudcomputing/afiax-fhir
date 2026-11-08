@@ -23,6 +23,7 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
     '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
     '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+    '@medplum/kenya-react': path.resolve(__dirname, '../../packages/kenya-react/src'),
   }).filter(([, relPath]) => existsSync(relPath))
 );
 

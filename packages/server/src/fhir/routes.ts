@@ -67,6 +67,7 @@ import { kenyaCdsCheckHandler } from './operations/kenyacds';
 import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaInvoicePaymentHandler } from './operations/kenyainvoicepayment';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
+import { kenyaRegistryLookupHandler } from './operations/kenyaregistrylookup';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -422,6 +423,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Encounter/:id/$kenya-order', kenyaOrderHandler);
   router.add('POST', '/Encounter/:id/$kenya-invoice', kenyaInvoiceHandler);
   router.add('POST', '/Invoice/:id/$kenya-payment', kenyaInvoicePaymentHandler);
+  // DHA Client Registry search for patient registration (any role that may create patients)
+  router.add('POST', '/Patient/$kenya-registry-lookup', kenyaRegistryLookupHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)

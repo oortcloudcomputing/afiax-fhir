@@ -26,11 +26,10 @@ import {
   KenyaPatientIdentifierSystems,
   normalizeErrorString,
 } from '@medplum/core';
-import type { Bundle, Patient } from '@medplum/fhirtypes';
-import { MedplumLink, useMedplum } from '@medplum/react';
+import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
+import { MedplumLink, useMedplum, useMedplumNavigate } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import type { Gender, KenyaPatientRegistration } from './KenyaPatientRegistration';
 import { buildKenyaPatient, getRegistrationErrors } from './KenyaPatientRegistration';
 
@@ -87,10 +86,21 @@ function normalizeGender(g: string | null | undefined): Gender {
   return 'other';
 }
 
-export function KenyaPatientWizard(): JSX.Element {
+export interface KenyaPatientWizardProps {
+  /** Called with the new Patient. Defaults to opening /Patient/:id. */
+  readonly onRegistered?: (patient: Patient) => void;
+}
+
+/**
+ * Kenya patient registration (DHA FUNC-DEMO-001): look the person up in the DHA Client Registry,
+ * check they are not already registered here, then register them with validated demographics.
+ * Works for any role that may create patients (Patient/$kenya-registry-lookup).
+ * @param props - The component props.
+ * @returns The registration wizard.
+ */
+export function KenyaPatientWizard(props: KenyaPatientWizardProps = {}): JSX.Element {
   const medplum = useMedplum();
-  const project = medplum.getProject();
-  const navigate = useNavigate();
+  const navigate = useMedplumNavigate();
 
   const [active, setActive] = useState(0);
 
@@ -164,11 +174,15 @@ export function KenyaPatientWizard(): JSX.Element {
     setDhaPatient(undefined);
     setDhaSearched(false);
     try {
-      const resp = await medplum.post(`admin/projects/${project?.id}/kenya/afyalink/patient-lookup`, {
-        identificationType: idType,
-        identificationNumber: number,
+      const resp = await medplum.post<Parameters>(medplum.fhirUrl('Patient', '$kenya-registry-lookup'), {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'identificationType', valueString: idType },
+          { name: 'identificationNumber', valueString: number },
+        ],
       });
-      const msg = extractDhaPatient(resp);
+      const result = resp.parameter?.find((p) => p.name === 'result')?.valueString;
+      const msg = extractDhaPatient({ result: result ? JSON.parse(result) : undefined });
       setDhaPatient(msg);
       setDhaSearched(true);
       if (isDhaFound(msg)) {
@@ -220,7 +234,11 @@ export function KenyaPatientWizard(): JSX.Element {
     try {
       const created = await medplum.createResource(buildKenyaPatient(registration));
       showNotification({ color: 'green', message: `Patient created: ${familyName.trim()}` });
-      navigate(`/Patient/${created.id}`)?.catch(console.error);
+      if (props.onRegistered) {
+        props.onRegistered(created);
+      } else {
+        navigate(`/Patient/${created.id}`);
+      }
     } catch (err) {
       const msg = normalizeErrorString(err);
       setError(msg);

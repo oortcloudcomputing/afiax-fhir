@@ -37,6 +37,7 @@ import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
+import { KenyaRegistrationPage } from './pages/patient/KenyaRegistrationPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
@@ -73,11 +74,11 @@ export function App(): JSX.Element | null {
 
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
   // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
-  const kenyaRoleMenus =
-    getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya'
-      ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)
-      : undefined;
+  const kenyaRoleMenus = isKenya
+    ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)
+    : undefined;
 
   return (
     <AppShell
@@ -177,7 +178,8 @@ export function App(): JSX.Element | null {
                   />
                 }
               />
-              <Route path="/Patient/new" element={<ResourceCreatePage />} />
+              {/* Kenya registers patients through the DHA Client Registry */}
+              <Route path="/Patient/new" element={isKenya ? <KenyaRegistrationPage /> : <ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId" element={<EncounterChartPage />}>
@@ -209,7 +211,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="Task" element={<TasksPage />} />
               <Route path="Task/:taskId" element={<TasksPage />} />
-              <Route path="/onboarding" element={<IntakeFormPage />} />
+              <Route path="/onboarding" element={isKenya ? <KenyaRegistrationPage /> : <IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

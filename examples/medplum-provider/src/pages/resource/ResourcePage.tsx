@@ -3,6 +3,7 @@
 import { Stack } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
+import { ConditionIhrPanel } from '@medplum/kenya-react';
 import { Document, LinkTabs, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -36,6 +37,8 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Stack>
+        {/* Kenya: IHR (2005) notification of a notifiable diagnosis (shown only in Kenya projects) */}
+        {resource.resourceType === 'Condition' && <ConditionIhrPanel condition={resource} />}
         <LinkTabs variant="pills" baseUrl={`/${resourceType}/${id}`} tabs={tabs} classNames={classes} />
         <Outlet />
       </Stack>

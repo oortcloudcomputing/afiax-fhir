@@ -770,4 +770,20 @@ describe('EncounterChart', () => {
     expect(screen.getByText('SHA claim')).toBeInTheDocument();
     expect(screen.queryByText('Export Claim')).not.toBeInTheDocument();
   });
+
+  test('Kenya: Vitals & history tab records vital signs and family history', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Vitals & history')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Vitals & history'));
+    });
+    expect(await screen.findByRole('button', { name: 'Save vital signs' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add family history' })).toBeInTheDocument();
+  });
 });

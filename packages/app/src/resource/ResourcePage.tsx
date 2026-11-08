@@ -16,7 +16,14 @@ import type {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { ClaimNationalSubmissionPanel, CoverageEligibilityPanel } from '@medplum/kenya-react';
+import {
+  ClaimNationalSubmissionPanel,
+  ConditionIhrPanel,
+  CoverageEligibilityPanel,
+  NationalRecordPublicationPanel,
+  PatientClinicalSummaryPanel,
+  PatientIdentityPanel,
+} from '@medplum/kenya-react';
 import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -26,13 +33,9 @@ import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
 import { SpecimenHeader } from '../components/SpecimenHeader';
 import { EncounterOrdersPanel } from '../kenya/EncounterOrdersPanel';
-import { PatientClinicalSummaryPanel } from '../kenya/PatientClinicalSummaryPanel';
 import { getPatient, getSpecimen } from '../utils';
 import { ClaimBillingPanel } from './ClaimBillingPanel';
-import { ConditionIhrPanel } from './ConditionIhrPanel';
-import { NationalRecordPublicationPanel } from './NationalRecordPublicationPanel';
 import { OrganizationFacilityVerificationPanel } from './OrganizationFacilityVerificationPanel';
-import { PatientIdentityPanel } from './PatientIdentityPanel';
 import { PractitionerAuthorityVerificationPanel } from './PractitionerAuthorityVerificationPanel';
 import { cleanResource } from './utils';
 

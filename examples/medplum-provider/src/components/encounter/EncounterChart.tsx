@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import { Box, Card, Stack, Text, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, getProjectSettingString, getReferenceString } from '@medplum/core';
 import type {
@@ -12,7 +12,7 @@ import type {
   Reference,
   Task,
 } from '@medplum/fhirtypes';
-import { KenyaEncounterOrders } from '@medplum/kenya-react';
+import { KenyaEncounterOrders, KenyaFamilyHistory, KenyaVitalSignsForm } from '@medplum/kenya-react';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -235,7 +235,14 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
-          extraTabs={isKenya ? [{ label: 'Orders', value: 'kenya-orders' }] : undefined}
+          extraTabs={
+            isKenya
+              ? [
+                  { label: 'Orders', value: 'kenya-orders' },
+                  { label: 'Vitals & history', value: 'kenya-vitals' },
+                ]
+              : undefined
+          }
           onSign={handleSign}
         />
         <Box p="md">
@@ -269,6 +276,26 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
           {/* Kenya CPOE: KNHTS-coded orders with decision support, routed to department queues */}
           {isKenya && activeTab === 'kenya-orders' && <KenyaEncounterOrders encounter={encounter} />}
+          {isKenya && activeTab === 'kenya-vitals' && (
+            <Stack gap="lg">
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Vital signs
+                </Title>
+                {['arrived', 'triaged', 'in-progress', 'onleave'].includes(encounter.status) ? (
+                  <KenyaVitalSignsForm encounter={encounter} />
+                ) : (
+                  <Text c="dimmed">Vital signs can be recorded while the encounter is in progress.</Text>
+                )}
+              </Card>
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Family history
+                </Title>
+                <KenyaFamilyHistory encounter={encounter} />
+              </Card>
+            </Stack>
+          )}
           {isKenya && activeTab === 'details' && (
             <KenyaBillingTab
               patient={patientResource}

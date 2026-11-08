@@ -5,39 +5,19 @@
 // vital signs (with BMI) and family history, set the visit type (e.g. MCH) and see the order history
 // with each order's department status.
 
-import {
-  Alert,
-  Button,
-  Group,
-  NumberInput,
-  Paper,
-  Select,
-  SimpleGrid,
-  Stack,
-  Table,
-  Tabs,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Alert, Group, Paper, Select, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { KenyaVitalSign } from '@medplum/core';
 import {
-  buildKenyaVitalSignObservations,
-  calculateKenyaBmi,
-  getKenyaBmiCategory,
   getProjectSettingString,
   KenyaEncounterTypes,
   KenyaEncounterTypeSystem,
-  KenyaFamilyRelationships,
-  KenyaVitalSigns,
   normalizeErrorString,
 } from '@medplum/core';
-import type { Coding, Encounter, FamilyMemberHistory, Patient, Reference } from '@medplum/fhirtypes';
-import { KenyaOrderEntry, KenyaOrderHistory, KnhtsCodeInput } from '@medplum/kenya-react';
-import { useMedplum, useResource } from '@medplum/react';
+import type { Encounter } from '@medplum/fhirtypes';
+import { KenyaFamilyHistory, KenyaOrderEntry, KenyaOrderHistory, KenyaVitalSignsForm } from '@medplum/kenya-react';
+import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export interface EncounterOrdersPanelProps {
   readonly encounter: Encounter;
@@ -84,10 +64,10 @@ function EncounterOrdersPanelContent({ encounter }: EncounterOrdersPanelProps): 
           <KenyaOrderEntry encounter={encounter} onPlaced={refresh} />
         </Tabs.Panel>
         <Tabs.Panel value="vitals" pt="sm">
-          <VitalSigns encounter={encounter} />
+          <KenyaVitalSignsForm encounter={encounter} />
         </Tabs.Panel>
         <Tabs.Panel value="family" pt="sm">
-          <FamilyHistory encounter={encounter} />
+          <KenyaFamilyHistory encounter={encounter} />
         </Tabs.Panel>
         <Tabs.Panel value="history" pt="sm">
           <KenyaOrderHistory encounter={encounter} version={historyVersion} />
@@ -129,169 +109,5 @@ function VisitType({ encounter }: EncounterOrdersPanelProps): JSX.Element {
       value={value}
       onChange={change}
     />
-  );
-}
-
-function VitalSigns({ encounter }: EncounterOrdersPanelProps): JSX.Element {
-  const medplum = useMedplum();
-  const patient = useResource(encounter.subject as Reference<Patient>);
-  const [readings, setReadings] = useState<Partial<Record<KenyaVitalSign['key'], number>>>({});
-  const [saving, setSaving] = useState(false);
-  const bmi = calculateKenyaBmi(readings.weight, readings.height);
-  const isAdult = isAdultPatient(patient);
-
-  function set(key: KenyaVitalSign['key'], value: number | string): void {
-    setReadings((r) => ({ ...r, [key]: typeof value === 'number' ? value : undefined }));
-  }
-
-  async function save(): Promise<void> {
-    const observations = buildKenyaVitalSignObservations(
-      readings,
-      {
-        subject: encounter.subject as Reference<Patient>,
-        encounter: { reference: `Encounter/${encounter.id}` },
-        effectiveDateTime: new Date().toISOString(),
-        performer: medplum.getProfile()
-          ? [{ reference: `${medplum.getProfile()?.resourceType}/${medplum.getProfile()?.id}` }]
-          : undefined,
-      },
-      isAdult
-    );
-    setSaving(true);
-    try {
-      for (const observation of observations) {
-        await medplum.createResource(observation);
-      }
-      showNotification({ color: 'green', message: `${observations.length} vital-sign records saved` });
-      setReadings({});
-    } catch (err) {
-      showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Stack gap="sm">
-      <SimpleGrid cols={{ base: 2, sm: 3 }}>
-        {KenyaVitalSigns.map((v) => (
-          <NumberInput
-            key={v.key}
-            label={`${v.display} (${v.unit})`}
-            decimalScale={1}
-            value={readings[v.key] ?? ''}
-            onChange={(value) => set(v.key, value)}
-          />
-        ))}
-      </SimpleGrid>
-      {bmi !== undefined && (
-        <Text data-testid="bmi">
-          BMI: <b>{bmi}</b> kg/m²{isAdult ? ` (${getKenyaBmiCategory(bmi)})` : ' (use the growth chart for children)'}
-        </Text>
-      )}
-      <Text size="xs" c="dimmed">
-        Readings outside NEWS2 or critical limits raise a clinical alert on the patient record.
-      </Text>
-      <Group justify="flex-end">
-        <Button
-          onClick={() => save()}
-          loading={saving}
-          disabled={Object.values(readings).every((v) => v === undefined)}
-        >
-          Save vital signs
-        </Button>
-      </Group>
-    </Stack>
-  );
-}
-
-function isAdultPatient(patient: Patient | undefined): boolean {
-  if (!patient?.birthDate) {
-    return true;
-  }
-  const ageMs = Date.now() - new Date(patient.birthDate).getTime();
-  return ageMs >= 18 * 365.25 * 24 * 60 * 60 * 1000;
-}
-
-function FamilyHistory({ encounter }: EncounterOrdersPanelProps): JSX.Element {
-  const medplum = useMedplum();
-  const [items, setItems] = useState<FamilyMemberHistory[]>([]);
-  const [relationship, setRelationship] = useState<string | null>(null);
-  const [condition, setCondition] = useState<Coding>();
-  const [note, setNote] = useState('');
-  const patientRef = encounter.subject?.reference as string;
-
-  const load = useCallback(() => {
-    medplum
-      .searchResources('FamilyMemberHistory', { patient: patientRef, _sort: '-_lastUpdated' }, { cache: 'no-cache' })
-      .then(setItems)
-      .catch(console.error);
-  }, [medplum, patientRef]);
-  useEffect(load, [load]);
-
-  function save(): void {
-    const rel = KenyaFamilyRelationships.find((r) => r.code === relationship);
-    if (!rel || !condition) {
-      return;
-    }
-    medplum
-      .createResource<FamilyMemberHistory>({
-        resourceType: 'FamilyMemberHistory',
-        status: 'completed',
-        patient: encounter.subject as Reference<Patient>,
-        date: new Date().toISOString().slice(0, 10),
-        relationship: {
-          coding: [
-            { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: rel.code, display: rel.display },
-          ],
-          text: rel.display,
-        },
-        condition: [{ code: { coding: [condition], text: condition.display } }],
-        note: note.trim() ? [{ text: note.trim() }] : undefined,
-      })
-      .then(() => {
-        setRelationship(null);
-        setCondition(undefined);
-        setNote('');
-        load();
-      })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-  }
-
-  return (
-    <Stack gap="sm">
-      {items.length > 0 ? (
-        <Table>
-          <Table.Tbody>
-            {items.map((item) => (
-              <Table.Tr key={item.id}>
-                <Table.Td>{item.relationship?.text}</Table.Td>
-                <Table.Td>
-                  {item.condition?.map((c) => c.code?.text ?? c.code?.coding?.[0]?.display).join(', ')}
-                </Table.Td>
-                <Table.Td>{item.note?.[0]?.text}</Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      ) : (
-        <Text c="dimmed">No family history recorded.</Text>
-      )}
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Relative"
-          data={KenyaFamilyRelationships.map((r) => ({ value: r.code, label: r.display }))}
-          value={relationship}
-          onChange={setRelationship}
-        />
-        <KnhtsCodeInput kind="diagnosis" label="Condition (ICD-11)" value={condition} onChange={setCondition} />
-      </SimpleGrid>
-      <TextInput label="Note" value={note} onChange={(e) => setNote(e.currentTarget.value)} />
-      <Group justify="flex-end">
-        <Button onClick={save} disabled={!relationship || !condition}>
-          Add family history
-        </Button>
-      </Group>
-    </Stack>
   );
 }

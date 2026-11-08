@@ -32,7 +32,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
-  const tabs = getPatientPageTabs(membership);
+  const tabs = getPatientPageTabs(membership, getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya');
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location, tabs) ?? tabs[0]).id;
   });

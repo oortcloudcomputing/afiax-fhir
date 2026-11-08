@@ -67,15 +67,15 @@ export function Measurement(): JSX.Element | null {
         value: Number.parseFloat(formData[chartDatasets[0].label]),
         system: 'http://unitsofmeasure.org',
         unit: chartDatasets[0].unit,
-        code: chartDatasets[0].unit,
+        code: chartDatasets[0].ucum,
       };
     } else {
       obs.component = chartDatasets.map((item) => ({
         code: {
           coding: [
             {
-              code: '8462-4',
-              display: 'Diastolic Blood Pressure',
+              code: item.code,
+              display: item.label,
               system: 'http://loinc.org',
             },
           ],
@@ -85,7 +85,7 @@ export function Measurement(): JSX.Element | null {
           value: Number.parseFloat(formData[item.label]),
           system: 'http://unitsofmeasure.org',
           unit: item.unit,
-          code: item.unit,
+          code: item.ucum,
         },
       }));
     }

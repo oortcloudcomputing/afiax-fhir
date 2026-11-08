@@ -8,7 +8,10 @@ export interface ObservationType {
   chartDatasets: {
     label: string;
     code?: string;
+    /** The unit shown to the patient. */
     unit: string;
+    /** The UCUM code saved on the Observation. */
+    ucum: string;
     backgroundColor: string;
     borderColor: string;
   }[];
@@ -30,14 +33,16 @@ export const measurementsMeta: Record<string, ObservationType> = {
       {
         label: 'Diastolic',
         code: '8462-4',
-        unit: 'mm[Hg]',
+        unit: 'mmHg',
+        ucum: 'mm[Hg]',
         backgroundColor: secondBackgroundColor,
         borderColor: secondBorderColor,
       },
       {
         label: 'Systolic',
         code: '8480-6',
-        unit: 'mm[Hg]',
+        unit: 'mmHg',
+        ucum: 'mm[Hg]',
         backgroundColor,
         borderColor,
       },
@@ -51,7 +56,8 @@ export const measurementsMeta: Record<string, ObservationType> = {
     chartDatasets: [
       {
         label: 'Body Temperature',
-        unit: 'C',
+        unit: '°C',
+        ucum: 'Cel',
         backgroundColor,
         borderColor,
       },
@@ -65,7 +71,8 @@ export const measurementsMeta: Record<string, ObservationType> = {
     chartDatasets: [
       {
         label: 'Height',
-        unit: 'in',
+        unit: 'cm',
+        ucum: 'cm',
         backgroundColor,
         borderColor,
       },
@@ -80,6 +87,7 @@ export const measurementsMeta: Record<string, ObservationType> = {
       {
         label: 'Respiratory Rate',
         unit: 'breaths/minute',
+        ucum: '/min',
         backgroundColor,
         borderColor,
       },
@@ -94,6 +102,7 @@ export const measurementsMeta: Record<string, ObservationType> = {
       {
         label: 'Heart Rate',
         unit: 'beats/minute',
+        ucum: '/min',
         backgroundColor,
         borderColor,
       },
@@ -107,7 +116,8 @@ export const measurementsMeta: Record<string, ObservationType> = {
     chartDatasets: [
       {
         label: 'Weight',
-        unit: 'lbs',
+        unit: 'kg',
+        ucum: 'kg',
         backgroundColor,
         borderColor,
       },

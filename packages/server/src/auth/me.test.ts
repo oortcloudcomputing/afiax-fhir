@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, resolveId } from '@medplum/core';
-import type { UserConfiguration } from '@medplum/fhirtypes';
+import type { Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -293,5 +293,16 @@ describe('Me', () => {
     expect(res4.status).toBe(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.security.memberships).toHaveLength(1);
+  });
+
+  test('Kenya admin menu hides technical items unless super admin', () => {
+    const kenya: Project = { resourceType: 'Project', setting: [{ name: 'countryPack', valueString: 'kenya' }] };
+    const admin = { resourceType: 'ProjectMembership', admin: true } as ProjectMembership;
+    const names = (superAdmin: boolean): string[] =>
+      getUserConfigurationMenu({ ...kenya, superAdmin }, admin)
+        .find((m) => m.title === 'Admin')
+        ?.link?.map((l) => l.name) ?? [];
+    expect(names(false)).toEqual(['Project', 'Country Pack Settings', 'Config']);
+    expect(names(true)).toContain('AccessPolicy');
   });
 });

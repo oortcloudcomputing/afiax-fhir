@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
+import { getProjectSettingString, getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
@@ -17,6 +17,7 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { getKenyaRoleMenus } from './components/kenya/kenyaRoleMenu';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -71,6 +72,11 @@ export function App(): JSX.Element | null {
 
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
+  const kenyaRoleMenus =
+    getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya'
+      ? getKenyaRoleMenus(medplum.getUserConfiguration())
+      : undefined;
 
   return (
     <AppShell
@@ -81,7 +87,7 @@ export function App(): JSX.Element | null {
       showLayoutVersionToggle={false}
       menus={
         profile
-          ? [
+          ? (kenyaRoleMenus ?? [
               {
                 links: [
                   { icon: <IconBook2 />, label: 'Spaces', href: '/Spaces/Communication' },
@@ -142,7 +148,7 @@ export function App(): JSX.Element | null {
                     : []),
                 ],
               },
-            ]
+            ])
           : undefined
       }
       resourceTypeSearchDisabled={true}

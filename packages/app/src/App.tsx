@@ -68,7 +68,10 @@ function userConfigToMenu(config: UserConfiguration | undefined, isKenya: boolea
         })) || [],
     })) || [];
 
-  if (isKenya) {
+  // Department queues: for staff without a Kenya role (set up before roles existed), department
+  // roles and the facility admin. A role's own menu already links its queues.
+  const role = config?.option?.find((o) => o.id === 'kenyaStaffRole')?.valueString;
+  if (isKenya && (!role || role === 'facility-admin')) {
     result.push({
       title: 'Clinical',
       links: [{ label: 'Department queues', href: '/kenya/queue', icon: <IconListCheck /> }],

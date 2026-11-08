@@ -1,8 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Schedule } from '@medplum/fhirtypes';
+import { Alert, Title } from '@mantine/core';
+import type { Questionnaire } from '@medplum/fhirtypes';
 import { Document, Scheduler, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
+
+// Asked when the patient picks a slot. Full Kenya appointment booking (facility schedules, confirmation by SMS)
+// is a later phase.
+const visitReasonQuestionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  status: 'active',
+  name: 'visit-reason',
+  title: 'Reason for your visit',
+  item: [
+    {
+      linkId: 'reason',
+      type: 'text',
+      text: 'What would you like to be seen for?',
+      required: true,
+    },
+  ],
+};
 
 export function GetCare(): JSX.Element {
   const medplum = useMedplum();
@@ -10,34 +28,17 @@ export function GetCare(): JSX.Element {
 
   return (
     <Document width={800}>
-      <Scheduler
-        schedule={schedule as Schedule}
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          status: 'active',
-          name: 'Test',
-          item: [
-            {
-              id: 'id-1',
-              linkId: 'q1',
-              type: 'string',
-              text: 'Question 1',
-            },
-            {
-              id: 'id-2',
-              linkId: 'q2',
-              type: 'string',
-              text: 'Question 2',
-            },
-            {
-              id: 'id-3',
-              linkId: 'q3',
-              type: 'string',
-              text: 'Question 3',
-            },
-          ],
-        }}
-      />
+      <Title order={1} mb="lg">
+        Get care
+      </Title>
+      {schedule ? (
+        <Scheduler schedule={schedule} questionnaire={visitReasonQuestionnaire} />
+      ) : (
+        <Alert color="blue" title="Online booking is not available yet">
+          Your facility has not opened online booking yet. Please call or visit your Afiax facility to book a visit, or
+          send a message to your care team.
+        </Alert>
+      )}
     </Document>
   );
 }

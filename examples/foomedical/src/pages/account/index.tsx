@@ -10,8 +10,8 @@ const sideMenu = {
   title: 'Account',
   menu: [
     { name: 'Profile', href: '/account/profile' },
-    { name: 'Provider', href: '/account/provider' },
-    { name: 'Membership & Billing', href: '/account/membership-and-billing' },
+    { name: 'My clinician', href: '/account/provider' },
+    { name: 'Cover and payments', href: '/account/membership-and-billing' },
   ],
 };
 
@@ -20,7 +20,7 @@ export function AccountPage(): JSX.Element {
     <Container>
       <Group align="top">
         <SideMenu {...sideMenu} />
-        <div style={{ width: 800, flex: 800 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <Suspense fallback={<div>Loading...</div>}>
             <Outlet />
           </Suspense>

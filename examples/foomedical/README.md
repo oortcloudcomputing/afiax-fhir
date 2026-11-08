@@ -1,22 +1,10 @@
-<h1 align="center">Foo Medical</h1>
-<p align="center">A free and open-source healthcare webapp from the Medplum team.</p>
-<p align="center">
-  <a href="https://github.com/medplum/foomedical/actions">
-    <img src="https://github.com/medplum/foomedical/actions/workflows/build.yml/badge.svg" />
-  </a>
-  <a href="https://github.com/medplum/foomedical/blob/main/LICENSE.txt">
-    <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
-  </a>
-  <a href="https://sonarcloud.io/project/overview?id=medplum_foomedical">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=medplum_foomedical&metric=alert_status&token=3760929adde88ce7da87782be8d811f8b5cec0f4" />
-  </a>
-</p>
+<h1 align="center">My Afiax</h1>
 
-![Foo Medical Screenshot](screenshot.png)
+### What is My Afiax?
 
-### What is Foo Medical?
+My Afiax is the Afiax patient portal, running at [myafiax.afiax.africa](https://myafiax.afiax.africa). Patients use it to see their health record and results, book appointments and message their care team.
 
-[Foo Medical](https://foomedical.com/) is a **ready to use medical practice sample app** that's open source. It's meant for developers to clone, customize and run.
+It is built on Afiax FHIR and started from the open-source Foo Medical sample app (Apache 2.0). The folder and package are still called `foomedical`.
 
 ### Features
 

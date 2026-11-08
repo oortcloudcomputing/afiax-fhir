@@ -17,7 +17,7 @@ import type {
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -56,6 +56,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     setClaim,
   } = props;
   const medplum = useMedplum();
+  const navigate = useMedplumNavigate();
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [submitting, setSubmitting] = useState(false);
@@ -299,13 +300,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
               </Button>
             )}
             {billingBot === null && (
-              <Button
-                variant="outline"
-                leftSection={<IconSend size={16} />}
-                onClick={() => {
-                  window.open('https://www.medplum.com/contact', '_blank');
-                }}
-              >
+              <Button variant="outline" leftSection={<IconSend size={16} />} onClick={() => navigate('/integrations')}>
                 Request to connect a billing service
               </Button>
             )}

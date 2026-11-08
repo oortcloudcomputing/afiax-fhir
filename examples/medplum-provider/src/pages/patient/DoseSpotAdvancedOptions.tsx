@@ -135,9 +135,9 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
             <Box mt="md">
               <Text mb="sm">Patient Information Sync</Text>
               <Text c="dimmed" mb="md">
-                Syncs patient between Medplum and DoseSpot. It creates an identifier for the patient in Medplum to link
-                it to the patient's record in DoseSpot. It also adds MedicationRequest and AllergyIntolerance resources
-                from Medplum to that patient's record in DoseSpot.
+                Syncs patient between Afiax and DoseSpot. It creates an identifier for the patient in Afiax to link it
+                to the patient's record in DoseSpot. It also adds MedicationRequest and AllergyIntolerance resources
+                from Afiax to that patient's record in DoseSpot.
               </Text>
               <Button onClick={syncPatient}>Sync Patient</Button>
             </Box>

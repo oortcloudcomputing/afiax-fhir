@@ -141,7 +141,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   // Kenya staff without a role still reach the department queues
                   ...(isKenya ? [{ icon: <IconListCheck />, label: 'Department queues', href: '/kenya/queue' }] : []),
-                  { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
+                  { icon: <IconApps />, label: 'Enterprise apps', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
                         {

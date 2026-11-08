@@ -42,8 +42,8 @@ interface KenyaRegistryLookupParameters {
 
 /**
  * Handles POST Patient/$kenya-registry-lookup: the DHA Client Registry search behind patient
- * registration. Open to anyone who may create patients (for example front-desk staff), unlike the
- * admin-only lookup used by the setup screens.
+ * registration. Open to staff (Practitioner profiles) who may create patients, for example front-desk
+ * staff, unlike the admin-only lookup used by the setup screens. Patients are refused.
  * @param req - The FHIR request.
  * @returns The Client Registry response.
  */
@@ -52,7 +52,10 @@ export async function kenyaRegistryLookupHandler(req: FhirRequest): Promise<Fhir
   if (getProjectCountryPack(ctx.project)?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
   }
-  if (!ctx.repo.supportsInteraction(AccessPolicyInteraction.CREATE, 'Patient')) {
+  // Staff only: a patient account (even one allowed to write its own Patient) must not be able to
+  // look up other people in the national registry
+  const profileType = ctx.profile.reference?.split('/')[0];
+  if (profileType !== 'Practitioner' || !ctx.repo.supportsInteraction(AccessPolicyInteraction.CREATE, 'Patient')) {
     throw new OperationOutcomeError(forbidden);
   }
   const params = parseInputParameters<KenyaRegistryLookupParameters>(kenyaRegistryLookupOperation, req);

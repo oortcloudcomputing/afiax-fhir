@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import type { AccessPolicy, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -83,6 +84,49 @@ describe('Patient/$kenya-registry-lookup', () => {
       addTestUser(project, { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Patient', readonly: true }] })
     );
     const res = await lookup(cashier.accessToken);
+    expect(res.status).toBe(403);
+  });
+
+  test('patient accounts are refused, even with write access to Patient', async () => {
+    const patientUser = await withTestContext(async () => {
+      const { inviteUser } = await import('../../admin/invite');
+      const { tryLogin } = await import('../../oauth/utils');
+      const { generateAccessToken } = await import('../../oauth/keys');
+      const email = `patient${randomUUID()}@example.com`;
+      const password = randomUUID();
+      const systemRepo = getProjectSystemRepo(project);
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const invite = await inviteUser({
+        project,
+        email,
+        password,
+        resourceType: 'Patient',
+        firstName: 'Pat',
+        lastName: 'Ient',
+        sendEmail: false,
+        membership: { accessPolicy: createReference(policy) },
+      });
+      const login = await tryLogin({
+        authMethod: 'password',
+        projectId: project.id,
+        email,
+        password,
+        scope: 'openid',
+        nonce: 'nonce',
+      });
+      return generateAccessToken({
+        login_id: login.id,
+        sub: invite.user.id,
+        username: invite.user.id,
+        scope: login.scope as string,
+        profile: getReferenceString(invite.profile),
+      });
+    });
+    const res = await lookup(patientUser);
     expect(res.status).toBe(403);
   });
 });

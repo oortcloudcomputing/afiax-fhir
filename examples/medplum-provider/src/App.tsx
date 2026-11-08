@@ -8,6 +8,7 @@ import {
   IconBook2,
   IconCalendarEvent,
   IconClipboardCheck,
+  IconListCheck,
   IconMail,
   IconPill,
   IconSettingsAutomation,
@@ -31,6 +32,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
@@ -137,6 +139,8 @@ export function App(): JSX.Element | null {
                       ]
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
+                  // Kenya staff without a role still reach the department queues
+                  ...(isKenya ? [{ icon: <IconListCheck />, label: 'Department queues', href: '/kenya/queue' }] : []),
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
@@ -214,6 +218,8 @@ export function App(): JSX.Element | null {
               <Route path="Task/:taskId" element={<TasksPage />} />
               <Route path="/onboarding" element={isKenya ? <KenyaRegistrationPage /> : <IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
+              {isKenya && <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />}
+              {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />

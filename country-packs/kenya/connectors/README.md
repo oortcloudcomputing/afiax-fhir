@@ -51,22 +51,40 @@ Those responsibilities belong in the pack handlers, resource panels, or downstre
 
 ## Current connector surfaces
 
-### DHA HIE / AfyaLink
+### DHA HIE
 
 Main file:
 
 - `packages/server/src/country-pack/kenya/afyalink.ts`
 
+The connector follows the current DHA HIE documentation at https://hie-docs.dha.go.ke (checked
+2026-11-10; pages last modified 2026-09-28). It replaced the retired AfyaLink v1 API
+(`GET /v1/hie-auth?key=…` with Basic auth), which DHA no longer accepts. Always check the live DHA
+docs and their changelog before changing this connector.
+
+Credentials:
+
+- a **client ID** and **client secret** for an app in the DHA AfyaConnect developer portal
+  (https://afyaconnect.dha.go.ke, reached from the certification portal's "Open AfyaConnect")
+- project secrets `kenyaHieClientId` and `kenyaHieClientSecret`; the earlier names
+  `kenyaAfyaLinkConsumerKey` and `kenyaAfyaLinkPassword` are still read as a fallback
+- optional `kenyaHieBaseUrl` (default for UAT: `https://ilm-dev.dha.go.ke/uat-middleware/api/v1`;
+  DHA issues the production URL with production credentials after certification)
+- optional `kenyaHieFacilityId`: a Facility Registry code (`FID-…`), only for multi-facility
+  credentials. A facility-scoped token already names its facility in the `facility_id` claim.
+
 Current responsibilities:
 
 - resolve Kenya HIE environment
 - resolve tenant-managed or Afiax-managed HIE credentials
-- authenticate via `GET /v1/hie-auth?key=...`
-- accept DHA auth responses returned either as raw JWT text or JSON
-- facility search by facility code
-- practitioner search by identification type and number
-- eligibility search
-- normalize DHA payload differences such as string vs numeric `found` fields
+- get and cache an access token (OAuth2 client credentials)
+- send `X-Facility-Id` / `X-Facility-Id-Type: fr-code` when `kenyaHieFacilityId` is set
+- facility search by FR code or KMHFL code
+- practitioner search by licence number and regulator, or by ID
+- Client Registry patient search
+- SHA eligibility check
+- treat DHA's "no match" answers (400 with "zero results" or "no practitioner membership") as
+  not found
 
 Current workflows that depend on it:
 
@@ -162,43 +180,68 @@ Operational notes:
 
 ## Request patterns currently implemented
 
+All HIE paths below are relative to the HIE base URL.
+
 ### HIE auth
 
-- method: `GET`
-- path: `/v1/hie-auth?key=...`
-- auth mode: Basic auth with username/password
-- normalization behavior:
-  - accepts raw JWT response bodies
-  - accepts JSON token payloads
+- method: `POST`
+- path: `/tenants/token`
+- body: form fields `client_id`, `client_secret`
+- response: `access_token` (Bearer), `expires_in` (about 3600 seconds)
+- the token is cached until a minute before it expires; the "Test HIE Connection" buttons always
+  authenticate again
 
 ### Facility lookup
 
 - method: `GET`
-- path: `/v1/facility-search?facility_code=...`
-- auth mode: Bearer token from HIE auth
+- path: `/facilities/search?identifier=...&identifier-type=fr-code|mfl`
+- auth mode: Bearer token
 - canonical input:
-  - Kenya facility code / MFL code from `Organization.identifier`
+  - FR code (`FID-…`) or KMHFL code from `Organization.identifier`
 - normalization behavior:
-  - tolerates DHA payloads where `found` is numeric, string, or boolean
-  - infers a facility match when DHA returns facility metadata without a strict `found=1`
+  - the response is an array of facility records; the first one is used
+  - `facilityLicenseStatus` LICENSED means approved; anything else is reported as not approved
+  - `regulatoryOperationalStatus.operationalStatus` is the operational status
 
 ### Practitioner lookup
 
 - method: `GET`
-- path: `/v1/practitioner-search?identification_type=...&identification_number=...`
-- auth mode: Bearer token from HIE auth
+- path: `/professionals?identification_number=...&identification_type=...&regulator=...`
+- auth mode: Bearer token
 - canonical input:
-  - identification type and identifier number from `Practitioner.identifier`
+  - KMPDC or COC licence number (sent as `registration_number` with the regulator)
+  - PPB or NCK National ID (sent as `National ID` with the regulator)
+  - National, Alien or Refugee ID
+
+### Client Registry
+
+- method: `GET`
+- path: `/patients?identification_number=...&identification_type=...`
+- auth mode: Bearer token
+- output: the patient's Client Registry ID (CR ID) and demographics. No agent ID is needed.
 
 ### Eligibility
 
 - method: `GET`
-- endpoint family: DHA eligibility path
-- auth mode: Bearer token from HIE auth
+- path: `/patients/eligibility?identification_number=...&identification_type=...`
+- auth mode: Bearer token
 - canonical input:
-  - identifier type
-  - identifier number
-  - values derived from `Coverage`
+  - identifier type (DHA prefers `ClientRegistry ID`) and number from `Coverage`
+- normalization behavior:
+  - eligible when a scheme in `schemes[]` has an active coverage status
+  - never eligible when `isAlive` is false
+  - passes through `whitelistedForOTP` and `facilityBiometricsEnforced`, which decide the consent
+    method for a visit
+
+### Not yet migrated
+
+These still use earlier DHA and SHA paths and need rework against the current HIE docs:
+
+- Shared Health Record publication: now `POST /shr/bundles`, after patient consent
+  (`POST /shr/consents`, verify the OTP) opens a visit. `publishToAfyaLinkShr` fails with a clear
+  message until that flow exists.
+- SHA claims: now the HIE eClaims API (`POST /claims/visit`, billing lines, `POST /claims/submit`
+  and so on), not a FHIR claim bundle to `/v1/shr-med/bundle`.
 
 ### SHA claim submit
 
@@ -224,7 +267,7 @@ Operational notes:
 1. resource panel saves the Kenya facility code on `Organization.identifier`
 2. the handler reads the canonical facility code from the resource
 3. `afyalink.ts` resolves HIE environment and credentials
-4. `afyalink.ts` authenticates and calls the DHA facility-search endpoint
+4. `afyalink.ts` authenticates and calls the DHA Facility Registry (`/facilities/search`)
 5. `afyalink.ts` normalizes the raw DHA payload
 6. the Kenya handler decides whether the result is usable, persists the registry snapshot, and writes workflow evidence
 

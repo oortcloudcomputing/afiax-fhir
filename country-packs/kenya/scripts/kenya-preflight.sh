@@ -249,10 +249,10 @@ fi
 # Human reminders
 # ---------------------------------------------------------------------------
 section "Human verification required (not automated)"
-echo "  ! DHA API endpoint verification (GitHub issue #4):"
-echo "      - Confirm /v1/shr/patient-record is the correct SHR outpatient submission path"
-echo "      - Confirm /v2/facility-search?facility_code=... works (docs show facility-fid on v2)"
-echo "      - Do not use SHR publication in production until confirmed with DHA"
+echo "  ! DHA HIE integration (check the live docs at https://hie-docs.dha.go.ke first):"
+echo "      - Registries and eligibility use the HIE middleware with AfyaConnect client credentials"
+echo "      - SHR publication needs the consent and visit flow (POST /shr/consents) - not built yet"
+echo "      - SHA claims need the HIE eClaims API (POST /claims/visit ...) - not migrated yet"
 echo "  ! Credentials have been rotated from UAT values (see runbook 01)"
 echo "  ! SHA Claims callback URL is registered in the SHA portal"
 echo "  ! At least one admin user has MFA enabled"

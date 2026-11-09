@@ -50,8 +50,8 @@ The minimum useful facility identifier is:
 2. Resolve the project country pack.
 3. Read Kenya HIE environment and HIE credential mode from `Project.setting`.
 4. Resolve credentials from `Project.secret` or `Project.systemSecret`.
-5. Obtain a DHA JWT through `GET /v1/hie-auth?key=...`.
-6. Call `GET /v1/facility-search?facility_code=...`.
+5. Get an access token through `POST /tenants/token` with the AfyaConnect client ID and secret.
+6. Call `GET /facilities/search?identifier=...&identifier-type=fr-code` (or `mfl` for a KMHFL code).
 7. Normalize the DHA payload into the shared verification status contract.
 8. Persist the Kenya verification snapshot on the `Organization`.
 9. Create a verification `Task`.

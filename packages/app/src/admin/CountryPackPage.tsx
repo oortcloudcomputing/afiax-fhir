@@ -29,7 +29,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { KenyaClaimQueuePanel } from '../resource/KenyaClaimQueuePanel';
 import { getProjectId } from '../utils';
 
-const kenyaAfyaLinkSecretNames = ['kenyaAfyaLinkConsumerKey', 'kenyaAfyaLinkUsername', 'kenyaAfyaLinkPassword'];
+// Each required HIE credential, with the earlier secret name that is still accepted.
+const kenyaHieSecretNames: readonly (readonly string[])[] = [
+  ['kenyaHieClientId', 'kenyaAfyaLinkConsumerKey'],
+  ['kenyaHieClientSecret', 'kenyaAfyaLinkPassword'],
+];
 
 const kenyaShaClaimsSecretNames = [
   KenyaShaClaimsSecretNames.accessKey,
@@ -330,16 +334,16 @@ export function CountryPackPage(): JSX.Element {
     const khisMoh505DataSetUid = getKenyaKhisMoh505DataSetUid(project);
     const khisIdsrEventProgram = getKenyaKhisIdsrEventProgram(project);
     const idsrNotificationEmails = getKenyaIdsrNotificationEmails(project);
-    const configuredHieSecretCount = kenyaAfyaLinkSecretNames.filter((name) =>
-      getProjectSettingString(project.secret, name)
+    const configuredHieSecretCount = kenyaHieSecretNames.filter((names) =>
+      names.some((name) => getProjectSettingString(project.secret, name))
     ).length;
-    const missingHieSecretCount = kenyaAfyaLinkSecretNames.length - configuredHieSecretCount;
+    const missingHieSecretCount = kenyaHieSecretNames.length - configuredHieSecretCount;
     const configuredShaSecretCount = kenyaShaClaimsSecretNames.filter((name) =>
       getProjectSettingString(project.secret, name)
     ).length;
     const missingShaSecretCount = kenyaShaClaimsSecretNames.length - configuredShaSecretCount;
     const canLookupFacility =
-      kenyaHieCredentialMode === 'afiax-managed' || configuredHieSecretCount === kenyaAfyaLinkSecretNames.length;
+      kenyaHieCredentialMode === 'afiax-managed' || configuredHieSecretCount === kenyaHieSecretNames.length;
 
     return (
       <Stack gap="md">
@@ -373,7 +377,7 @@ export function CountryPackPage(): JSX.Element {
           <DescriptionListEntry term="HIE Credential Status">
             {kenyaHieCredentialMode === 'afiax-managed'
               ? 'Managed by Afiax platform operations'
-              : `${configuredHieSecretCount} of ${kenyaAfyaLinkSecretNames.length} required HIE credentials configured`}
+              : `${configuredHieSecretCount} of ${kenyaHieSecretNames.length} required HIE credentials configured`}
           </DescriptionListEntry>
           <DescriptionListEntry term="SHA Credential Status">
             {kenyaShaClaimsCredentialMode === 'afiax-managed'

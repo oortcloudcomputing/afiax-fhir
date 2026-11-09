@@ -56,7 +56,7 @@ export async function handlePublishNationalRecord(
 
   const bundle = await buildPublicationBundle(ctx, patient, input);
   const bundleEntryCount = bundle.entry?.length ?? 0;
-  const endpoint = `${credentials.baseUrl}/v1/shr/patient-record`;
+  const endpoint = `${credentials.baseUrl}/shr/bundles`;
 
   let publicationId: string | null = null;
   let status: NationalRecordPublicationStatus;

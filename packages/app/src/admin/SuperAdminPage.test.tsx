@@ -140,11 +140,11 @@ describe('SuperAdminPage', () => {
 
     expect(await screen.findByText(/Afiax Kenya Project/)).toBeInTheDocument();
     expect(screen.getByTestId('afiax-managed-project-id')).toHaveValue('project-123');
-    expect(screen.getByTestId('afiax-managed-consumer-key')).toHaveValue('existing-consumer-key');
+    expect(screen.getByTestId('afiax-managed-client-id')).toHaveValue('existing-consumer-key');
     expect(screen.getByTestId('afiax-managed-sha-access-key')).toHaveValue('existing-sha-access-key');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('afiax-managed-consumer-key'), {
+      fireEvent.change(screen.getByTestId('afiax-managed-client-id'), {
         target: { value: 'updated-consumer-key' },
       });
     });
@@ -156,9 +156,9 @@ describe('SuperAdminPage', () => {
     expect(postSpy).toHaveBeenCalledWith(
       'admin/super/projects/project-123/kenya/afyalink/systemsecrets',
       expect.arrayContaining([
-        expect.objectContaining({ name: 'kenyaAfyaLinkConsumerKey', valueString: 'updated-consumer-key' }),
-        expect.objectContaining({ name: 'kenyaAfyaLinkUsername', valueString: 'existing-username' }),
-        expect.objectContaining({ name: 'kenyaAfyaLinkPassword', valueString: 'existing-password' }),
+        // Values saved under the earlier names load into the form and are saved under the new names.
+        expect.objectContaining({ name: 'kenyaHieClientId', valueString: 'updated-consumer-key' }),
+        expect.objectContaining({ name: 'kenyaHieClientSecret', valueString: 'existing-password' }),
       ])
     );
 

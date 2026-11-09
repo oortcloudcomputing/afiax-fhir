@@ -77,7 +77,7 @@ describe('handlePublishNationalRecord', () => {
     expect(result.status).toBe('published');
     expect(result.publicationId).toBe('SHR-ABC123');
     expect(result.bundleEntryCount).toBe(1); // Patient only (no extra resources requested)
-    expect(result.endpoint).toContain('/v1/shr/patient-record');
+    expect(result.endpoint).toContain('/shr/bundles');
     expect(result.task?.reference).toMatch(/^Task\//);
 
     // SHR endpoint called with a Bundle

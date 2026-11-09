@@ -1,5 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Kenya HIE connector (DHA Health Information Exchange middleware).
+//
+// Follows the current DHA HIE documentation at https://hie-docs.dha.go.ke (checked 2026-11-10,
+// pages last modified 2026-09-28). It replaces the retired AfyaLink v1 API
+// (GET /v1/hie-auth?key=… with Basic auth, /v2/facility-search, /v1/practitioner-search,
+// /v2/eligibility, Tiberbu /check-client), which DHA no longer accepts.
+//
+// - Credentials: a client ID and client secret per app, issued in the AfyaConnect developer
+//   portal (https://afyaconnect.dha.go.ke).
+// - Token: POST {base}/tenants/token (form client_id, client_secret) returns a Bearer token
+//   (about one hour). Tokens are cached until shortly before they expire.
+// - Facility: a facility-scoped token carries the facility (facility_id claim). A multi-facility
+//   (service-account) token must send X-Facility-Id and X-Facility-Id-Type: fr-code on every
+//   call; set the kenyaHieFacilityId secret to send them.
 import type { KenyaHieCredentialMode, KenyaHieEnvironment } from '@medplum/core';
 import {
   getKenyaHieAgentId,
@@ -10,6 +25,18 @@ import {
 import type { Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 
+export const KenyaHieSecretNames = {
+  baseUrl: 'kenyaHieBaseUrl',
+  clientId: 'kenyaHieClientId',
+  clientSecret: 'kenyaHieClientSecret',
+  facilityId: 'kenyaHieFacilityId',
+} as const;
+
+/**
+ * Secret names used before the move to the DHA HIE middleware. They are still read as a
+ * fallback, so projects configured earlier keep working: the AfyaConnect client ID was entered
+ * as the consumer key and the client secret as the password.
+ */
 export const KenyaAfyaLinkSecretNames = {
   baseUrl: 'kenyaAfyaLinkBaseUrl',
   consumerKey: 'kenyaAfyaLinkConsumerKey',
@@ -17,16 +44,25 @@ export const KenyaAfyaLinkSecretNames = {
   password: 'kenyaAfyaLinkPassword',
 } as const;
 
+/** Every secret name the Kenya HIE connector reads (current and legacy). */
+export const KenyaHieAllSecretNames: readonly string[] = [
+  ...Object.values(KenyaHieSecretNames),
+  ...Object.values(KenyaAfyaLinkSecretNames),
+];
+
+export const KenyaHieDefaultBaseUrls: Record<KenyaHieEnvironment, string | undefined> = {
+  uat: 'https://ilm-dev.dha.go.ke/uat-middleware/api/v1',
+  // DHA issues production credentials and the production base URL after certification.
+  production: undefined,
+};
+
 export interface KenyaAfyaLinkCredentials {
   readonly baseUrl: string;
-  readonly consumerKey: string;
-  readonly username: string;
-  readonly password: string;
+  readonly clientId: string;
+  readonly clientSecret: string;
+  /** Facility Registry (FR) code sent as X-Facility-Id, for multi-facility tokens. */
+  readonly facilityId?: string;
   readonly agentId?: string;
-}
-
-export interface AfyaLinkTokenResponse {
-  readonly token?: string;
 }
 
 export interface AfyaLinkFacilityMessage {
@@ -35,8 +71,11 @@ export interface AfyaLinkFacilityMessage {
   readonly registration_number?: string | null;
   readonly regulator?: string | null;
   readonly facility_code?: string;
+  readonly fr_code?: string | null;
   readonly found?: number;
   readonly approved?: boolean | string | null;
+  /** The registry's licence status as returned, for example LICENSED. */
+  readonly license_status?: string | null;
   readonly facility_level?: string | null;
   readonly facility_category?: string | null;
   readonly facility_owner?: string | null;
@@ -45,6 +84,7 @@ export interface AfyaLinkFacilityMessage {
   readonly sub_county?: string | null;
   readonly ward?: string | null;
   readonly operational_status?: string | null;
+  readonly sha_operational_status?: string | null;
   readonly current_license_expiry_date?: string | null;
 }
 
@@ -56,10 +96,25 @@ export interface AfyaLinkPractitionerMessage {
   readonly registration_number?: string | null;
   readonly found?: number;
   readonly is_active?: string | boolean | null;
+  readonly full_name?: string | null;
+  readonly licensing_body?: string | null;
+  readonly client_registry_id?: string | null;
+  readonly license_end?: string | null;
 }
 
 export interface AfyaLinkPractitionerSearchResponse {
   readonly message?: AfyaLinkPractitionerMessage;
+}
+
+export interface AfyaLinkEligibilityScheme {
+  readonly schemeId?: number | null;
+  readonly schemeName?: string | null;
+  readonly memberType?: string | null;
+  readonly coverageStatus?: string | null;
+  readonly coverageStartDate?: string | null;
+  readonly coverageEndDate?: string | null;
+  readonly reason?: string | null;
+  readonly possibleSolution?: string | null;
 }
 
 export interface AfyaLinkEligibilityMessage {
@@ -74,7 +129,12 @@ export interface AfyaLinkEligibilityMessage {
   readonly request_id_type?: string | null;
   readonly message?: string | null;
   readonly status?: string | null;
-  // v3 fields
+  readonly member_cr_number?: string | null;
+  readonly is_alive?: boolean | null;
+  readonly whitelisted_for_otp?: boolean | null;
+  readonly facility_biometrics_enforced?: boolean | null;
+  readonly schemes?: readonly AfyaLinkEligibilityScheme[];
+  // Fields from the retired v3 eligibility API, kept for callers that still read them.
   readonly means_testing_details?: { readonly means_testing_done?: boolean | null } | null;
   readonly client_portal_details?: {
     readonly employment_type?: string | null;
@@ -93,9 +153,11 @@ export interface AfyaLinkClientRegistryMessage {
   readonly client_registry_id?: string | null;
   readonly full_name?: string | null;
   readonly first_name?: string | null;
+  readonly middle_name?: string | null;
   readonly last_name?: string | null;
   readonly date_of_birth?: string | null;
   readonly gender?: string | null;
+  readonly phone?: string | null;
   readonly identification_type?: string | null;
   readonly identification_number?: string | null;
   readonly account_status?: string | null;
@@ -120,445 +182,445 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function normalizeFoundValue(value: unknown): number | undefined {
-  if (typeof value === 'number') {
-    return value;
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? 1 : 0;
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) {
-      return undefined;
-    }
-    if (normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'found') {
-      return 1;
-    }
-    if (normalized === '0' || normalized === 'false' || normalized === 'no' || normalized === 'not found') {
-      return 0;
-    }
-  }
-
-  return undefined;
-}
-
-function normalizeAfyaLinkFacilityMessage(
-  payload: Record<string, unknown>,
-  facilityCode: string
-): AfyaLinkFacilityMessage | undefined {
-  const normalizedFound = normalizeFoundValue(payload.found);
-  const inferredFound =
-    normalizedFound ??
-    (typeof payload.facility_name === 'string' ||
-    typeof payload.registration_number === 'string' ||
-    typeof payload.facility_level === 'string'
-      ? 1
-      : undefined);
-
-  const message: AfyaLinkFacilityMessage = {
-    id: typeof payload.id === 'string' ? payload.id : null,
-    facility_name: typeof payload.facility_name === 'string' ? payload.facility_name : null,
-    registration_number: typeof payload.registration_number === 'string' ? payload.registration_number : null,
-    regulator: typeof payload.regulator === 'string' ? payload.regulator : null,
-    facility_code:
-      typeof payload.facility_code === 'string' && payload.facility_code.trim() ? payload.facility_code : facilityCode,
-    found: inferredFound,
-    approved: typeof payload.approved === 'boolean' || typeof payload.approved === 'string' ? payload.approved : null,
-    facility_level: typeof payload.facility_level === 'string' ? payload.facility_level : null,
-    facility_category: typeof payload.facility_category === 'string' ? payload.facility_category : null,
-    facility_owner: typeof payload.facility_owner === 'string' ? payload.facility_owner : null,
-    facility_type: typeof payload.facility_type === 'string' ? payload.facility_type : null,
-    county: typeof payload.county === 'string' ? payload.county : null,
-    sub_county: typeof payload.sub_county === 'string' ? payload.sub_county : null,
-    ward: typeof payload.ward === 'string' ? payload.ward : null,
-    operational_status: typeof payload.operational_status === 'string' ? payload.operational_status : null,
-    current_license_expiry_date:
-      typeof payload.current_license_expiry_date === 'string' ? payload.current_license_expiry_date : null,
-  };
-
-  if (
-    message.found === undefined &&
-    !message.facility_name &&
-    !message.registration_number &&
-    !message.facility_level &&
-    !message.county &&
-    !message.operational_status
-  ) {
-    return undefined;
-  }
-
-  return message;
-}
-
-function normalizeAfyaLinkFacilitySearchResponse(
-  payload: unknown,
-  facilityCode: string
-): AfyaLinkFacilitySearchResponse {
-  if (!isRecord(payload)) {
-    throw new Error('AfyaLink facility search returned an unsupported response body');
-  }
-
-  if (isRecord(payload.message)) {
-    const message = normalizeAfyaLinkFacilityMessage(payload.message, facilityCode);
-    if (message) {
-      return { message };
-    }
-  }
-
-  const rootMessage = normalizeAfyaLinkFacilityMessage(payload, facilityCode);
-  if (rootMessage) {
-    return { message: rootMessage };
-  }
-
-  throw new Error('AfyaLink facility search response did not include a recognizable facility payload');
-}
-
-function getRawEligibleValue(eligible: unknown): string | boolean | null {
-  return typeof eligible === 'string' || typeof eligible === 'boolean' ? eligible : null;
-}
-
-function normalizeAfyaLinkPractitionerMessage(
-  payload: Record<string, unknown>
-): AfyaLinkPractitionerMessage | undefined {
-  const normalizedFound = normalizeFoundValue(payload.found);
-  let registrationNumber: string | null = null;
-  if (typeof payload.registration_number === 'number' || typeof payload.registration_number === 'string') {
-    registrationNumber = String(payload.registration_number);
-  }
-  const isActive =
-    typeof payload.is_active === 'boolean' || typeof payload.is_active === 'string' ? payload.is_active : null;
-
-  if (normalizedFound === undefined && !registrationNumber && isActive === null) {
-    return undefined;
-  }
-
-  return {
-    registration_number: registrationNumber,
-    found: normalizedFound,
-    is_active: isActive,
-  };
-}
-
-function normalizeAfyaLinkPractitionerSearchResponse(payload: unknown): AfyaLinkPractitionerSearchResponse {
-  if (!isRecord(payload)) {
-    throw new Error('AfyaLink practitioner search returned an unsupported response body');
-  }
-
-  if (isRecord(payload.message)) {
-    const message = normalizeAfyaLinkPractitionerMessage(payload.message);
-    if (message) {
-      return { message };
-    }
-  }
-
-  const rootMessage = normalizeAfyaLinkPractitionerMessage(payload);
-  if (rootMessage) {
-    return { message: rootMessage };
-  }
-
-  throw new Error('AfyaLink practitioner search response did not include a recognizable practitioner payload');
-}
-
-function normalizeAfyaLinkEligibilityMessage(payload: Record<string, unknown>): AfyaLinkEligibilityMessage | undefined {
-  const normalizedEligible = normalizeFoundValue(payload.eligible);
-
-  const meansTestingDetails = isRecord(payload.means_testing_details) ? payload.means_testing_details : null;
-  const clientPortalDetails = isRecord(payload.client_portal_details) ? payload.client_portal_details : null;
-
-  const message: AfyaLinkEligibilityMessage = {
-    id: typeof payload.id === 'string' || typeof payload.id === 'number' ? payload.id : null,
-    eligible: normalizedEligible ?? getRawEligibleValue(payload.eligible),
-    full_name: typeof payload.full_name === 'string' ? payload.full_name : null,
-    reason: typeof payload.reason === 'string' ? payload.reason : null,
-    possible_solution: typeof payload.possible_solution === 'string' ? payload.possible_solution : null,
-    coverageEndDate: typeof payload.coverageEndDate === 'string' ? payload.coverageEndDate : null,
-    transition_status: typeof payload.transition_status === 'string' ? payload.transition_status : null,
-    request_id_number: typeof payload.request_id_number === 'string' ? payload.request_id_number : null,
-    request_id_type: typeof payload.request_id_type === 'string' ? payload.request_id_type : null,
-    message: typeof payload.message === 'string' ? payload.message : null,
-    status: typeof payload.status === 'string' ? payload.status : null,
-    means_testing_details: meansTestingDetails
-      ? {
-          means_testing_done:
-            typeof meansTestingDetails.means_testing_done === 'boolean' ? meansTestingDetails.means_testing_done : null,
-        }
-      : null,
-    client_portal_details: clientPortalDetails
-      ? {
-          employment_type:
-            typeof clientPortalDetails.employment_type === 'string' ? clientPortalDetails.employment_type : null,
-          employer_name:
-            typeof clientPortalDetails.employer_name === 'string' ? clientPortalDetails.employer_name : null,
-        }
-      : null,
-    eligible_employee:
-      typeof payload.eligible_employee === 'boolean' ||
-      typeof payload.eligible_employee === 'string' ||
-      typeof payload.eligible_employee === 'number'
-        ? payload.eligible_employee
-        : null,
-    policy_end_employer: typeof payload.policy_end_employer === 'string' ? payload.policy_end_employer : null,
-  };
-
-  if (
-    message.eligible === null &&
-    !message.full_name &&
-    !message.reason &&
-    !message.possible_solution &&
-    !message.coverageEndDate &&
-    !message.message &&
-    !message.status
-  ) {
-    return undefined;
-  }
-
-  return message;
-}
-
-function normalizeAfyaLinkEligibilityResponse(payload: unknown): AfyaLinkEligibilityResponse {
-  if (!isRecord(payload)) {
-    throw new Error('AfyaLink eligibility returned an unsupported response body');
-  }
-
-  if (isRecord(payload.message)) {
-    const message = normalizeAfyaLinkEligibilityMessage(payload.message);
-    if (message) {
-      return { message };
-    }
-  }
-
-  const rootMessage = normalizeAfyaLinkEligibilityMessage(payload);
-  if (rootMessage) {
-    return { message: rootMessage };
-  }
-
-  throw new Error('AfyaLink eligibility response did not include a recognizable payload');
+function str(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 function getProjectSecret(project: Project, name: string): string | undefined {
-  return project.secret?.find((entry) => entry.name === name)?.valueString;
+  return project.secret?.find((entry) => entry.name === name)?.valueString?.trim() || undefined;
 }
 
 function getProjectSystemSecret(project: Project, name: string): string | undefined {
-  return project.systemSecret?.find((entry) => entry.name === name)?.valueString;
+  return project.systemSecret?.find((entry) => entry.name === name)?.valueString?.trim() || undefined;
 }
 
 function getManagedProjectSecret(
   project: Project,
-  name: string,
+  names: readonly string[],
   credentialMode: KenyaHieCredentialMode
 ): string | undefined {
-  if (credentialMode === 'afiax-managed') {
-    return getProjectSystemSecret(project, name);
+  for (const name of names) {
+    const value =
+      credentialMode === 'afiax-managed'
+        ? getProjectSystemSecret(project, name)
+        : (getProjectSecret(project, name) ?? getProjectSystemSecret(project, name));
+    if (value) {
+      return value;
+    }
   }
-  return getProjectSecret(project, name) ?? getProjectSystemSecret(project, name);
+  return undefined;
 }
 
-function requireManagedProjectSecret(project: Project, name: string, credentialMode: KenyaHieCredentialMode): string {
-  const value = getManagedProjectSecret(project, name, credentialMode);
+function requireManagedProjectSecret(
+  project: Project,
+  names: readonly string[],
+  credentialMode: KenyaHieCredentialMode
+): string {
+  const value = getManagedProjectSecret(project, names, credentialMode);
   if (!value) {
     throw new Error(
       credentialMode === 'afiax-managed'
-        ? `Missing required Afiax-managed Kenya AfyaLink secret: ${name}`
-        : `Missing required Kenya AfyaLink secret: ${name}`
+        ? `Missing required Afiax-managed Kenya HIE secret: ${names[0]}`
+        : `Missing required Kenya HIE secret: ${names[0]}`
     );
   }
   return value;
 }
 
-function getKenyaAfyaLinkBaseUrl(
+function getKenyaHieBaseUrl(
   project: Project,
   credentialMode: KenyaHieCredentialMode,
   environment: KenyaHieEnvironment
 ): string {
-  const explicitBaseUrl = getManagedProjectSecret(project, KenyaAfyaLinkSecretNames.baseUrl, credentialMode);
+  const explicitBaseUrl = getManagedProjectSecret(project, [KenyaHieSecretNames.baseUrl], credentialMode);
   if (explicitBaseUrl) {
     return explicitBaseUrl.replace(/\/+$/, '');
   }
 
-  if (environment === 'uat') {
-    // DHA's published UAT integration guides use https://uat.dha.go.ke as the shared UAT base.
-    return 'https://uat.dha.go.ke';
+  // The legacy override pointed at the retired AfyaLink host; use it only if it names the middleware.
+  const legacyBaseUrl = getManagedProjectSecret(project, [KenyaAfyaLinkSecretNames.baseUrl], credentialMode);
+  if (legacyBaseUrl && !/^https:\/\/uat\.dha\.go\.ke\/?$/.test(legacyBaseUrl)) {
+    return legacyBaseUrl.replace(/\/+$/, '');
+  }
+
+  const defaultBaseUrl = KenyaHieDefaultBaseUrls[environment];
+  if (defaultBaseUrl) {
+    return defaultBaseUrl;
   }
 
   throw new Error(
-    'Missing required Kenya AfyaLink production base URL. Configure kenyaAfyaLinkBaseUrl as an Afiax-managed system secret or project secret override.'
+    'Missing required Kenya HIE production base URL. DHA issues it with production credentials after certification; configure kenyaHieBaseUrl.'
   );
 }
 
 export function getKenyaAfyaLinkCredentials(project: Project): KenyaAfyaLinkCredentials {
   const credentialMode = getKenyaHieCredentialMode(project);
   const environment = getKenyaHieEnvironment(project);
+  const facilityId = getManagedProjectSecret(project, [KenyaHieSecretNames.facilityId], credentialMode);
+  const agentId = getKenyaHieAgentId(project);
   return {
-    baseUrl: getKenyaAfyaLinkBaseUrl(project, credentialMode, environment),
-    consumerKey: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.consumerKey, credentialMode),
-    username: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.username, credentialMode),
-    password: requireManagedProjectSecret(project, KenyaAfyaLinkSecretNames.password, credentialMode),
-    agentId: getKenyaHieAgentId(project) ?? undefined,
+    baseUrl: getKenyaHieBaseUrl(project, credentialMode, environment),
+    clientId: requireManagedProjectSecret(
+      project,
+      [KenyaHieSecretNames.clientId, KenyaAfyaLinkSecretNames.consumerKey],
+      credentialMode
+    ),
+    clientSecret: requireManagedProjectSecret(
+      project,
+      [KenyaHieSecretNames.clientSecret, KenyaAfyaLinkSecretNames.password],
+      credentialMode
+    ),
+    ...(facilityId ? { facilityId } : {}),
+    ...(agentId ? { agentId } : {}),
   };
 }
 
-export async function getAfyaLinkToken(credentials: KenyaAfyaLinkCredentials): Promise<string> {
-  const basicAuth = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
-  const response = await fetch(
-    `${credentials.baseUrl}/v1/hie-auth?key=${encodeURIComponent(credentials.consumerKey)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Basic ${basicAuth}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink auth failed (${response.status}): ${errorBody}`);
-  }
-
-  const rawBody = (await response.text()).trim();
-  if (!rawBody) {
-    throw new Error('AfyaLink auth response was empty');
-  }
-
-  try {
-    const data = JSON.parse(rawBody) as AfyaLinkTokenResponse | string;
-    if (typeof data === 'string' && data.trim()) {
-      return data.trim();
-    }
-    if (data && typeof data === 'object' && typeof data.token === 'string' && data.token.trim()) {
-      return data.token.trim();
-    }
-  } catch {
-    // DHA UAT may return the JWT token as a raw string instead of a JSON object.
-    if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(rawBody)) {
-      return rawBody;
-    }
-  }
-
-  throw new Error('AfyaLink auth response did not include a valid token');
+interface CachedToken {
+  readonly token: string;
+  readonly expiresAt: number;
 }
 
+const tokenCache = new Map<string, CachedToken>();
+
+/** Clears cached HIE access tokens (used by tests and after credentials change). */
+export function clearKenyaHieTokenCache(): void {
+  tokenCache.clear();
+}
+
+function getTokenCacheKey(credentials: KenyaAfyaLinkCredentials): string {
+  return `${credentials.baseUrl}\u0000${credentials.clientId}\u0000${credentials.clientSecret}`;
+}
+
+/**
+ * Gets an HIE access token with the OAuth2 client credentials (POST /tenants/token).
+ * @param credentials - The HIE credentials.
+ * @param options - Optional settings.
+ * @param options.forceRefresh - Skip the cache and authenticate again (for connection tests).
+ * @returns The Bearer access token.
+ */
+export async function getAfyaLinkToken(
+  credentials: KenyaAfyaLinkCredentials,
+  options?: { readonly forceRefresh?: boolean }
+): Promise<string> {
+  const cacheKey = getTokenCacheKey(credentials);
+  const cached = tokenCache.get(cacheKey);
+  if (!options?.forceRefresh && cached && cached.expiresAt > Date.now()) {
+    return cached.token;
+  }
+
+  const response = await fetch(`${credentials.baseUrl}/tenants/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body: new URLSearchParams({
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+    }).toString(),
+  });
+
+  const rawBody = (await response.text()).trim();
+  if (!response.ok) {
+    throw new Error(`Kenya HIE authentication failed (${response.status}): ${rawBody}`);
+  }
+
+  let data: unknown;
+  try {
+    data = JSON.parse(rawBody);
+  } catch {
+    throw new Error('Kenya HIE authentication response was not JSON');
+  }
+
+  const token = isRecord(data) ? str(data.access_token) : null;
+  if (!token) {
+    throw new Error('Kenya HIE authentication response did not include an access_token');
+  }
+
+  const expiresIn = isRecord(data) && typeof data.expires_in === 'number' ? data.expires_in : 300;
+  // Renew a minute early so a request never goes out with a token about to expire.
+  const lifetimeMs = Math.max(expiresIn - 60, 0) * 1000;
+  if (lifetimeMs > 0) {
+    tokenCache.set(cacheKey, { token, expiresAt: Date.now() + lifetimeMs });
+  }
+  return token;
+}
+
+interface HieResult {
+  readonly status: number;
+  readonly ok: boolean;
+  readonly body: unknown;
+  readonly text: string;
+}
+
+async function hieGet(
+  credentials: KenyaAfyaLinkCredentials,
+  path: string,
+  params: Record<string, string>
+): Promise<HieResult> {
+  const token = await getAfyaLinkToken(credentials);
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+  };
+  if (credentials.facilityId) {
+    headers['X-Facility-Id'] = credentials.facilityId;
+    headers['X-Facility-Id-Type'] = 'fr-code';
+  }
+
+  const response = await fetch(`${credentials.baseUrl}${path}?${new URLSearchParams(params).toString()}`, {
+    method: 'GET',
+    headers,
+  });
+  const text = await response.text();
+  let body: unknown = undefined;
+  try {
+    body = text ? JSON.parse(text) : undefined;
+  } catch {
+    body = undefined;
+  }
+  return { status: response.status, ok: response.ok, body, text };
+}
+
+/**
+ * DHA answers "no match" with 400 and a message such as "zero results found" or
+ * "no practitioner membership returned"; treat those as not found rather than errors.
+ * @param result - The HIE response.
+ * @returns True when the response means the registry has no match.
+ */
+function isNotFoundResult(result: HieResult): boolean {
+  if (result.status === 404) {
+    return true;
+  }
+  if (result.status !== 400 || !isRecord(result.body)) {
+    return false;
+  }
+  const message = str(result.body.message)?.toLowerCase() ?? '';
+  return /zero results|not found|no practitioner|no facility|no patient|no record/.test(message);
+}
+
+function describeFailure(result: HieResult): string {
+  if (isRecord(result.body)) {
+    const message = str(result.body.message);
+    const traceId = str(result.body.trace_id);
+    if (message) {
+      return traceId ? `${message} (trace ${traceId})` : message;
+    }
+  }
+  return result.text;
+}
+
+const FacilityIdentifierPattern = /^FID-/i;
+
+function getFacilityIdentifierType(facilityCode: string): 'fr-code' | 'mfl' {
+  return FacilityIdentifierPattern.test(facilityCode.trim()) ? 'fr-code' : 'mfl';
+}
+
+function normalizeFacilityRecord(payload: Record<string, unknown>, facilityCode: string): AfyaLinkFacilityMessage {
+  const address = isRecord(payload.address) ? payload.address : {};
+  const regulatory = isRecord(payload.regulatoryOperationalStatus) ? payload.regulatoryOperationalStatus : {};
+  const sha = isRecord(payload.SHAOperationStatus) ? payload.SHAOperationStatus : {};
+  const licenseStatus = str(payload.facilityLicenseStatus);
+  // The registry reports the licence state (for example LICENSED); anything else means the
+  // facility is not approved for use.
+  let approved: string | null = null;
+  if (licenseStatus) {
+    approved = /^licen[sc]ed$/i.test(licenseStatus) ? 'true' : 'not approved';
+  }
+  return {
+    id: str(payload.uuid) ?? str(payload.fidCode),
+    facility_name: str(payload.officialName),
+    registration_number: str(payload.registrationNumber),
+    regulator: str(payload.regulatoryBody),
+    facility_code: facilityCode,
+    fr_code: str(payload.frCode),
+    found: 1,
+    approved,
+    license_status: licenseStatus,
+    facility_level: str(payload.kephLevel),
+    facility_category: str(payload.facilityType),
+    facility_owner: str(payload.facilityOwnership),
+    facility_type: str(payload.facilityType),
+    county: str(address.county),
+    sub_county: str(address.subCounty),
+    ward: str(address.ward),
+    operational_status: str(regulatory.operationalStatus),
+    sha_operational_status: str(sha.operationalStatus),
+    current_license_expiry_date: str(payload.facilityLicenseEndDate),
+  };
+}
+
+/**
+ * Looks up a facility in the Facility Registry (GET /facilities/search).
+ * @param credentials - The HIE credentials.
+ * @param facilityCode - An FR code (FID-…) or a KMHFL (MFL) code.
+ * @returns The normalized facility record, with found 0 when there is no match.
+ */
 export async function searchAfyaLinkFacility(
   credentials: KenyaAfyaLinkCredentials,
   facilityCode: string
 ): Promise<AfyaLinkFacilitySearchResponse> {
-  const token = await getAfyaLinkToken(credentials);
-  // TODO(dha-verify): facility registry API docs show /v1/facility-search?facility_code=... (v1).
-  // The claims integration guide mentions /v2/facility-search?facility-fid=... (v2, different param).
-  // Test /v2 with facility_code param against UAT; switch to facility-fid if v2 requires it.
-  // Tracked: https://github.com/oortcloudcomputing/afiax-fhir/issues/4
-  const response = await fetch(
-    `${credentials.baseUrl}/v2/facility-search?facility_code=${encodeURIComponent(facilityCode)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const code = facilityCode.trim();
+  const result = await hieGet(credentials, '/facilities/search', {
+    identifier: code,
+    'identifier-type': getFacilityIdentifierType(code),
+  });
 
-  if (response.status === 404) {
-    return {
-      message: {
-        facility_code: facilityCode,
-        found: 0,
-      },
-    };
+  if (isNotFoundResult(result)) {
+    return { message: { facility_code: code, found: 0 } };
   }
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink facility search failed (${response.status}): ${errorBody}`);
+  if (!result.ok) {
+    throw new Error(`Kenya HIE facility search failed (${result.status}): ${describeFailure(result)}`);
   }
 
   try {
-    return normalizeAfyaLinkFacilitySearchResponse(await response.json(), facilityCode);
+    const records = Array.isArray(result.body) ? result.body : [result.body];
+    const record = records.find(isRecord);
+    if (!record) {
+      return { message: { facility_code: code, found: 0 } };
+    }
+    return { message: normalizeFacilityRecord(record, code) };
   } catch (err) {
-    throw new Error(`Failed to parse AfyaLink facility search response: ${normalizeErrorString(err)}`);
+    throw new Error(`Failed to parse Kenya HIE facility search response: ${normalizeErrorString(err)}`);
   }
 }
 
-function buildPractitionerSearchUrl(baseUrl: string, identificationType: string, identificationNumber: string): string {
-  const enc = encodeURIComponent;
-  // Regulator-based registration number lookup (KMPDC doctors, COC clinical officers)
-  if (identificationType === 'KMPDC') {
-    return `${baseUrl}/v1/practitioner-search?regulator=kmpdc&registration_number=${enc(identificationNumber)}`;
+const PractitionerRegulators = new Set(['KMPDC', 'COC', 'NCK', 'PPB']);
+
+function buildPractitionerSearchParams(
+  identificationType: string,
+  identificationNumber: string
+): Record<string, string> {
+  const type = identificationType.trim().toUpperCase();
+  if (type === 'KMPDC' || type === 'COC') {
+    // Licence (registration) number lookup; the registry's preferred identifier.
+    return { identification_number: identificationNumber, identification_type: 'registration_number', regulator: type };
   }
-  if (identificationType === 'COC') {
-    return `${baseUrl}/v1/practitioner-search?regulator=coc&registration_number=${enc(identificationNumber)}`;
+  if (type === 'PPB' || type === 'NCK') {
+    // Pharmacists and nurses are captured by National ID in Afiax FHIR.
+    return { identification_number: identificationNumber, identification_type: 'National ID', regulator: type };
   }
-  // National ID-based lookup (PPB pharmacists, NCK nurses, legacy ID/PASSPORT)
-  const regulators: Record<string, string> = { PPB: 'ppb', NCK: 'nck' };
-  const regulator = regulators[identificationType];
-  const normalizedType = identificationType === 'PASSPORT' ? 'Passport' : 'National ID';
-  const base = `${baseUrl}/v1/practitioner-search?identification_type=${enc(normalizedType)}&identification_number=${enc(identificationNumber)}`;
-  return regulator ? `${base}&regulator=${regulator}` : base;
+  if (type === 'ID' || type === 'NATIONAL ID') {
+    return { identification_number: identificationNumber, identification_type: 'National ID' };
+  }
+  if (type === 'ALIEN ID' || type === 'REFUGEE ID') {
+    return { identification_number: identificationNumber, identification_type: identificationType.trim() };
+  }
+  if (type === 'REGISTRATION_NUMBER') {
+    return { identification_number: identificationNumber, identification_type: 'registration_number' };
+  }
+  throw new Error(
+    `Unsupported practitioner identification type for the DHA Health Worker Registry: ${identificationType}. Use a KMPDC, COC, PPB or NCK number, or a National, Alien or Refugee ID.`
+  );
 }
 
+/**
+ * Looks up a practitioner in the Health Worker Registry (GET /professionals).
+ * @param credentials - The HIE credentials.
+ * @param identificationType - KMPDC, COC, PPB, NCK, ID or registration_number.
+ * @param identificationNumber - The licence or ID number.
+ * @returns The normalized practitioner record, with found 0 when there is no match.
+ */
 export async function searchAfyaLinkPractitioner(
   credentials: KenyaAfyaLinkCredentials,
   identificationType: string,
   identificationNumber: string
 ): Promise<AfyaLinkPractitionerSearchResponse> {
-  const token = await getAfyaLinkToken(credentials);
-  const response = await fetch(
-    buildPractitionerSearchUrl(credentials.baseUrl, identificationType, identificationNumber),
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const params = buildPractitionerSearchParams(identificationType, identificationNumber.trim());
+  const result = await hieGet(credentials, '/professionals', params);
 
-  if (response.status === 404) {
-    return {
-      message: {
-        found: 0,
-        registration_number: null,
-        is_active: null,
-      },
-    };
+  if (isNotFoundResult(result)) {
+    return { message: { found: 0, registration_number: null, is_active: null } };
+  }
+  if (!result.ok) {
+    throw new Error(`Kenya HIE practitioner search failed (${result.status}): ${describeFailure(result)}`);
   }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink practitioner search failed (${response.status}): ${errorBody}`);
+  const payload = isRecord(result.body) && isRecord(result.body.message) ? result.body.message : undefined;
+  const membership = payload && isRecord(payload.membership) ? payload.membership : undefined;
+  if (!payload || !membership) {
+    return { message: { found: 0, registration_number: null, is_active: null } };
   }
 
-  try {
-    return normalizeAfyaLinkPractitionerSearchResponse(await response.json());
-  } catch (err) {
-    throw new Error(`Failed to parse AfyaLink practitioner search response: ${normalizeErrorString(err)}`);
+  const identifiers = isRecord(payload.identifiers) ? payload.identifiers : {};
+  const licenses = Array.isArray(payload.licenses) ? payload.licenses.filter(isRecord) : [];
+  const latestLicenseEnd = licenses
+    .map((license) => str(license.license_end))
+    .filter((value): value is string => !!value)
+    .sort()
+    .pop();
+  let isActive: string | boolean | null = null;
+  if (typeof membership.is_active === 'number') {
+    isActive = membership.is_active === 1;
+  } else if (typeof membership.is_active === 'boolean' || typeof membership.is_active === 'string') {
+    isActive = membership.is_active;
   }
+
+  return {
+    message: {
+      found: 1,
+      registration_number:
+        str(membership.registration_id) ?? (PractitionerRegulators.has(params.regulator) ? identificationNumber : null),
+      is_active: isActive,
+      full_name: str(membership.full_name),
+      licensing_body: str(membership.licensing_body),
+      client_registry_id: str(identifiers.client_registry_id),
+      license_end: latestLicenseEnd ?? null,
+    },
+  };
 }
 
+/**
+ * The eligibility identification types DHA accepts. Afiax's own labels map onto them.
+ * "SHA Number" and "Temporary ID" are not in DHA's list; they are passed through unchanged
+ * and DHA rejects them, which surfaces as an error to the caller.
+ * @param identificationType - The identification type label.
+ * @returns The DHA identification type.
+ */
+function toHiePatientIdentificationType(identificationType: string): string {
+  const normalized = identificationType
+    .trim()
+    .toUpperCase()
+    .replace(/[_\s]+/g, ' ');
+  const map: Record<string, string> = {
+    'NATIONAL ID': 'National ID',
+    ID: 'National ID',
+    'CR ID': 'ClientRegistry ID',
+    'CLIENTREGISTRY ID': 'ClientRegistry ID',
+    'CLIENT REGISTRY ID': 'ClientRegistry ID',
+    'BIRTH NOTIFICATION': 'Birth Notification',
+    'BIRTH CERTIFICATE': 'Birth Certificate',
+    'BIRTH CERTIFICATE NUMBER': 'Birth Certificate',
+    'ALIEN ID': 'Alien ID',
+    'REFUGEE ID': 'Refugee ID',
+    'MANDATE NUMBER': 'Mandate Number',
+  };
+  return map[normalized] ?? identificationType.trim();
+}
+
+function isActiveCoverage(status: string | null): boolean {
+  return !!status && /^(active|eligible|1|true)$/i.test(status.trim());
+}
+
+/**
+ * Checks SHA eligibility (GET /patients/eligibility).
+ * @param credentials - The HIE credentials.
+ * @param identificationType - The patient identification type (ClientRegistry ID preferred).
+ * @param identificationNumber - The identification number.
+ * @returns The normalized eligibility result.
+ */
 export async function searchAfyaLinkEligibility(
   credentials: KenyaAfyaLinkCredentials,
   identificationType: string,
   identificationNumber: string
 ): Promise<AfyaLinkEligibilityResponse> {
-  const token = await getAfyaLinkToken(credentials);
-  const response = await fetch(
-    `${credentials.baseUrl}/v2/eligibility?identification_type=${encodeURIComponent(
-      identificationType
-    )}&identification_number=${encodeURIComponent(identificationNumber)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const hieType = toHiePatientIdentificationType(identificationType);
+  const result = await hieGet(credentials, '/patients/eligibility', {
+    identification_number: identificationNumber.trim(),
+    identification_type: hieType,
+  });
 
-  if (response.status === 404) {
+  if (isNotFoundResult(result)) {
     return {
       message: {
         eligible: 0,
@@ -568,241 +630,123 @@ export async function searchAfyaLinkEligibility(
       },
     };
   }
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink eligibility failed (${response.status}): ${errorBody}`);
+  if (!result.ok || !isRecord(result.body)) {
+    throw new Error(`Kenya HIE eligibility check failed (${result.status}): ${describeFailure(result)}`);
   }
 
-  try {
-    return normalizeAfyaLinkEligibilityResponse(await response.json());
-  } catch (err) {
-    throw new Error(`Failed to parse AfyaLink eligibility response: ${normalizeErrorString(err)}`);
-  }
-}
-
-function extractClientRegistryFromFhirPatient(
-  patient: Record<string, unknown>,
-  identificationType: string,
-  identificationNumber: string
-): AfyaLinkClientRegistryMessage {
-  // v3 API returns a FHIR R4 Patient resource — extract name, DOB, gender, and identifiers
-  const nameArr = Array.isArray(patient.name) ? patient.name : [];
-  const name = isRecord(nameArr[0]) ? nameArr[0] : {};
-  const family = typeof name.family === 'string' ? name.family : null;
-  const givenArr = Array.isArray(name.given) ? name.given : [];
-  const given = typeof givenArr[0] === 'string' ? givenArr[0] : null;
-  const fullName = [given, family].filter(Boolean).join(' ') || null;
-
-  const identifierArr = Array.isArray(patient.identifier) ? patient.identifier : [];
-  // Look for client registry ID in extensions or identifiers
-  let clientRegistryId: string | null = null;
-  for (const id of identifierArr) {
-    if (!isRecord(id)) {
-      continue;
-    }
-    const sys = typeof id.system === 'string' ? id.system : '';
-    if (sys.includes('client-registry') || sys.includes('hie')) {
-      clientRegistryId = typeof id.value === 'string' ? id.value : null;
-      break;
-    }
-  }
-  if (!clientRegistryId) {
-    // Fall back to the resource id
-    clientRegistryId = typeof patient.id === 'string' ? patient.id : null;
-  }
-
-  return {
-    found: 1,
-    client_registry_id: clientRegistryId,
-    full_name: fullName,
-    first_name: given,
-    last_name: family,
-    date_of_birth: typeof patient.birthDate === 'string' ? patient.birthDate : null,
-    gender: typeof patient.gender === 'string' ? patient.gender : null,
-    identification_type: identificationType,
-    identification_number: identificationNumber,
-  };
-}
-
-function normalizeAfyaLinkClientRegistryResponse(
-  raw: unknown,
-  identificationType: string,
-  identificationNumber: string
-): AfyaLinkClientRegistryResponse {
-  if (!isRecord(raw)) {
-    return { message: { found: 0 } };
-  }
-
-  // Current AfyaLink format: { status: "success", message: "Client found.", data: { client_id, ... } }
-  if (isRecord(raw.data)) {
-    const data = raw.data;
-    const clientId = typeof data.client_id === 'string' ? data.client_id : null;
-    return {
-      message: {
-        found: clientId || typeof data.first_name === 'string' ? 1 : 0,
-        client_registry_id: clientId,
-        full_name: typeof data.full_name === 'string' ? data.full_name : null,
-        first_name: typeof data.first_name === 'string' ? data.first_name : null,
-        last_name: typeof data.last_name === 'string' ? data.last_name : null,
-        date_of_birth: typeof data.date_of_birth === 'string' ? data.date_of_birth : null,
-        gender: typeof data.gender === 'string' ? data.gender : null,
-        identification_type:
-          typeof data.identification_type === 'string' ? data.identification_type : identificationType,
-        identification_number:
-          typeof data.identification_number === 'string' ? data.identification_number : identificationNumber,
-        account_status: typeof data.account_status === 'string' ? data.account_status : null,
-      },
-    };
-  }
-
-  // Legacy: { message: { result: [FHIRPatient, ...] } } or flat message object
-  if (isRecord(raw.message)) {
-    const msg = raw.message;
-    const resultArr = Array.isArray(msg.result) ? msg.result : [];
-    if (resultArr.length > 0 && isRecord(resultArr[0])) {
-      return { message: extractClientRegistryFromFhirPatient(resultArr[0], identificationType, identificationNumber) };
-    }
-    if (resultArr.length === 0 || normalizeFoundValue(msg.found) === 0) {
+  const body = result.body;
+  const schemes: AfyaLinkEligibilityScheme[] = (Array.isArray(body.schemes) ? body.schemes : [])
+    .filter(isRecord)
+    .map((scheme) => {
+      const coverage = isRecord(scheme.coverage) ? scheme.coverage : {};
       return {
-        message: { found: 0, identification_type: identificationType, identification_number: identificationNumber },
+        schemeId: typeof scheme.schemeId === 'number' ? scheme.schemeId : null,
+        schemeName: str(scheme.schemeName),
+        memberType: str(scheme.memberType),
+        coverageStatus: str(coverage.status),
+        coverageStartDate: str(coverage.startDate),
+        coverageEndDate: str(coverage.endDate),
+        reason: str(coverage.reason),
+        possibleSolution: str(coverage.possibleSolution),
       };
-    }
-    return {
-      message: {
-        found: normalizeFoundValue(msg.found),
-        client_registry_id: typeof msg.client_registry_id === 'string' ? msg.client_registry_id : null,
-        full_name: typeof msg.full_name === 'string' ? msg.full_name : null,
-        first_name: typeof msg.first_name === 'string' ? msg.first_name : null,
-        last_name: typeof msg.last_name === 'string' ? msg.last_name : null,
-        date_of_birth: typeof msg.date_of_birth === 'string' ? msg.date_of_birth : null,
-        gender: typeof msg.gender === 'string' ? msg.gender : null,
-        identification_type: typeof msg.identification_type === 'string' ? msg.identification_type : identificationType,
-        identification_number:
-          typeof msg.identification_number === 'string' ? msg.identification_number : identificationNumber,
-      },
-    };
-  }
+    });
 
-  // Flat response fallback
-  const found = normalizeFoundValue(raw.found);
+  const isAlive = typeof body.isAlive === 'boolean' ? body.isAlive : null;
+  const activeScheme = schemes.find((scheme) => isActiveCoverage(scheme.coverageStatus ?? null));
+  const firstScheme = activeScheme ?? schemes[0];
+  // A deceased patient is never eligible: DHA says to block every later transaction.
+  const eligible = isAlive !== false && !!activeScheme;
+  const statusDesc = str(body.statusDesc);
+
   return {
     message: {
-      found: found ?? (raw.client_registry_id ? 1 : 0),
-      client_registry_id: typeof raw.client_registry_id === 'string' ? raw.client_registry_id : null,
-      full_name: typeof raw.full_name === 'string' ? raw.full_name : null,
-      first_name: typeof raw.first_name === 'string' ? raw.first_name : null,
-      last_name: typeof raw.last_name === 'string' ? raw.last_name : null,
-      date_of_birth: typeof raw.date_of_birth === 'string' ? raw.date_of_birth : null,
-      gender: typeof raw.gender === 'string' ? raw.gender : null,
-      identification_type: typeof raw.identification_type === 'string' ? raw.identification_type : identificationType,
-      identification_number:
-        typeof raw.identification_number === 'string' ? raw.identification_number : identificationNumber,
+      id: str(body.hash),
+      eligible: eligible ? 1 : 0,
+      full_name: str(body.fullName),
+      reason: firstScheme?.reason ?? (isAlive === false ? 'Patient is recorded as deceased' : statusDesc),
+      possible_solution: firstScheme?.possibleSolution ?? null,
+      coverageEndDate: firstScheme?.coverageEndDate ?? null,
+      transition_status: firstScheme?.coverageStatus ?? str(body.statusCode),
+      request_id_number: str(body.requestIdNumber) ?? identificationNumber,
+      request_id_type: identificationType,
+      message: statusDesc,
+      status: str(body.statusCode),
+      member_cr_number: str(body.memberCrNumber),
+      is_alive: isAlive,
+      whitelisted_for_otp: typeof body.whitelistedForOTP === 'boolean' ? body.whitelistedForOTP : null,
+      facility_biometrics_enforced:
+        typeof body.facilityBiometricsEnforced === 'boolean' ? body.facilityBiometricsEnforced : null,
+      schemes,
     },
   };
 }
 
+/**
+ * Looks up a patient in the Client Registry (GET /patients).
+ * @param credentials - The HIE credentials.
+ * @param identificationType - The patient identification type.
+ * @param identificationNumber - The identification number.
+ * @returns The normalized patient record, with found 0 when there is no match.
+ */
 export async function searchAfyaLinkClientRegistry(
   credentials: KenyaAfyaLinkCredentials,
   identificationType: string,
   identificationNumber: string
 ): Promise<AfyaLinkClientRegistryResponse> {
-  if (!credentials.agentId) {
-    throw new Error(
-      'AfyaLink client registry requires an agent ID. Configure kenyaAfyaLinkAgentId as a project setting.'
-    );
-  }
-  const token = await getAfyaLinkToken(credentials);
-  const enc = encodeURIComponent;
-  const url = `${credentials.baseUrl}/check-client?identification_type=${enc(identificationType)}&identification_number=${enc(identificationNumber)}&agent=${enc(credentials.agentId)}`;
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+  const result = await hieGet(credentials, '/patients', {
+    identification_number: identificationNumber.trim(),
+    identification_type: toHiePatientIdentificationType(identificationType),
   });
 
-  if (response.status === 404) {
-    return {
-      message: { found: 0, identification_type: identificationType, identification_number: identificationNumber },
-    };
+  const notFound: AfyaLinkClientRegistryResponse = {
+    message: { found: 0, identification_type: identificationType, identification_number: identificationNumber },
+  };
+  if (isNotFoundResult(result)) {
+    return notFound;
+  }
+  if (!result.ok) {
+    throw new Error(`Kenya HIE client registry lookup failed (${result.status}): ${describeFailure(result)}`);
   }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink client registry lookup failed (${response.status}): ${errorBody}`);
+  const record = Array.isArray(result.body) ? result.body.find(isRecord) : result.body;
+  if (!isRecord(record) || !str(record.id)) {
+    return notFound;
   }
 
-  try {
-    return normalizeAfyaLinkClientRegistryResponse(await response.json(), identificationType, identificationNumber);
-  } catch (err) {
-    throw new Error(`Failed to parse AfyaLink client registry response: ${normalizeErrorString(err)}`);
-  }
-}
-
-// TODO(dha-verify): AfyaLink client update uses PUT /v3/agent-update-client on a separate Tiberbu host
-// (api-uat.tiberbu.health for UAT, unknown production host). It also requires an encrypted_pin field.
-// This function is currently unused. Do not call until the Tiberbu host URL and PIN encryption are confirmed.
-export async function updateAfyaLinkClientRegistry(
-  credentials: KenyaAfyaLinkCredentials,
-  clientRegistryId: string,
-  updates: Record<string, unknown>
-): Promise<void> {
-  const token = await getAfyaLinkToken(credentials);
-  const response = await fetch(`${credentials.baseUrl}/v3/agent-update-client`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+  const firstName = str(record.first_name);
+  const middleName = str(record.middle_name);
+  const lastName = str(record.last_name);
+  return {
+    message: {
+      found: 1,
+      client_registry_id: str(record.id),
+      full_name: [firstName, middleName, lastName].filter(Boolean).join(' ') || null,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      date_of_birth: str(record.date_of_birth),
+      gender: str(record.gender),
+      phone: str(record.phone),
+      identification_type: str(record.identification_type) ?? identificationType,
+      identification_number: str(record.identification_number) ?? identificationNumber,
+      account_status: str(record.deceased_datetime) ? 'deceased' : null,
     },
-    body: JSON.stringify({ id: clientRegistryId, ...updates }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink client registry update failed (${response.status}): ${errorBody}`);
-  }
+  };
 }
 
+/**
+ * Publishing to the Shared Health Record now needs patient consent and an open visit
+ * (POST /shr/consents, verify the OTP, then POST /shr/bundles with the visit's consent).
+ * That flow is not built yet, so this fails clearly instead of calling the retired endpoint.
+ * @param _credentials - The HIE credentials.
+ * @param _bundle - The FHIR bundle to publish.
+ * @returns Never returns.
+ */
 export async function publishToAfyaLinkShr(
-  credentials: KenyaAfyaLinkCredentials,
-  bundle: Record<string, unknown>
+  _credentials: KenyaAfyaLinkCredentials,
+  _bundle: Record<string, unknown>
 ): Promise<AfyaLinkShrPublicationResponse> {
-  const token = await getAfyaLinkToken(credentials);
-  // TODO(dha-verify): endpoint /v1/shr/patient-record is not listed in the public AfyaLink API docs.
-  // DHA docs show /v1/patient-resource (PUT), /v1/shr-submission (POST), /v1/shr/summary (GET).
-  // Confirm correct outpatient SHR submission path with DHA before production use.
-  // Tracked: https://github.com/oortcloudcomputing/afiax-fhir/issues/4
-  const response = await fetch(`${credentials.baseUrl}/v1/shr/patient-record`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(bundle),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`AfyaLink SHR publication failed (${response.status}): ${errorBody}`);
-  }
-
-  try {
-    const raw = await response.json();
-    if (isRecord(raw) && isRecord(raw.message)) {
-      return {
-        message: {
-          record_id: typeof raw.message.record_id === 'string' ? raw.message.record_id : null,
-          status: typeof raw.message.status === 'string' ? raw.message.status : null,
-          timestamp: typeof raw.message.timestamp === 'string' ? raw.message.timestamp : null,
-          message: typeof raw.message.message === 'string' ? raw.message.message : null,
-        },
-      };
-    }
-    return { message: { status: 'received' } };
-  } catch (err) {
-    throw new Error(`Failed to parse AfyaLink SHR publication response: ${normalizeErrorString(err)}`);
-  }
+  throw new Error(
+    'Kenya Shared Health Record publication is not available yet: DHA now requires patient consent and an open visit (POST /shr/consents, then POST /shr/bundles), which Afiax FHIR does not implement yet.'
+  );
 }

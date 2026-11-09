@@ -20,11 +20,15 @@ import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
-const KenyaAfyaLinkSecretNames = {
-  baseUrl: 'kenyaAfyaLinkBaseUrl',
-  consumerKey: 'kenyaAfyaLinkConsumerKey',
-  username: 'kenyaAfyaLinkUsername',
-  password: 'kenyaAfyaLinkPassword',
+// Client ID and secret from the DHA AfyaConnect developer portal (OAuth2 client credentials).
+// The kenyaAfyaLink* names are the earlier ones; they are still read when the new ones are empty.
+const KenyaHieSecretNames = {
+  baseUrl: 'kenyaHieBaseUrl',
+  clientId: 'kenyaHieClientId',
+  clientSecret: 'kenyaHieClientSecret',
+  facilityId: 'kenyaHieFacilityId',
+  legacyClientId: 'kenyaAfyaLinkConsumerKey',
+  legacyClientSecret: 'kenyaAfyaLinkPassword',
 } as const;
 
 interface NamedSecretField {
@@ -37,19 +41,14 @@ interface NamedSecretField {
 
 const kenyaAfyaLinkFields: NamedSecretField[] = [
   {
-    name: KenyaAfyaLinkSecretNames.consumerKey,
-    label: 'Kenya HIE Consumer Key',
-    description: 'Consumer key issued from the DHA developer portal for HIE registry and related APIs.',
+    name: KenyaHieSecretNames.clientId,
+    label: 'Kenya HIE Client ID',
+    description: 'Client ID of your app in the DHA AfyaConnect developer portal (afyaconnect.dha.go.ke).',
   },
   {
-    name: KenyaAfyaLinkSecretNames.username,
-    label: 'Kenya HIE Username',
-    description: 'DHA developer portal username used for HIE Basic authentication.',
-  },
-  {
-    name: KenyaAfyaLinkSecretNames.password,
-    label: 'Kenya HIE Password',
-    description: 'DHA developer portal password used for HIE Basic authentication.',
+    name: KenyaHieSecretNames.clientSecret,
+    label: 'Kenya HIE Client Secret',
+    description: 'Client secret of the same AfyaConnect app.',
     sensitive: true,
   },
 ];

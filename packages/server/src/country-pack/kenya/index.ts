@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { CountryPackDefinition } from '../types';
-import { KenyaAfyaLinkSecretNames } from './afyalink';
+import { KenyaHieSecretNames } from './afyalink';
 import { checkKenyaCoverage } from './check-coverage';
 import { checkKenyaNationalClaimStatus } from './check-national-claim-status';
 import { submitKenyaNationalClaim } from './submit-national-claim';
@@ -13,7 +13,7 @@ export const kenyaCountryPack: CountryPackDefinition = {
   title: 'Kenya Country Pack',
   countryCode: 'KE',
   requiredProjectSettings: ['countryPack'],
-  requiredProjectSecrets: Object.values(KenyaAfyaLinkSecretNames),
+  requiredProjectSecrets: [KenyaHieSecretNames.clientId, KenyaHieSecretNames.clientSecret],
   supportedOperations: [
     'resolve-patient-identity',
     'verify-facility-authority',

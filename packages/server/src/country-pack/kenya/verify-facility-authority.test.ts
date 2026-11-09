@@ -2,12 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Organization, Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { clearKenyaHieTokenCache } from './afyalink';
 import { verifyKenyaFacilityAuthority } from './verify-facility-authority';
 
 jest.mock('node-fetch');
 
+// A Facility Registry record as GET /facilities/search returns it (trimmed).
+const licensedFacility = {
+  frCode: 'FID-47-105963-0',
+  officialName: 'Afiax Clinic',
+  registrationNumber: '017207',
+  facilityLicenseStatus: 'LICENSED',
+  facilityLicenseEndDate: '2026-12-31T00:00:00+03:00',
+  regulatoryOperationalStatus: { operationalStatus: 'ACTIVE' },
+};
+
 describe('verifyKenyaFacilityAuthority', () => {
-  function buildInput(organization: Organization, project?: Project): Parameters<typeof verifyKenyaFacilityAuthority>[0] {
+  function buildInput(
+    organization: Organization,
+    project?: Project
+  ): Parameters<typeof verifyKenyaFacilityAuthority>[0] {
     return {
       correlationId: 'corr-1',
       organization: {
@@ -23,18 +37,18 @@ describe('verifyKenyaFacilityAuthority', () => {
             setting: [{ name: 'countryPack', valueString: 'kenya' }],
           } as Project),
         systemRepo: {
-          readResource: jest.fn(async () =>
-            ({
-              resourceType: 'Project',
-              id: 'project-1',
-              setting: [{ name: 'countryPack', valueString: 'kenya' }],
-              secret: [
-                { name: 'kenyaAfyaLinkBaseUrl', valueString: 'https://afyalink.example.com' },
-                { name: 'kenyaAfyaLinkConsumerKey', valueString: 'consumer-key' },
-                { name: 'kenyaAfyaLinkUsername', valueString: 'username' },
-                { name: 'kenyaAfyaLinkPassword', valueString: 'password' },
-              ],
-            }) as Project
+          readResource: jest.fn(
+            async () =>
+              ({
+                resourceType: 'Project',
+                id: 'project-1',
+                setting: [{ name: 'countryPack', valueString: 'kenya' }],
+                secret: [
+                  { name: 'kenyaHieBaseUrl', valueString: 'https://hie.example.com/api/v1' },
+                  { name: 'kenyaHieClientId', valueString: 'client-id' },
+                  { name: 'kenyaHieClientSecret', valueString: 'client-secret' },
+                ],
+              }) as Project
           ),
         },
       } as any,
@@ -42,21 +56,21 @@ describe('verifyKenyaFacilityAuthority', () => {
   }
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockReset();
+    clearKenyaHieTokenCache();
   });
 
   test('returns verified when facility authority identifier is present', async () => {
     (fetch as unknown as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
-        text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        status: 200,
+        text: jest.fn(async () => JSON.stringify({ access_token: 'jwt-token', expires_in: 3600 })),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          message: { facility_code: '12345', found: 1, approved: true, operational_status: 'Operational' },
-        })),
+        text: jest.fn(async () => JSON.stringify([licensedFacility])),
       });
 
     await expect(
@@ -95,14 +109,13 @@ describe('verifyKenyaFacilityAuthority', () => {
     (fetch as unknown as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
-        text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        status: 200,
+        text: jest.fn(async () => JSON.stringify({ access_token: 'jwt-token', expires_in: 3600 })),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          message: { facility_code: '12345', found: 1, approved: true, operational_status: 'Operational' },
-        })),
+        text: jest.fn(async () => JSON.stringify([licensedFacility])),
       });
 
     await expect(
@@ -120,18 +133,17 @@ describe('verifyKenyaFacilityAuthority', () => {
     });
   });
 
-  test('returns verified when DHA returns found as a string', async () => {
+  test('returns unverified when the facility licence is not active', async () => {
     (fetch as unknown as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
-        text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        status: 200,
+        text: jest.fn(async () => JSON.stringify({ access_token: 'jwt-token', expires_in: 3600 })),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => ({
-          message: { facility_code: '12345', found: '1', approved: true, operational_status: 'Operational' },
-        })),
+        text: jest.fn(async () => JSON.stringify([{ ...licensedFacility, facilityLicenseStatus: 'EXPIRED' }])),
       });
 
     await expect(
@@ -144,10 +156,11 @@ describe('verifyKenyaFacilityAuthority', () => {
         })
       )
     ).resolves.toMatchObject({
-      status: 'verified',
+      status: 'unverified',
       facilityAuthorityIdentifier: '12345',
       registryFound: true,
-      nextState: 'ready-for-registry-check',
+      facilityApprovalStatus: 'not approved',
+      nextState: 'review-facility-approval-status',
     });
   });
 
@@ -155,12 +168,13 @@ describe('verifyKenyaFacilityAuthority', () => {
     (fetch as unknown as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
-        text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+        status: 200,
+        text: jest.fn(async () => JSON.stringify({ access_token: 'jwt-token', expires_in: 3600 })),
       })
       .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        text: jest.fn(async () => 'not found'),
+        ok: true,
+        status: 200,
+        text: jest.fn(async () => '[]'),
       });
 
     await expect(

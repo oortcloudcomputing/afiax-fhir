@@ -9,11 +9,9 @@ import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 
-const KenyaAfyaLinkSecretNames = {
-  baseUrl: 'kenyaAfyaLinkBaseUrl',
-  consumerKey: 'kenyaAfyaLinkConsumerKey',
-  username: 'kenyaAfyaLinkUsername',
-  password: 'kenyaAfyaLinkPassword',
+const KenyaHieSecretNames = {
+  clientId: 'kenyaHieClientId',
+  clientSecret: 'kenyaHieClientSecret',
 } as const;
 
 let medplum = new MockClient();
@@ -71,9 +69,8 @@ describe('SecretsPage', () => {
     await setup('/admin/secrets');
 
     expect(await screen.findByText('Kenya DHA HIE Access')).toBeInTheDocument();
-    expect(screen.getByLabelText('Kenya HIE Consumer Key')).toBeInTheDocument();
-    expect(screen.getByLabelText('Kenya HIE Username')).toBeInTheDocument();
-    expect(screen.getByLabelText('Kenya HIE Password')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kenya HIE Client ID')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kenya HIE Client Secret')).toBeInTheDocument();
     expect(screen.getByLabelText('Kenya SHA Access Key')).toBeInTheDocument();
     expect(screen.getByLabelText('Kenya SHA Secret Key')).toBeInTheDocument();
     expect(screen.getByLabelText('Kenya SHA Callback URL')).toBeInTheDocument();
@@ -127,20 +124,14 @@ describe('SecretsPage', () => {
     await setup('/admin/secrets');
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Consumer Key'), {
-        target: { value: 'consumer-key-123' },
+      fireEvent.change(screen.getByLabelText('Kenya HIE Client ID'), {
+        target: { value: 'client-id-123' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Username'), {
-        target: { value: 'portal-user' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Password'), {
-        target: { value: 'portal-password' },
+      fireEvent.change(screen.getByLabelText('Kenya HIE Client Secret'), {
+        target: { value: 'client-secret-123' },
       });
     });
 
@@ -170,16 +161,12 @@ describe('SecretsPage', () => {
       'admin/projects/123/secrets',
       expect.arrayContaining([
         expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.consumerKey,
-          valueString: 'consumer-key-123',
+          name: KenyaHieSecretNames.clientId,
+          valueString: 'client-id-123',
         }),
         expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.username,
-          valueString: 'portal-user',
-        }),
-        expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.password,
-          valueString: 'portal-password',
+          name: KenyaHieSecretNames.clientSecret,
+          valueString: 'client-secret-123',
         }),
         expect.objectContaining({
           name: KenyaShaClaimsSecretNames.accessKey,
@@ -217,20 +204,14 @@ describe('SecretsPage', () => {
     await setup('/admin/secrets');
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Consumer Key'), {
-        target: { value: 'consumer-key-123' },
+      fireEvent.change(screen.getByLabelText('Kenya HIE Client ID'), {
+        target: { value: 'client-id-123' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Username'), {
-        target: { value: 'portal-user' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Kenya HIE Password'), {
-        target: { value: 'portal-password' },
+      fireEvent.change(screen.getByLabelText('Kenya HIE Client Secret'), {
+        target: { value: 'client-secret-123' },
       });
     });
 
@@ -242,16 +223,12 @@ describe('SecretsPage', () => {
       'admin/projects/123/kenya/afyalink/test',
       expect.arrayContaining([
         expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.consumerKey,
-          valueString: 'consumer-key-123',
+          name: KenyaHieSecretNames.clientId,
+          valueString: 'client-id-123',
         }),
         expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.username,
-          valueString: 'portal-user',
-        }),
-        expect.objectContaining({
-          name: KenyaAfyaLinkSecretNames.password,
-          valueString: 'portal-password',
+          name: KenyaHieSecretNames.clientSecret,
+          valueString: 'client-secret-123',
         }),
       ])
     );
@@ -273,11 +250,11 @@ describe('SecretsPage', () => {
 
     await setup('/admin/secrets');
 
-    await userEvent.type(screen.getByLabelText('Kenya HIE Username'), 'portal-user');
-    expect(screen.getByLabelText('Kenya HIE Username')).toHaveValue('portal-user');
+    await userEvent.type(screen.getByLabelText('Kenya HIE Client Secret'), 'client-secret-123');
+    expect(screen.getByLabelText('Kenya HIE Client Secret')).toHaveValue('client-secret-123');
 
-    await userEvent.type(screen.getByLabelText('Kenya HIE Consumer Key'), 'consumer-key-123');
-    expect(screen.getByLabelText('Kenya HIE Consumer Key')).toHaveValue('consumer-key-123');
+    await userEvent.type(screen.getByLabelText('Kenya HIE Client ID'), 'client-id-123');
+    expect(screen.getByLabelText('Kenya HIE Client ID')).toHaveValue('client-id-123');
   });
 
   test('Afiax-managed mode hides tenant credentials', async () => {
@@ -298,9 +275,8 @@ describe('SecretsPage', () => {
     await setup('/admin/secrets');
 
     expect(await screen.findByText('Kenya DHA HIE Access')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Kenya HIE Consumer Key')).toBeNull();
-    expect(screen.queryByLabelText('Kenya HIE Username')).toBeNull();
-    expect(screen.queryByLabelText('Kenya HIE Password')).toBeNull();
+    expect(screen.queryByLabelText('Kenya HIE Client ID')).toBeNull();
+    expect(screen.queryByLabelText('Kenya HIE Client Secret')).toBeNull();
     expect(screen.queryByLabelText('Kenya SHA Access Key')).toBeNull();
     expect(screen.queryByLabelText('Kenya SHA Secret Key')).toBeNull();
     expect(screen.queryByLabelText('Kenya SHA Callback URL')).toBeNull();

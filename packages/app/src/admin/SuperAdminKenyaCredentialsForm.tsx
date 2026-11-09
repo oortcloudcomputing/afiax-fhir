@@ -8,11 +8,15 @@ import { ReferenceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
-const KenyaAfyaLinkSecretNames = {
-  baseUrl: 'kenyaAfyaLinkBaseUrl',
-  consumerKey: 'kenyaAfyaLinkConsumerKey',
-  username: 'kenyaAfyaLinkUsername',
-  password: 'kenyaAfyaLinkPassword',
+// Client ID and secret from the DHA AfyaConnect developer portal (OAuth2 client credentials).
+// The kenyaAfyaLink* names are the earlier ones; they are still read when the new ones are empty.
+const KenyaHieSecretNames = {
+  baseUrl: 'kenyaHieBaseUrl',
+  clientId: 'kenyaHieClientId',
+  clientSecret: 'kenyaHieClientSecret',
+  facilityId: 'kenyaHieFacilityId',
+  legacyClientId: 'kenyaAfyaLinkConsumerKey',
+  legacyClientSecret: 'kenyaAfyaLinkPassword',
 } as const;
 
 interface KenyaAfyaLinkSecretsResponse {
@@ -51,9 +55,9 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
   const [environment, setEnvironment] = useState<'uat' | 'production' | undefined>();
   const [credentialMode, setCredentialMode] = useState<'tenant-managed' | 'afiax-managed' | undefined>();
   const [baseUrlOverride, setBaseUrlOverride] = useState('');
-  const [consumerKey, setConsumerKey] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [facilityId, setFacilityId] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -85,10 +89,17 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
       setProjectName(result.project.name);
       setEnvironment(result.kenya.environment);
       setCredentialMode(result.kenya.credentialMode);
-      setBaseUrlOverride(getSecretValue(result.project.systemSecret, KenyaAfyaLinkSecretNames.baseUrl));
-      setConsumerKey(getSecretValue(result.project.systemSecret, KenyaAfyaLinkSecretNames.consumerKey));
-      setUsername(getSecretValue(result.project.systemSecret, KenyaAfyaLinkSecretNames.username));
-      setPassword(getSecretValue(result.project.systemSecret, KenyaAfyaLinkSecretNames.password));
+      const systemSecrets = result.project.systemSecret;
+      setBaseUrlOverride(getSecretValue(systemSecrets, KenyaHieSecretNames.baseUrl));
+      setClientId(
+        getSecretValue(systemSecrets, KenyaHieSecretNames.clientId) ||
+          getSecretValue(systemSecrets, KenyaHieSecretNames.legacyClientId)
+      );
+      setClientSecret(
+        getSecretValue(systemSecrets, KenyaHieSecretNames.clientSecret) ||
+          getSecretValue(systemSecrets, KenyaHieSecretNames.legacyClientSecret)
+      );
+      setFacilityId(getSecretValue(systemSecrets, KenyaHieSecretNames.facilityId));
       setShaEnvironment(shaResult.kenya.environment);
       setShaCredentialMode(shaResult.kenya.credentialMode);
       setShaBaseUrlOverride(getSecretValue(shaResult.project.systemSecret, KenyaShaClaimsSecretNames.baseUrl));
@@ -105,10 +116,10 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
 
   function buildSecretPayload(): ProjectSetting[] {
     return [
-      { name: KenyaAfyaLinkSecretNames.baseUrl, valueString: baseUrlOverride },
-      { name: KenyaAfyaLinkSecretNames.consumerKey, valueString: consumerKey },
-      { name: KenyaAfyaLinkSecretNames.username, valueString: username },
-      { name: KenyaAfyaLinkSecretNames.password, valueString: password },
+      { name: KenyaHieSecretNames.baseUrl, valueString: baseUrlOverride },
+      { name: KenyaHieSecretNames.clientId, valueString: clientId },
+      { name: KenyaHieSecretNames.clientSecret, valueString: clientSecret },
+      { name: KenyaHieSecretNames.facilityId, valueString: facilityId },
     ];
   }
 
@@ -253,28 +264,32 @@ export function SuperAdminKenyaCredentialsForm(): JSX.Element {
       <TextInput
         label="HIE Base URL Override"
         description="Optional. Leave blank to use the platform-derived Kenya HIE endpoint for the selected environment."
-        placeholder="https://production.dha.example"
+        placeholder="https://ilm-dev.dha.go.ke/uat-middleware/api/v1"
         value={baseUrlOverride}
         onChange={(event) => setBaseUrlOverride(event.currentTarget.value)}
         data-testid="afiax-managed-base-url"
       />
       <TextInput
-        label="Kenya HIE Consumer Key"
-        value={consumerKey}
-        onChange={(event) => setConsumerKey(event.currentTarget.value)}
-        data-testid="afiax-managed-consumer-key"
-      />
-      <TextInput
-        label="Kenya HIE Username"
-        value={username}
-        onChange={(event) => setUsername(event.currentTarget.value)}
-        data-testid="afiax-managed-username"
+        label="Kenya HIE Client ID"
+        description="Client ID of the app in the DHA AfyaConnect developer portal."
+        value={clientId}
+        onChange={(event) => setClientId(event.currentTarget.value)}
+        data-testid="afiax-managed-client-id"
       />
       <PasswordInput
-        label="Kenya HIE Password"
-        value={password}
-        onChange={(event) => setPassword(event.currentTarget.value)}
-        data-testid="afiax-managed-password"
+        label="Kenya HIE Client Secret"
+        description="Client secret of the same AfyaConnect app."
+        value={clientSecret}
+        onChange={(event) => setClientSecret(event.currentTarget.value)}
+        data-testid="afiax-managed-client-secret"
+      />
+      <TextInput
+        label="Facility FR Code"
+        description="Optional. Only for multi-facility credentials: the Facility Registry code (FID-…) sent with every request. Facility-scoped credentials already carry it."
+        placeholder="FID-47-105963-0"
+        value={facilityId}
+        onChange={(event) => setFacilityId(event.currentTarget.value)}
+        data-testid="afiax-managed-facility-id"
       />
       <Text size="sm" c="dimmed">
         Saving updates only the Kenya HIE credentials in <code>Project.systemSecret</code>. Other system secrets for the

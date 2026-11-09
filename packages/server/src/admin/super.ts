@@ -10,8 +10,8 @@ import {
   getKenyaHieEnvironment,
   getKenyaShaClaimsCredentialMode,
   getKenyaShaClaimsEnvironment,
-  getQueryString,
   getProjectSettingString,
+  getQueryString,
   getResourceTypes,
   KenyaProjectSettingNames,
   KenyaShaClaimsSecretNames,
@@ -26,9 +26,9 @@ import { body, checkExact, validationResult } from 'express-validator';
 import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
-import { getAfyaLinkToken, getKenyaAfyaLinkCredentials, KenyaAfyaLinkSecretNames } from '../country-pack/kenya/afyalink';
 import type { AuthenticatedRequestContext } from '../context';
 import { getAuthenticatedContext } from '../context';
+import { getAfyaLinkToken, getKenyaAfyaLinkCredentials, KenyaHieAllSecretNames } from '../country-pack/kenya/afyalink';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -63,7 +63,7 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
-const kenyaAfyaLinkManagedSecretNames = new Set<string>(Object.values(KenyaAfyaLinkSecretNames));
+const kenyaAfyaLinkManagedSecretNames = new Set<string>(KenyaHieAllSecretNames);
 const kenyaShaManagedSecretNames = new Set<string>(Object.values(KenyaShaClaimsSecretNames));
 
 function assertKenyaProject(project: Project): void {
@@ -190,7 +190,7 @@ superAdminRouter.post('/projects/:projectId/kenya/afyalink/test', async (req: Re
       systemSecret: mergeKenyaSystemSecrets(project, (req.body as ProjectSetting[]) ?? []),
     };
     const credentials = getKenyaAfyaLinkCredentials(testProject);
-    await getAfyaLinkToken(credentials);
+    await getAfyaLinkToken(credentials, { forceRefresh: true });
     res.json({
       ok: true,
       message: `Kenya HIE authentication succeeded for ${credentials.baseUrl}`,

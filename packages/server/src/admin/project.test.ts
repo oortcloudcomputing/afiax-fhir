@@ -11,7 +11,7 @@ import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { KenyaAfyaLinkSecretNames } from '../country-pack/kenya/afyalink';
+import { KenyaHieSecretNames } from '../country-pack/kenya/afyalink';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
@@ -627,7 +627,7 @@ describe('Project Admin routes', () => {
     expect(res3.body.project.site[0].name).toStrictEqual('test_site');
   });
 
-  test('Test Kenya AfyaLink connection', async () => {
+  test('Test Kenya HIE connection', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'John',
@@ -646,31 +646,29 @@ describe('Project Admin routes', () => {
 
     (fetch as unknown as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      text: jest.fn(async () => JSON.stringify({ token: 'jwt-token' })),
+      status: 200,
+      text: jest.fn(async () => JSON.stringify({ access_token: 'jwt-token', expires_in: 3600 })),
     });
 
     const res = await request(app)
       .post('/admin/projects/' + project.id + '/kenya/afyalink/test')
       .set('Authorization', 'Bearer ' + accessToken)
       .send([
-        { name: KenyaAfyaLinkSecretNames.baseUrl, valueString: 'https://afyalink.example.com' },
-        { name: KenyaAfyaLinkSecretNames.consumerKey, valueString: 'consumer-key' },
-        { name: KenyaAfyaLinkSecretNames.username, valueString: 'username' },
-        { name: KenyaAfyaLinkSecretNames.password, valueString: 'password' },
+        { name: KenyaHieSecretNames.baseUrl, valueString: 'https://hie.example.com/api/v1' },
+        { name: KenyaHieSecretNames.clientId, valueString: 'client-id' },
+        { name: KenyaHieSecretNames.clientSecret, valueString: 'client-secret' },
       ]);
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       ok: true,
-      baseUrl: 'https://afyalink.example.com',
+      baseUrl: 'https://hie.example.com/api/v1',
     });
     expect(fetch).toHaveBeenCalledWith(
-      'https://afyalink.example.com/v1/hie-auth?key=consumer-key',
+      'https://hie.example.com/api/v1/tenants/token',
       expect.objectContaining({
-        method: 'GET',
-        headers: expect.objectContaining({
-          Authorization: `Basic ${Buffer.from('username:password').toString('base64')}`,
-        }),
+        method: 'POST',
+        body: 'client_id=client-id&client_secret=client-secret',
       })
     );
   });

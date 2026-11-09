@@ -123,7 +123,7 @@ projectAdminRouter.post('/:projectId/kenya/afyalink/test', async (req: Request, 
       secret: (req.body as ProjectSetting[]) ?? ctx.project.secret,
     };
     const credentials = getKenyaAfyaLinkCredentials(project);
-    await getAfyaLinkToken(credentials);
+    await getAfyaLinkToken(credentials, { forceRefresh: true });
     res.json({
       ok: true,
       message: `Kenya HIE authentication succeeded for ${credentials.baseUrl}`,

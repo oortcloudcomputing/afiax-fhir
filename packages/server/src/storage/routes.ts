@@ -68,14 +68,15 @@ function buildPublicKey(): KeyObject {
   const config = getConfig();
   const signingKey = config.signingKey;
   const passphrase = config.signingKeyPassphrase;
-  if (!signingKey || !passphrase) {
-    throw new Error('Signing key or passphrase is not configured');
+  if (!signingKey) {
+    throw new Error('Signing key is not configured');
   }
+  // The passphrase is optional: Afiax keeps an unencrypted key in Vault (kv/afiax/medplum/signing-key)
   return createPublicKey(
     createPrivateKey({
       key: signingKey,
       format: 'pem',
-      passphrase: passphrase,
+      ...(passphrase ? { passphrase } : {}),
     })
   );
 }

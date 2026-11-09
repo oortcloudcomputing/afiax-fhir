@@ -346,17 +346,32 @@ export async function getAfyaLinkToken(
   return token;
 }
 
-interface HieResult {
+export interface HieResult {
   readonly status: number;
   readonly ok: boolean;
   readonly body: unknown;
   readonly text: string;
 }
 
-async function hieGet(
+export interface HieRequestOptions {
+  readonly params?: Record<string, string>;
+  readonly body?: unknown;
+}
+
+/**
+ * Sends one request to the HIE middleware with a Bearer token, and the facility headers when
+ * kenyaHieFacilityId is configured. JSON bodies are parsed; the raw text is kept for errors.
+ * @param credentials - The HIE credentials.
+ * @param method - The HTTP method.
+ * @param path - The path below the HIE base URL, for example /claims/visit.
+ * @param options - Query parameters and a JSON body.
+ * @returns The status, parsed body and raw text.
+ */
+export async function requestKenyaHie(
   credentials: KenyaAfyaLinkCredentials,
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  params: Record<string, string>
+  options?: HieRequestOptions
 ): Promise<HieResult> {
   const token = await getAfyaLinkToken(credentials);
   const headers: Record<string, string> = {
@@ -367,10 +382,15 @@ async function hieGet(
     headers['X-Facility-Id'] = credentials.facilityId;
     headers['X-Facility-Id-Type'] = 'fr-code';
   }
+  if (options?.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
 
-  const response = await fetch(`${credentials.baseUrl}${path}?${new URLSearchParams(params).toString()}`, {
-    method: 'GET',
+  const query = options?.params ? `?${new URLSearchParams(options.params).toString()}` : '';
+  const response = await fetch(`${credentials.baseUrl}${path}${query}`, {
+    method,
     headers,
+    ...(options?.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
   });
   const text = await response.text();
   let body: unknown = undefined;
@@ -380,6 +400,14 @@ async function hieGet(
     body = undefined;
   }
   return { status: response.status, ok: response.ok, body, text };
+}
+
+async function hieGet(
+  credentials: KenyaAfyaLinkCredentials,
+  path: string,
+  params: Record<string, string>
+): Promise<HieResult> {
+  return requestKenyaHie(credentials, 'GET', path, { params });
 }
 
 /**
@@ -399,7 +427,12 @@ function isNotFoundResult(result: HieResult): boolean {
   return /zero results|not found|no practitioner|no facility|no patient|no record/.test(message);
 }
 
-function describeFailure(result: HieResult): string {
+/**
+ * Describes a failed HIE response with DHA's message and trace ID when present.
+ * @param result - The HIE response.
+ * @returns The message to report.
+ */
+export function describeHieFailure(result: HieResult): string {
   if (isRecord(result.body)) {
     const message = str(result.body.message);
     const traceId = str(result.body.trace_id);
@@ -470,7 +503,7 @@ export async function searchAfyaLinkFacility(
     return { message: { facility_code: code, found: 0 } };
   }
   if (!result.ok) {
-    throw new Error(`Kenya HIE facility search failed (${result.status}): ${describeFailure(result)}`);
+    throw new Error(`Kenya HIE facility search failed (${result.status}): ${describeHieFailure(result)}`);
   }
 
   try {
@@ -533,7 +566,7 @@ export async function searchAfyaLinkPractitioner(
     return { message: { found: 0, registration_number: null, is_active: null } };
   }
   if (!result.ok) {
-    throw new Error(`Kenya HIE practitioner search failed (${result.status}): ${describeFailure(result)}`);
+    throw new Error(`Kenya HIE practitioner search failed (${result.status}): ${describeHieFailure(result)}`);
   }
 
   const payload = isRecord(result.body) && isRecord(result.body.message) ? result.body.message : undefined;
@@ -631,7 +664,7 @@ export async function searchAfyaLinkEligibility(
     };
   }
   if (!result.ok || !isRecord(result.body)) {
-    throw new Error(`Kenya HIE eligibility check failed (${result.status}): ${describeFailure(result)}`);
+    throw new Error(`Kenya HIE eligibility check failed (${result.status}): ${describeHieFailure(result)}`);
   }
 
   const body = result.body;
@@ -705,7 +738,7 @@ export async function searchAfyaLinkClientRegistry(
     return notFound;
   }
   if (!result.ok) {
-    throw new Error(`Kenya HIE client registry lookup failed (${result.status}): ${describeFailure(result)}`);
+    throw new Error(`Kenya HIE client registry lookup failed (${result.status}): ${describeHieFailure(result)}`);
   }
 
   const record = Array.isArray(result.body) ? result.body.find(isRecord) : result.body;

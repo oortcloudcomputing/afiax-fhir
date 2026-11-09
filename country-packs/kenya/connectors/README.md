@@ -233,6 +233,41 @@ All HIE paths below are relative to the HIE base URL.
   - passes through `whitelistedForOTP` and `facilityBiometricsEnforced`, which decide the consent
     method for a visit
 
+### SHA visit consent and start visit
+
+Main files: `packages/server/src/country-pack/kenya/hie-visit.ts` (DHA calls) and
+`packages/server/src/fhir/operations/kenyashavisit.ts` (Encounter operations). Built from the DHA
+Start Visit, Send OTP and Biometrics Consent pages (last modified 2026-09-28).
+
+The patient must have a Client Registry ID (`Patient.identifier` with system
+`https://afiax.africa/kenya/identifier/client-registry-id`). The eligibility check's
+`facilityBiometricsEnforced` and `whitelistedForOTP` decide the consent path.
+
+`POST Encounter/{id}/$kenya-visit-consent`, one `action` per call:
+
+| action | DHA call | Inputs |
+|---|---|---|
+| `contacts` | `GET /patients/contacts` | none; returns masked numbers to choose from |
+| `send-otp` | `POST /claims/otp` | `interventionCode` (one or more), optional `contactId` |
+| `authorize-biometrics` | `POST /claims/authorize` | `serviceType`, `interventionCode`, `agentId` (agent National ID), `workStationId` (from HealthID `http://localhost:18065/status`), `deviceOs`; the facility FR code and name come from the encounter's `serviceProvider` (or `facilityFrCode`) |
+| `authorization-status` | `GET /claims/authorizations` | `authorizationGuid` or `consentToken`. DHA documents a `patient_id` search but UAT rejects it |
+| `cancel-authorization` | `POST /claims/authorizations/{token}/reject` | `consentToken`; clears a fingerprint capture stuck in PENDING |
+
+The fingerprint authorization returns `captureUrl` (DHA's capture page, shown to the patient). It
+becomes `AUTHORIZED` (or `AUTHORIZED_PENDING_VISIT` for elective cases). `REJECTED` with reason
+`BIOMETRICS_NOT_FOUND_OTP_ALLOWED` means: switch to OTP, do not retry fingerprints.
+
+`POST Encounter/{id}/$kenya-start-visit` calls `POST /claims/visit` with `serviceType`
+(OUTPATIENT, INPATIENT, CAPITATION or EMERGENCY), `interventionCode`, and either `otp` or
+`authorizationGuid`; the attending doctor is optional (`practitionerIdentificationNumber`,
+`practitionerRegulator`, `practitionerIdentificationType`). It records the visit on the Encounter:
+extension `https://afiax.africa/fhir/StructureDefinition/kenya-sha-visit` (claim ID, consent token,
+authorization GUID, visit number, service type, consent method, intervention codes, workflow state,
+scheme) and the identifier `https://afiax.africa/kenya/identifier/sha-visit-claim-id`. The consent
+token is needed by every later claim call. A second start on the same encounter is refused.
+
+Both operations are for staff (Practitioner) who may update the Encounter.
+
 ### Not yet migrated
 
 These still use earlier DHA and SHA paths and need rework against the current HIE docs:

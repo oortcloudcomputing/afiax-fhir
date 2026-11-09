@@ -67,9 +67,10 @@ import { kenyaCdsCheckHandler } from './operations/kenyacds';
 import { kenyaClaimHandler } from './operations/kenyaclaim';
 import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaInvoicePaymentHandler } from './operations/kenyainvoicepayment';
-import { kenyaShaRemittanceHandler } from './operations/kenyasharemittance';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
 import { kenyaRegistryLookupHandler } from './operations/kenyaregistrylookup';
+import { kenyaShaRemittanceHandler } from './operations/kenyasharemittance';
+import { kenyaStartVisitHandler, kenyaVisitConsentHandler } from './operations/kenyashavisit';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -429,6 +430,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/PaymentReconciliation/$kenya-sha-remittance', kenyaShaRemittanceHandler);
   // DHA Client Registry search for patient registration (any role that may create patients)
   router.add('POST', '/Patient/$kenya-registry-lookup', kenyaRegistryLookupHandler);
+  // SHA visit through the DHA HIE: patient consent (OTP or fingerprints), then start the visit
+  router.add('POST', '/Encounter/:id/$kenya-visit-consent', kenyaVisitConsentHandler);
+  router.add('POST', '/Encounter/:id/$kenya-start-visit', kenyaStartVisitHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)

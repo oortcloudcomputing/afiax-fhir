@@ -2504,8 +2504,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     });
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
-      auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch(console.error);
+      // Saved by the system, not with the caller's permissions: a user whose access policy can't write
+      // AuditEvent (read-only clients, most staff roles) must still leave an audit trail. The event's
+      // agent records who acted.
+      this.getSystemRepo()
+        .createResource(auditEvent)
+        .catch((err: unknown) => getLogger().error('Failed to save AuditEvent', { error: normalizeErrorString(err) }));
     }
   }
 

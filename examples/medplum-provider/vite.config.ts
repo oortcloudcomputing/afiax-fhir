@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import react from '@vitejs/plugin-react';
 import dns from 'dns';
-import { existsSync } from 'fs';
+import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 dns.setDefaultResultOrder('verbatim');
+
+if (!existsSync(path.join(__dirname, '.env'))) {
+  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
+}
 
 // Resolve aliases to local packages when working within the monorepo
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
@@ -19,13 +23,14 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
     '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
     '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+    '@medplum/kenya-react': path.resolve(__dirname, '../../packages/kenya-react/src'),
   }).filter(([, relPath]) => existsSync(relPath))
 );
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
   envPrefix: ['MEDPLUM_'],
+  plugins: [react()],
   server: {
     host: 'localhost',
     port: 3000,

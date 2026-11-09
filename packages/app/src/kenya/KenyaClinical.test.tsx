@@ -19,9 +19,10 @@ import type {
   Task,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { getGrowthPoints, parseCdsAlerts } from '@medplum/kenya-react';
 import { MockClient } from '@medplum/mock';
+import { within } from '@testing-library/react';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
-import { getGrowthPoints, parseCdsAlerts } from './clinical-utils';
 
 const kenyaProject = {
   resourceType: 'Project',
@@ -184,6 +185,13 @@ describe('Kenya clinical workspace', () => {
     expect(await screen.findByText('Medication: Amoxicillin 500 mg Oral Capsule')).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Dispense' }));
+    });
+    // Dispensing asks for confirmation first
+    expect(await screen.findByText(/was handed to Achieng Otieno/)).toBeInTheDocument();
+    expect((await medplum.readResource('Task', task.id)).status).toBe('requested');
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Dispense' }));
     });
 
     await waitFor(async () => {

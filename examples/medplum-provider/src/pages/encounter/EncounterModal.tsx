@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { getProjectSettingString, normalizeErrorString } from '@medplum/core';
 import type { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
+import { getKenyaVisitType, KenyaVisitTypeSelect } from '@medplum/kenya-react';
 import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -24,9 +25,14 @@ export const EncounterModal = (): JSX.Element => {
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  // Kenya: a KNHTS visit type is required and the care template is optional
+  const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
+  const [visitType, setVisitType] = useState<string | null>(isKenya ? 'OPD-VISIT' : null);
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !start || !end || !status || !planDefinitionData) {
+    const missingTemplate = !isKenya && !planDefinitionData;
+    const missingVisitType = isKenya && !visitType;
+    if (!patient || !encounterClass || !start || !end || !status || missingTemplate || missingVisitType) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -39,7 +45,17 @@ export const EncounterModal = (): JSX.Element => {
     setIsLoading(true);
 
     try {
-      const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
+      const type = isKenya ? getKenyaVisitType(visitType) : undefined;
+      const encounter = await createEncounter(
+        medplum,
+        start,
+        end,
+        encounterClass,
+        patient,
+        planDefinitionData,
+        undefined,
+        type ? [type] : undefined
+      );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
@@ -100,6 +116,8 @@ export const EncounterModal = (): JSX.Element => {
                   path="Encounter.type"
                 />
 
+                {isKenya && <KenyaVisitTypeSelect required value={visitType} onChange={setVisitType} />}
+
                 <CodeInput
                   name="status"
                   label="Status"
@@ -122,18 +140,14 @@ export const EncounterModal = (): JSX.Element => {
                 </Text>
                 <Text size="sm" color="dimmed" mb="lg">
                   You can select template for new encounter. Tasks from the template will be automatically added to the
-                  encounter. Administrators can create and edit templates in the{' '}
-                  <Text component="a" href="#" variant="link">
-                    Medplum app
-                  </Text>
-                  .
+                  encounter. Administrators create and edit templates in the Afiax admin app.
                 </Text>
 
                 <ResourceInput
                   name="plandefinition"
                   resourceType="PlanDefinition"
                   onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
-                  required={true}
+                  required={!isKenya}
                 />
               </Card>
             </Grid.Col>

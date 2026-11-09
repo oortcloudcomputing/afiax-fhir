@@ -332,7 +332,7 @@ describe('DoseSpotAdvancedOptions', () => {
     await waitFor(() => {
       expect(screen.getByText(/Fetches recently completed and active prescriptions/i)).toBeInTheDocument();
       expect(screen.getByText(/Retrieves medication history from DoseSpot/i)).toBeInTheDocument();
-      expect(screen.getByText(/Syncs patient between Medplum and DoseSpot/i)).toBeInTheDocument();
+      expect(screen.getByText(/Syncs patient between Afiax and DoseSpot/i)).toBeInTheDocument();
     });
   });
 

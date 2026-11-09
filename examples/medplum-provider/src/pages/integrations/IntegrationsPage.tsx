@@ -1,222 +1,213 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Flex } from '@mantine/core';
-import type { JSX } from 'react';
-import { IntegrationCard } from '../../components/IntegrationCard';
+//
+// Afiax enterprise apps: the Afiax products that work with Afiax Provider, and the national services
+// (Kenya) the platform connects to. National services show whether this project has them set up.
 
-interface Integration {
-  name: string;
-  tags: string[];
-  description: string;
-  displayUrl: string;
-  url: string;
-  imageUrl: string;
+import { Badge, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { getProjectSettingString } from '@medplum/core';
+import { Document, useMedplum } from '@medplum/react';
+import {
+  IconBook,
+  IconBrain,
+  IconBuildingHospital,
+  IconCash,
+  IconChartBar,
+  IconDeviceHeartMonitor,
+  IconFileInvoice,
+  IconId,
+  IconPhoto,
+  IconReportMedical,
+  IconUsersGroup,
+} from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+
+interface AfiaxApp {
+  readonly name: string;
+  readonly product: string;
+  readonly description: string;
+  readonly icon: ReactNode;
+  /** Later releases are marked "Coming later". */
+  readonly comingLater?: boolean;
 }
 
-const integrations = [
+const enterpriseApps: AfiaxApp[] = [
   {
-    name: 'Okta',
-    tags: ['Authentication'],
-    description: 'Implement SSO for healthcare staff with HIPAA-compliant authentication protocols.',
-    displayUrl: 'okta.com',
-    url: 'https://www.okta.com',
-    imageUrl: 'okta.png',
+    name: 'Afiax Pay',
+    product: 'Afiax Clinical Suite',
+    description: 'M-Pesa and card payments, patient wallets and SHA remittance reconciliation.',
+    icon: <IconCash />,
   },
   {
-    name: 'Auth0',
-    tags: ['Authentication'],
-    description: 'Manage identity access for patient portals and provider applications across multiple platforms.',
-    displayUrl: 'auth0.com',
-    url: 'https://auth0.com',
-    imageUrl: 'auth0.png',
-  },
-  {
-    name: 'Google Authentication',
-    tags: ['Authentication'],
-    description: "Add Google's authentication system to your EHR for standardized sign-in.",
-    displayUrl: 'cloud.google.com',
-    url: 'https://cloud.google.com/identity',
-    imageUrl: 'google.png',
-  },
-  {
-    name: 'Microsoft Entra SSO',
-    tags: ['Authentication'],
-    description: "Integrate Microsoft's identity platform with clinical systems for centralized access management.",
-    displayUrl: 'microsoft.com',
-    url: 'https://learn.microsoft.com/en-us/entra/identity-platform',
-    imageUrl: 'entra.png',
-  },
-  {
-    name: 'Labcorp',
-    tags: ['Diagnostics'],
-    description: 'Place orders and receive lab results directly in your EHR from Labcorp.',
-    displayUrl: 'labcorp.com',
-    url: 'https://www.labcorp.com',
-    imageUrl: 'labcorp.png',
-  },
-  {
-    name: 'Quest Diagnostics',
-    tags: ['Diagnostics'],
-    description: 'Place orders and receive lab results directly in your EHR from Quest.',
-    displayUrl: 'questdiagnostics.com',
-    url: 'https://www.questdiagnostics.com',
-    imageUrl: 'quest.png',
-  },
-  {
-    name: 'Health Gorilla',
-    tags: ['HIE', 'Diagnostics'],
+    name: 'Finance and stock',
+    product: 'Afiax Clinical Suite',
     description:
-      'Access nationwide clinical data networks for patient records diagnostic reports and ADT notifications.',
-    displayUrl: 'healthgorilla.com',
-    url: 'https://www.healthgorilla.com',
-    imageUrl: 'healthgorilla.png',
+      'Price lists, sales invoices and accounts, pharmacy stock with batches and expiry, purchasing and KRA eTIMS.',
+    icon: <IconFileInvoice />,
   },
   {
-    name: 'Candid Health',
-    tags: ['Billing'],
-    description:
-      'Integrate automated eligibility verification and claims processing with your practice management system.',
-    displayUrl: 'candidhealth.com',
-    url: 'https://www.candidhealth.com',
-    imageUrl: 'candid.png',
+    name: 'Remote patient monitoring',
+    product: 'Afiax Clinical Suite',
+    description: 'Readings from home and ward devices (blood pressure, glucose, oxygen) in the patient record.',
+    icon: <IconDeviceHeartMonitor />,
   },
   {
-    name: 'Particle',
-    tags: ['HIE'],
-    description: 'Import and export clinical data with other healthcare organizations through standardized models.',
-    displayUrl: 'particlehealth.com',
-    url: 'https://www.particlehealth.com',
-    imageUrl: 'particle.png',
+    name: 'Imaging',
+    product: 'Afiax Clinical Suite',
+    description: 'Store and view X-ray, ultrasound and CT images alongside radiology orders and reports.',
+    icon: <IconPhoto />,
+    comingLater: true,
   },
   {
-    name: 'Epic Systems',
-    tags: ['EHR'],
-    description: 'Connect to your existing Epic EHR through FHIR APIs to exchange clinical data.',
-    displayUrl: 'epic.com',
-    url: 'https://www.epic.com',
-    imageUrl: 'epic.png',
+    name: 'Afiax AI',
+    product: 'Afiax AI',
+    description: 'Clinical decision support, imaging AI and help with clinical notes, in English and Kiswahili.',
+    icon: <IconBrain />,
+    comingLater: true,
   },
   {
-    name: 'reCAPTCHA',
-    tags: ['Security'],
-    description: 'Implement bot protection for online patient registration forms while maintaining usability.',
-    displayUrl: 'google.com/recaptcha',
-    url: 'https://www.google.com/recaptcha',
-    imageUrl: 'recaptcha.png',
+    name: 'Afiax Workspace',
+    product: 'Afiax Workspace',
+    description: 'Training and CPD, team messaging, files, reports and the locums marketplace.',
+    icon: <IconBook />,
+  },
+];
+
+interface NationalService {
+  readonly name: string;
+  readonly description: string;
+  readonly icon: ReactNode;
+  /** Project setting that holds the environment when the service is set up; undefined = always available. */
+  readonly setting?: string;
+}
+
+const kenyaServices: NationalService[] = [
+  {
+    name: 'DHA Client Registry and HIE',
+    description: 'Patient identity checks at registration and sharing records with the Shared Health Record.',
+    icon: <IconId />,
+    setting: 'kenyaHieEnvironment',
   },
   {
-    name: 'Datadog',
-    tags: ['Observability'],
-    description: 'Monitor healthcare application performance to identify issues before they impact clinical workflows.',
-    displayUrl: 'datadog.com',
-    url: 'https://www.datadog.com',
-    imageUrl: 'datadog.png',
+    name: 'SHA',
+    description: 'Cover eligibility checks, pre-authorisation and claims to the Social Health Authority.',
+    icon: <IconBuildingHospital />,
+    setting: 'kenyaShaClaimsEnvironment',
   },
   {
-    name: 'Sumo Logic',
-    tags: ['Observability'],
-    description: 'Analyze system logs and user activities across healthcare IT systems for compliance verification.',
-    displayUrl: 'sumologic.com',
-    url: 'https://www.sumologic.com',
-    imageUrl: 'sumo.png',
+    name: 'KHIS',
+    description: 'Disease surveillance (IDSR) reports: immediate notifications and the weekly MOH 505.',
+    icon: <IconChartBar />,
+    setting: 'kenyaKhisEnvironment',
   },
   {
-    name: 'Snowflake',
-    tags: ['Data warehouse'],
-    description:
-      'Store clinical and operational data in a cloud database with access controls, allowing for analysis and reporting without managing physical servers.',
-    displayUrl: 'snowflake.com',
-    url: 'https://www.snowflake.com',
-    imageUrl: 'snowflake.png',
-  },
-  {
-    name: 'OpenAI',
-    tags: ['AI'],
-    description: 'Implement AI-powered features for clinical documentation and workflow management.',
-    displayUrl: 'openai.com',
-    url: 'https://openai.com',
-    imageUrl: 'openai.png',
-  },
-  {
-    name: 'Stripe',
-    tags: ['Billing'],
-    description:
-      'Send invoices, process payments, and automate reconciliation to complement your revenue cycle management.',
-    displayUrl: 'stripe.com',
-    url: 'https://stripe.com',
-    imageUrl: 'stripe.png',
-  },
-  {
-    name: 'Acuity Scheduling',
-    tags: ['Scheduling'],
-    description: 'Manage your clinical availability and appointments with comprehensive scheduling tools.',
-    displayUrl: 'acuityscheduling.com',
-    url: 'https://www.acuityscheduling.com',
-    imageUrl: 'acuity.png',
-  },
-  {
-    name: 'Cal.com',
-    tags: ['Scheduling'],
-    description: 'Open source scheduling platform for managing availability and appointments.',
-    displayUrl: 'cal.com',
-    url: 'https://cal.com',
-    imageUrl: 'calcom.png',
-  },
-  {
-    name: 'Claude',
-    tags: ['AI'],
-    description: 'Implement AI-powered features for clinical documentation and workflow management.',
-    displayUrl: 'anthropic.com/claude',
-    url: 'https://www.anthropic.com/claude',
-    imageUrl: 'claude.png',
-  },
-  {
-    name: 'DeepSeek',
-    tags: ['AI'],
-    description: 'Implement AI-powered features for clinical documentation and workflow management.',
-    displayUrl: 'deepseek.com',
-    url: 'https://www.deepseek.com',
-    imageUrl: 'deepseek.png',
-  },
-  {
-    name: 'Azure',
-    tags: ['Cloud Services'],
-    description: 'Deploy HIPAA-compliant applications with specialized services for protected health information.',
-    displayUrl: 'azure.microsoft.com',
-    url: 'https://azure.microsoft.com',
-    imageUrl: 'azure.png',
-  },
-  {
-    name: 'Healthie',
-    tags: ['EHR', 'Practice Management'],
-    description: 'Connect to your existing Healthie account to exchange clinical data.',
-    displayUrl: 'gethealthie.com',
-    url: 'https://gethealthie.com',
-    imageUrl: 'healthie.png',
+    name: 'KNHTS',
+    description: 'The national terminology service: ICD-11 diagnoses, medicines, tests and SHA benefit codes.',
+    icon: <IconReportMedical />,
   },
 ];
 
 export function IntegrationsPage(): JSX.Element {
-  function requestIntegration(integration: Integration): void {
-    const subject = `Integration Request: ${integration.name}`;
-    const body = `Hello Medplum team,\n\nI would like to request an integration with ${integration.name}.\n\nHere are the details:\n\nName: ${integration.name}\nDescription: ${integration.description}\nURL: ${integration.url}\n\nThank you!`;
-    window.location.href = `mailto:hello@medplum.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
+  const medplum = useMedplum();
+  const project = medplum.getProject();
+  const isKenya = getProjectSettingString(project, 'countryPack') === 'kenya';
 
   return (
-    <Flex mih={50} gap="md" justify="center" align="flex-end" direction="row" wrap="wrap" m="xl">
-      {integrations.map((i) => (
-        <IntegrationCard
-          key={i.name}
-          name={i.name}
-          displayUrl={i.displayUrl}
-          url={i.url}
-          tags={i.tags}
-          description={i.description}
-          imageUrl={`/img/integrations/${i.imageUrl}`}
-          onClick={() => requestIntegration(i)}
-        />
-      ))}
-    </Flex>
+    <Document>
+      <Stack gap="xl">
+        <Stack gap={4}>
+          <Title order={2}>Afiax enterprise apps</Title>
+          <Text c="dimmed">
+            Afiax products that work with Afiax Provider. Your Afiax administrator turns them on for your facility.
+          </Text>
+        </Stack>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+          {enterpriseApps.map((app) => (
+            <AppCard
+              key={app.name}
+              name={app.name}
+              icon={app.icon}
+              tags={[app.product]}
+              description={app.description}
+              status={app.comingLater ? { label: 'Coming later', color: 'gray' } : undefined}
+            />
+          ))}
+        </SimpleGrid>
+
+        {isKenya && (
+          <>
+            <Stack gap={4}>
+              <Title order={3}>Kenya national services</Title>
+              <Text c="dimmed">Set up by your facility administrator in the country pack settings.</Text>
+            </Stack>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+              {kenyaServices.map((service) => {
+                const environment = service.setting ? getProjectSettingString(project, service.setting) : undefined;
+                let status: { label: string; color: string };
+                if (!service.setting) {
+                  status = { label: 'Built in', color: 'green' };
+                } else if (environment) {
+                  status = { label: `Set up (${environment.toUpperCase()})`, color: 'green' };
+                } else {
+                  status = { label: 'Not set up', color: 'yellow' };
+                }
+                return (
+                  <AppCard
+                    key={service.name}
+                    name={service.name}
+                    icon={service.icon}
+                    tags={['National service']}
+                    description={service.description}
+                    status={status}
+                  />
+                );
+              })}
+            </SimpleGrid>
+          </>
+        )}
+        <Group gap="xs">
+          <IconUsersGroup size={16} />
+          <Text size="sm" c="dimmed">
+            Need something else connected? Ask your Afiax administrator.
+          </Text>
+        </Group>
+      </Stack>
+    </Document>
+  );
+}
+
+interface AppCardProps {
+  readonly name: string;
+  readonly icon: ReactNode;
+  readonly tags: string[];
+  readonly description: string;
+  readonly status?: { label: string; color: string };
+}
+
+function AppCard(props: AppCardProps): JSX.Element {
+  return (
+    <Paper radius="md" withBorder p="md" data-testid="afiax-app-card">
+      <Group justify="space-between" wrap="nowrap" align="flex-start">
+        <Group wrap="nowrap" gap="sm">
+          {props.icon}
+          <Text fw={700}>{props.name}</Text>
+        </Group>
+        {props.status && (
+          <Badge color={props.status.color} variant="light" size="sm">
+            {props.status.label}
+          </Badge>
+        )}
+      </Group>
+      <Group mt="xs" gap={4}>
+        {props.tags.map((tag) => (
+          <Badge key={tag} variant="outline" color="gray" size="xs">
+            {tag}
+          </Badge>
+        ))}
+      </Group>
+      <Text size="sm" mt="sm">
+        {props.description}
+      </Text>
+    </Paper>
   );
 }

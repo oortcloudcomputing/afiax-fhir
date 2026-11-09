@@ -353,4 +353,23 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
   });
+
+  test('Kenya: points to the visit Orders tab instead of US lab ordering', async () => {
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <OrderLabsPage onSubmitLabOrder={mockOnSubmitLabOrder} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
+    expect(screen.getByText('Order tests from the visit')).toBeInTheDocument();
+    expect(useHealthGorillaLabOrder).not.toHaveBeenCalled();
+  });
 });

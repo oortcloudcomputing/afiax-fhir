@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Loader, Modal, ScrollArea } from '@mantine/core';
-import { getReferenceString, isOk } from '@medplum/core';
+import { getProjectSettingString, getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -32,7 +32,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
-  const tabs = getPatientPageTabs(membership);
+  const tabs = getPatientPageTabs(membership, getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya');
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location, tabs) ?? tabs[0]).id;
   });
@@ -99,7 +99,11 @@ export function PatientPage(): JSX.Element {
               onRequestLabs={() => {
                 setIsLabsModalOpen(true);
               }}
-              pharmacyDialogComponent={DoseSpotPharmacyDialog}
+              pharmacyDialogComponent={
+                getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya'
+                  ? undefined
+                  : DoseSpotPharmacyDialog
+              }
             />
           </ScrollArea>
         </div>

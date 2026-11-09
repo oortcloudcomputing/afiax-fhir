@@ -18,6 +18,8 @@ interface EncounterHeaderProps {
   onTabChange?: (tab: string) => void;
   onSign?: (practitioner: Reference<Practitioner>, lock: boolean) => void;
   onSignLock?: (practitioner: Reference<Practitioner>) => void;
+  /** Extra tabs after the standard ones (for example Kenya orders). */
+  extraTabs?: { label: string; value: string }[];
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
@@ -28,6 +30,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     onStatusChange,
     onTabChange,
     onSign,
+    extraTabs = [],
   } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
   const [activeTab, setActiveTab] = useState<string>('notes');
@@ -171,6 +174,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             data={[
               { label: 'Note & Tasks', value: 'notes' },
               { label: 'Details & Billing', value: 'details' },
+              ...extraTabs,
             ]}
             fullWidth
             radius="md"

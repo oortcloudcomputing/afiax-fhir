@@ -4,9 +4,11 @@ import type { PatientIdentityStatus } from '@medplum/core';
 import {
   buildKenyaPatientIdentityExtension,
   createReference,
+  forbidden,
   KenyaClientRegistryIdSystem,
   KenyaPatientIdentityCorrelationIdSystem,
   normalizeErrorString,
+  OperationOutcomeError,
 } from '@medplum/core';
 import type { Patient, Project, Reference, Task } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
@@ -43,9 +45,24 @@ export interface PatientIdentityResult {
   readonly task?: Reference<Task>;
 }
 
+/**
+ * Resolves a Patient's identity against the DHA Client Registry and records the result.
+ *
+ * Staff (and integrations) see the registry's name, date of birth and gender. A patient signed in to
+ * the portal (self-service) may only resolve their own record, the registry entry is accepted only if
+ * its name and date of birth match that record, and no registry details are returned, so the
+ * operation cannot be used to look other people up.
+ * @param input - The patient, the ID to look up and the request context.
+ * @returns The resolution result.
+ */
 export async function handleResolvePatientIdentity(input: PatientIdentityInput): Promise<PatientIdentityResult> {
   const { ctx, patient, identificationType, identificationNumber, correlationId } = input;
   const resolvedAt = new Date().toISOString();
+  const callerType = ctx.profile.reference?.split('/')[0];
+  const selfService = callerType === 'Patient';
+  if (callerType === 'RelatedPerson' || (selfService && ctx.profile.reference !== `Patient/${patient.id}`)) {
+    throw new OperationOutcomeError(forbidden);
+  }
 
   let credentials: KenyaAfyaLinkCredentials;
   try {
@@ -75,7 +92,10 @@ export async function handleResolvePatientIdentity(input: PatientIdentityInput):
     const msg = response.message;
     const found = typeof msg?.found === 'number' ? msg.found : 0;
 
-    if (found === 1 && msg?.client_registry_id) {
+    if (found === 1 && msg?.client_registry_id && selfService && !matchesPatientRecord(patient, msg)) {
+      status = 'not-found';
+      message = 'The ID number does not match the name and date of birth on your record.';
+    } else if (found === 1 && msg?.client_registry_id) {
       clientRegistryId = msg.client_registry_id;
       fullName = msg.full_name ?? (msg.first_name && msg.last_name ? `${msg.first_name} ${msg.last_name}` : null);
       dateOfBirth = msg.date_of_birth ?? null;
@@ -146,13 +166,48 @@ export async function handleResolvePatientIdentity(input: PatientIdentityInput):
     identificationType,
     identificationNumber,
     clientRegistryId,
-    fullName,
-    dateOfBirth,
-    gender,
+    // Self-service callers never see registry details (their record already holds what matched)
+    fullName: selfService ? null : fullName,
+    dateOfBirth: selfService ? null : dateOfBirth,
+    gender: selfService ? null : gender,
     resolvedAt,
     message,
     task: createReference(task),
   };
+}
+
+interface RegistryPerson {
+  readonly full_name?: string | null;
+  readonly first_name?: string | null;
+  readonly last_name?: string | null;
+  readonly date_of_birth?: string | null;
+}
+
+function nameTokens(...parts: (string | null | undefined)[]): string[] {
+  return parts
+    .join(' ')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Whether a registry entry is the same person as the Patient record: same date of birth, the family
+ * name and at least one given name among the registry's names (Kenyan name order varies).
+ * @param patient - The Patient record.
+ * @param person - The Client Registry entry.
+ * @returns True if they match.
+ */
+export function matchesPatientRecord(patient: Patient, person: RegistryPerson): boolean {
+  const dob = person.date_of_birth?.slice(0, 10);
+  if (!patient.birthDate || !dob || dob !== patient.birthDate) {
+    return false;
+  }
+  const registry = new Set(nameTokens(person.full_name, person.first_name, person.last_name));
+  const name = patient.name?.[0];
+  const family = nameTokens(name?.family);
+  const given = nameTokens(...(name?.given ?? []));
+  return family.length > 0 && family.every((t) => registry.has(t)) && given.some((t) => registry.has(t));
 }
 
 async function persistPatientIdentityExtension(

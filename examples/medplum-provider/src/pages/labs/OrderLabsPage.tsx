@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
+import { Alert, Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, getProjectSettingString } from '@medplum/core';
 import type { Encounter, Patient, Practitioner, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type {
   BillingInformation,
@@ -52,6 +52,20 @@ export interface OrderLabsPageProps {
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
+  const medplum = useMedplum();
+  // Health Gorilla is US lab ordering; Kenya orders investigations from the visit (KNHTS, lab queue)
+  if (getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya') {
+    return (
+      <Alert color="blue" title="Order tests from the visit">
+        Open the patient&apos;s visit, choose the Orders tab and pick Laboratory or Radiology. The order goes to the
+        department queue and is billed to the visit.
+      </Alert>
+    );
+  }
+  return <HealthGorillaOrderLabs {...props} />;
+}
+
+function HealthGorillaOrderLabs(props: OrderLabsPageProps): JSX.Element {
   const { encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();

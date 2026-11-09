@@ -139,12 +139,19 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
     },
   ];
 
+  // Kenya facilities see only facility administration; the technical items are for super admins
+  const technical =
+    countryPack !== 'kenya' || project.superAdmin
+      ? [
+          { name: 'AccessPolicy', target: '/AccessPolicy' },
+          { name: 'Subscriptions', target: '/Subscription' },
+          { name: 'Batch', target: '/batch' },
+        ]
+      : [];
   const link = [
     { name: 'Project', target: '/admin/project' },
     ...(countryPack ? [{ name: 'Country Pack Settings', target: '/admin/settings' }] : []),
-    { name: 'AccessPolicy', target: '/AccessPolicy' },
-    { name: 'Subscriptions', target: '/Subscription' },
-    { name: 'Batch', target: '/batch' },
+    ...technical,
   ];
   if (!project.superAdmin) {
     link.push({ name: 'Config', target: '/admin/config' });

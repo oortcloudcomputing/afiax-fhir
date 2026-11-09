@@ -7,7 +7,8 @@
     "types": ["vite/client"],
     "paths": {
       "@medplum/core": ["../core/src"],
-      "@medplum/react": ["../react/src"]
+      "@medplum/react": ["../react/src"],
+      "@medplum/kenya-react": ["../kenya-react/src"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts", "vite.config.ts"]

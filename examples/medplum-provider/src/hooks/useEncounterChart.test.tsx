@@ -311,6 +311,25 @@ describe('useEncounterChart', () => {
     );
   });
 
+  test('Kenya: no automatic claim (SHA claims are made by the cashier)', async () => {
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+    await medplum.createResource(mockPatient);
+    vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
+
+    const { result } = renderHook(() => useEncounterChart(mockEncounter, mockPatient), { wrapper });
+    await waitFor(() => {
+      expect(result.current.chargeItems).toHaveLength(1);
+      expect(result.current.practitioner).toBeDefined();
+    });
+    expect(createClaimFromEncounter).not.toHaveBeenCalled();
+  });
+
   test('does not create claim if one already exists', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);

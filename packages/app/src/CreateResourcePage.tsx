@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper, ScrollArea, Text } from '@mantine/core';
 import { getProjectSettingString } from '@medplum/core';
+import { KenyaPatientWizard } from '@medplum/kenya-react';
 import { LinkTabs, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { Outlet, useParams } from 'react-router';
 import { KenyaOrganizationWizard } from './resource/KenyaOrganizationWizard';
-import { KenyaPatientWizard } from './resource/KenyaPatientWizard';
 import { KenyaPractitionerWizard } from './resource/KenyaPractitionerWizard';
 
 const tabs = ['Form', 'JSON', 'Profiles'];

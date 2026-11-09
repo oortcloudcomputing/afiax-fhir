@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import { Box, Card, Stack, Text, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, getProjectSettingString, getReferenceString } from '@medplum/core';
 import type {
   ClinicalImpression,
   Encounter,
@@ -12,6 +12,13 @@ import type {
   Reference,
   Task,
 } from '@medplum/fhirtypes';
+import {
+  KenyaEncounterOrders,
+  KenyaFamilyHistory,
+  KenyaMedicationAdministrationRecord,
+  KenyaNursingNotes,
+  KenyaVitalSignsForm,
+} from '@medplum/kenya-react';
 import { Loading, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,6 +31,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
 import { EncounterHeader } from './EncounterHeader';
+import { KenyaBillingTab } from './KenyaBillingTab';
 import { SignAddendum } from './SignAddendum';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
@@ -50,6 +58,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const patientResource = useResource(patientReference);
 
   const [activeTab, setActiveTab] = useState<string>('notes');
+  const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
   const {
     encounter,
     claim,
@@ -232,6 +241,15 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
+          extraTabs={
+            isKenya
+              ? [
+                  { label: 'Orders', value: 'kenya-orders' },
+                  { label: 'Vitals & history', value: 'kenya-vitals' },
+                  { label: 'Nursing', value: 'kenya-nursing' },
+                ]
+              : undefined
+          }
           onSign={handleSign}
         />
         <Box p="md">
@@ -263,7 +281,54 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               ))}
             </Stack>
           )}
-          {activeTab === 'details' && (
+          {/* Kenya CPOE: KNHTS-coded orders with decision support, routed to department queues */}
+          {isKenya && activeTab === 'kenya-orders' && <KenyaEncounterOrders encounter={encounter} />}
+          {isKenya && activeTab === 'kenya-nursing' && (
+            <Stack gap="lg">
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Medicines given
+                </Title>
+                <KenyaMedicationAdministrationRecord encounter={encounter} />
+              </Card>
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Nursing notes
+                </Title>
+                <KenyaNursingNotes encounter={encounter} />
+              </Card>
+            </Stack>
+          )}
+          {isKenya && activeTab === 'kenya-vitals' && (
+            <Stack gap="lg">
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Vital signs
+                </Title>
+                {['arrived', 'triaged', 'in-progress', 'onleave'].includes(encounter.status) ? (
+                  <KenyaVitalSignsForm encounter={encounter} />
+                ) : (
+                  <Text c="dimmed">Vital signs can be recorded while the encounter is in progress.</Text>
+                )}
+              </Card>
+              <Card withBorder shadow="sm">
+                <Title order={4} mb="sm">
+                  Family history
+                </Title>
+                <KenyaFamilyHistory encounter={encounter} />
+              </Card>
+            </Stack>
+          )}
+          {isKenya && activeTab === 'details' && (
+            <KenyaBillingTab
+              patient={patientResource}
+              encounter={encounter}
+              setEncounter={setEncounter}
+              practitioner={practitioner}
+              setPractitioner={setPractitioner}
+            />
+          )}
+          {!isKenya && activeTab === 'details' && (
             <BillingTab
               encounter={encounter}
               setEncounter={setEncounter}

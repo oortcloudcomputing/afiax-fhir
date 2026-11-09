@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
+import { getProjectSettingString, getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
@@ -8,6 +8,7 @@ import {
   IconBook2,
   IconCalendarEvent,
   IconClipboardCheck,
+  IconListCheck,
   IconMail,
   IconPill,
   IconSettingsAutomation,
@@ -17,8 +18,10 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { getKenyaRoleMenus } from './components/kenya/kenyaRoleMenu';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
+import { getConfig } from './config';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -29,12 +32,15 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
+import { KenyaClinicalSummaryTab, KenyaNationalRecordsTab } from './pages/patient/KenyaPatientTabs';
+import { KenyaRegistrationPage } from './pages/patient/KenyaRegistrationPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
@@ -70,7 +76,13 @@ export function App(): JSX.Element | null {
   }
 
   const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
+  // DoseSpot is US e-prescribing; Kenya prescribes through Kenya orders (KNHTS, CDS, pharmacy queue)
+  const hasDoseSpot = !isKenya && hasDoseSpotIdentifier(membership);
+  // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
+  const kenyaRoleMenus = isKenya
+    ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)
+    : undefined;
 
   return (
     <AppShell
@@ -81,7 +93,7 @@ export function App(): JSX.Element | null {
       showLayoutVersionToggle={false}
       menus={
         profile
-          ? [
+          ? (kenyaRoleMenus ?? [
               {
                 links: [
                   { icon: <IconBook2 />, label: 'Spaces', href: '/Spaces/Communication' },
@@ -128,7 +140,9 @@ export function App(): JSX.Element | null {
                       ]
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
-                  { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
+                  // Kenya staff without a role still reach the department queues
+                  ...(isKenya ? [{ icon: <IconListCheck />, label: 'Department queues', href: '/kenya/queue' }] : []),
+                  { icon: <IconApps />, label: 'Enterprise apps', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
                         {
@@ -142,7 +156,7 @@ export function App(): JSX.Element | null {
                     : []),
                 ],
               },
-            ]
+            ])
           : undefined
       }
       resourceTypeSearchDisabled={true}
@@ -170,7 +184,8 @@ export function App(): JSX.Element | null {
                   />
                 }
               />
-              <Route path="/Patient/new" element={<ResourceCreatePage />} />
+              {/* Kenya registers patients through the DHA Client Registry */}
+              <Route path="/Patient/new" element={isKenya ? <KenyaRegistrationPage /> : <ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId" element={<EncounterChartPage />}>
@@ -183,6 +198,8 @@ export function App(): JSX.Element | null {
                 <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
+                {isKenya && <Route path="kenya-summary" element={<KenyaClinicalSummaryTab />} />}
+                {isKenya && <Route path="kenya-national" element={<KenyaNationalRecordsTab />} />}
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
@@ -202,8 +219,10 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="Task" element={<TasksPage />} />
               <Route path="Task/:taskId" element={<TasksPage />} />
-              <Route path="/onboarding" element={<IntakeFormPage />} />
+              <Route path="/onboarding" element={isKenya ? <KenyaRegistrationPage /> : <IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
+              {isKenya && <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />}
+              {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />

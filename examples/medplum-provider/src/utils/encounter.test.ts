@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { HTTP_HL7_ORG } from '@medplum/core';
+import { HTTP_HL7_ORG, KenyaEncounterTypeSystem } from '@medplum/core';
 import type {
   Appointment,
   Coding,
@@ -233,5 +233,36 @@ describe('encounter utils', () => {
 
       expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
     });
+  });
+
+  test('a Kenya visit: visit type and period, and no care template', async () => {
+    const medplum = new MockClient();
+    const created: any[] = [];
+    vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+      const result = { ...resource, id: `${resource.resourceType}-1` };
+      created.push(result);
+      return result;
+    });
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({});
+    vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
+    const type = [{ coding: [{ system: KenyaEncounterTypeSystem, code: 'OPD-VISIT' }], text: 'Outpatient Visit' }];
+
+    const encounter = await createEncounter(
+      medplum,
+      new Date('2026-11-08T08:00:00Z'),
+      new Date('2026-11-08T08:30:00Z'),
+      { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
+      { resourceType: 'Patient', id: 'patient-1' },
+      undefined,
+      undefined,
+      type
+    );
+
+    expect(encounter).toMatchObject({
+      type,
+      period: { start: '2026-11-08T08:00:00.000Z', end: '2026-11-08T08:30:00.000Z' },
+    });
+    // No PlanDefinition/$apply without a care template
+    expect(postSpy).not.toHaveBeenCalled();
   });
 });

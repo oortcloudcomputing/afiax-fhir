@@ -39,6 +39,7 @@ export default defineConfig({
       '@medplum/core': path.resolve(__dirname, '../core/src'),
       '@medplum/react': path.resolve(__dirname, '../react/src'),
       '@medplum/react-hooks': path.resolve(__dirname, '../react-hooks/src'),
+      '@medplum/kenya-react': path.resolve(__dirname, '../kenya-react/src'),
     },
   },
 });

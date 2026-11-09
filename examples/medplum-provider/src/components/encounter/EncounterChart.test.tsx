@@ -730,4 +730,77 @@ describe('EncounterChart', () => {
       });
     });
   });
+
+  test('Kenya projects get an Orders tab with Kenya order entry', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Orders')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Orders'));
+    });
+    expect(await screen.findByTestId('kenya-encounter-orders')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Place order' })).toBeInTheDocument();
+  });
+
+  test('no Orders tab outside Kenya', async () => {
+    setup();
+    await waitFor(() => expect(screen.getByText('Note & Tasks')).toBeInTheDocument());
+    expect(screen.queryByText('Orders')).not.toBeInTheDocument();
+  });
+
+  test('Kenya: Details & Billing shows SHA cover, the bill and the SHA claim instead of US billing', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Details & Billing')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Details & Billing'));
+    });
+    expect(await screen.findByText('Insurance cover')).toBeInTheDocument();
+    expect(screen.getByText('Bill and payments')).toBeInTheDocument();
+    expect(screen.getByText('SHA claim')).toBeInTheDocument();
+    expect(screen.queryByText('Export Claim')).not.toBeInTheDocument();
+  });
+
+  test('Kenya: Vitals & history tab records vital signs and family history', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Vitals & history')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Vitals & history'));
+    });
+    expect(await screen.findByRole('button', { name: 'Save vital signs' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add family history' })).toBeInTheDocument();
+  });
+
+  test('Kenya: Nursing tab shows the medicines given and nursing notes', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    await waitFor(() => expect(screen.getByText('Nursing')).toBeInTheDocument());
+    await act(async () => {
+      await user.click(screen.getByText('Nursing'));
+    });
+    expect(await screen.findByText('Medicines given')).toBeInTheDocument();
+    expect(await screen.findByText('No medicines prescribed in this visit.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save note' })).toBeInTheDocument();
+  });
 });

@@ -38,12 +38,23 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
  * Returns the patient page tabs filtered based on user permissions.
  * Currently filters out the DoseSpot tab if the user doesn't have DoseSpot access.
  * @param membership - The current user's project membership.
+ * @param isKenya - Whether the project uses the Kenya country pack (adds the Kenya tabs, drops DoseSpot).
  * @returns Filtered array of patient page tabs.
  */
-export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
-  return PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot);
+export function getPatientPageTabs(membership: ProjectMembership | undefined, isKenya = false): PatientPageTabInfo[] {
+  // DoseSpot is US e-prescribing; Kenya projects get the Kenya tabs instead
+  const hasDoseSpot = !isKenya && hasDoseSpotIdentifier(membership);
+  return [
+    ...PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot),
+    ...(isKenya ? KenyaPatientPageTabs : []),
+  ];
 }
+
+/** Kenya projects: the clinical summary and national records (DHA identity, Shared Health Record). */
+export const KenyaPatientPageTabs: PatientPageTabInfo[] = [
+  { id: 'kenya-summary', url: 'kenya-summary', label: 'Clinical summary' },
+  { id: 'kenya-national', url: 'kenya-national', label: 'National records' },
+];
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },

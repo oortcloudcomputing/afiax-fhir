@@ -22,6 +22,7 @@ import {
   searchAfyaLinkFacility,
   searchAfyaLinkPractitioner,
 } from '../country-pack/kenya/afyalink';
+import { ensureKenyaStaffRoles } from '../country-pack/kenya/staff-roles';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
@@ -221,6 +222,28 @@ projectAdminRouter.post('/:projectId/kenya/afyalink/patient-lookup', async (req:
   } catch (err) {
     sendOutcome(res, badRequest(normalizeErrorString(err)));
   }
+});
+
+// POST to /admin/projects/:projectId/kenya/staff-roles
+// creates or updates the Kenya staff-role menus (UserConfiguration) and AccessPolicies, and lists them
+// with their references for the invite page's Role picker.
+projectAdminRouter.post('/:projectId/kenya/staff-roles', async (_req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') {
+    sendOutcome(res, badRequest('Kenya country pack is not enabled for this project'));
+    return;
+  }
+  const roles = await ensureKenyaStaffRoles(ctx.repo);
+  res.json(
+    roles.map(({ role, userConfiguration, accessPolicy }) => ({
+      code: role.code,
+      display: role.display,
+      description: role.description,
+      admin: !!role.admin,
+      userConfiguration,
+      accessPolicy,
+    }))
+  );
 });
 
 projectAdminRouter.post('/:projectId/sites', async (req: Request, res: Response) => {

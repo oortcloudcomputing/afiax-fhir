@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
+import { getProjectSettingString, getReferenceString } from '@medplum/core';
 import type {
   Appointment,
   ChargeItem,
@@ -151,6 +151,11 @@ export function useEncounterChart(
     const createClaim = async (): Promise<void> => {
       if (claim) {
         // If a claim already exists, don't create a new one
+        return;
+      }
+      // Kenya claims are SHA claims the cashier makes on purpose (SHA benefit codes per charge); never
+      // auto-create a US professional claim and self-pay cover there
+      if (getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya') {
         return;
       }
 

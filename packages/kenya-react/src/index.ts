@@ -1,0 +1,36 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+//
+// Afiax Kenya country-pack components, shared by the admin app, Afiax Provider and My Afiax.
+// Components take callbacks instead of using a router, so any app (staff- or patient-facing) can
+// host them; every server call goes through the FHIR API with the signed-in user's own access.
+
+export * from './billing/ClaimNationalSubmissionPanel';
+export * from './billing/CoverageEligibilityPanel';
+export * from './billing/kenya-billing';
+export * from './billing/KenyaPatientCover';
+export * from './billing/KenyaVisitBilling';
+export * from './billing/KenyaVisitClaim';
+export * from './clinical/CdsAlertList';
+export * from './clinical/clinical-utils';
+export * from './clinical/GrowthChart';
+export * from './clinical/KenyaFamilyHistory';
+export * from './clinical/KenyaVitalSigns';
+export * from './clinical/PatientClinicalSummaryPanel';
+export * from './coding/kenya-diagnosis';
+export * from './coding/kenya-visit-type';
+export * from './coding/KenyaVisitTypeSelect';
+export * from './coding/KnhtsCodeInput';
+export * from './common/ConfirmButton';
+export * from './nursing/kenya-nursing';
+export * from './nursing/KenyaMedicationAdministrationRecord';
+export * from './nursing/KenyaNursingNotes';
+export * from './orders/KenyaEncounterOrders';
+export * from './orders/KenyaOrderEntry';
+export * from './orders/KenyaOrderHistory';
+export * from './patient/ConditionIhrPanel';
+export * from './patient/NationalRecordPublicationPanel';
+export * from './patient/PatientIdentityPanel';
+export * from './queues/KenyaDepartmentQueue';
+export * from './registration/KenyaPatientRegistration';
+export * from './registration/KenyaPatientWizard';

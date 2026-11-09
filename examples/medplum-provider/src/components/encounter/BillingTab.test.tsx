@@ -274,11 +274,31 @@ describe('BillingTab', () => {
     expect(screen.queryByText('Request to connect a billing service')).not.toBeInTheDocument();
   });
 
-  test('request billing service button opens contact page', async () => {
-    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+  test('request billing service button opens the Afiax enterprise apps page', async () => {
+    const navigateSpy = vi.fn();
     const user = userEvent.setup();
 
-    await setup({ claim: mockClaim });
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum} navigate={navigateSpy}>
+            <MantineProvider>
+              <BillingTab
+                patient={mockPatient}
+                encounter={mockEncounter}
+                setEncounter={vi.fn()}
+                practitioner={mockPractitioner}
+                setPractitioner={vi.fn()}
+                chargeItems={[]}
+                setChargeItems={vi.fn()}
+                claim={mockClaim}
+                setClaim={vi.fn()}
+              />
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
@@ -286,8 +306,7 @@ describe('BillingTab', () => {
 
     await user.click(screen.getByText('Request to connect a billing service'));
 
-    expect(windowOpenSpy).toHaveBeenCalledWith('https://www.medplum.com/contact', '_blank');
-    windowOpenSpy.mockRestore();
+    expect(navigateSpy).toHaveBeenCalledWith('/integrations');
   });
 
   test('shows missing diagnosis notification when submitting without conditions', async () => {

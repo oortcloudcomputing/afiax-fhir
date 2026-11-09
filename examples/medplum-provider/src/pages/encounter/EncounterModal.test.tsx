@@ -284,4 +284,21 @@ describe('EncounterModal', () => {
       expect(errorMessages.length).toBeGreaterThan(0);
     });
   });
+
+  test('Kenya: a KNHTS visit type is asked for and the care template is optional', async () => {
+    vi.spyOn(medplum, 'getProject').mockReturnValue({
+      resourceType: 'Project',
+      id: 'project-ke',
+      setting: [{ name: 'countryPack', valueString: 'kenya' }],
+    });
+    setup();
+    expect(await screen.findByRole('textbox', { name: /Visit type/ })).toHaveValue('Outpatient Visit');
+    const planDefinitionInput = document.querySelector('input[name="plandefinition"]');
+    expect(planDefinitionInput).not.toBeRequired();
+  });
+
+  test('Outside Kenya there is no visit type picker', () => {
+    setup();
+    expect(screen.queryByRole('textbox', { name: /Visit type/ })).not.toBeInTheDocument();
+  });
 });

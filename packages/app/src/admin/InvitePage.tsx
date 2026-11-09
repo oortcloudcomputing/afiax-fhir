@@ -3,7 +3,12 @@
 import { Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { InviteRequest } from '@medplum/core';
-import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import {
+  getProjectSettingString,
+  isOperationOutcome,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+} from '@medplum/core';
 import type { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   Form,
@@ -17,11 +22,15 @@ import {
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
+import type { KenyaStaffRoleOption } from './KenyaStaffRoleSelect';
+import { KenyaStaffRoleSelect } from './KenyaStaffRoleSelect';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const [project, setProject] = useState<Project | undefined>(medplum.getProject());
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
+  const [staffRole, setStaffRole] = useState<KenyaStaffRoleOption>();
+  const isKenya = getProjectSettingString(project, 'countryPack') === 'kenya';
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [emailSent, setEmailSent] = useState(false);
   const [result, setResult] = useState<ProjectMembership | undefined>(undefined);
@@ -34,8 +43,16 @@ export function InvitePage(): JSX.Element {
         lastName: formData.lastName,
         email: formData.email,
         sendEmail: formData.sendEmail === 'on',
-        accessPolicy,
-        admin: formData.isAdmin === 'on',
+        ...(staffRole
+          ? {
+              // A Kenya staff role sets the menu and the matching access policy together
+              membership: {
+                accessPolicy: staffRole.accessPolicy,
+                userConfiguration: staffRole.userConfiguration,
+                admin: staffRole.admin,
+              },
+            }
+          : { accessPolicy, admin: formData.isAdmin === 'on' }),
         scope: formData.isProjectScoped === 'on' ? 'project' : 'server',
         mfaRequired: formData.mfaRequired === 'on',
       };
@@ -58,7 +75,7 @@ export function InvitePage(): JSX.Element {
           setOutcome(normalizeOperationOutcome(err));
         });
     },
-    [medplum, project, accessPolicy]
+    [medplum, project, accessPolicy, staffRole]
   );
 
   return (
@@ -98,11 +115,14 @@ export function InvitePage(): JSX.Element {
             required={true}
             error={getErrorsForInput(outcome, 'email')}
           />
-          <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
-            <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
-          </FormSection>
+          {isKenya && project?.id && <KenyaStaffRoleSelect projectId={project.id} onChange={setStaffRole} />}
+          {!staffRole && (
+            <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
+              <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
+            </FormSection>
+          )}
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
-          <Checkbox name="isAdmin" label="Admin" />
+          {!staffRole && <Checkbox name="isAdmin" label="Admin" />}
           <Checkbox name="isProjectScoped" label="Project scoped" />
           <Checkbox name="mfaRequired" label="MFA required" />
           <Group justify="flex-end">

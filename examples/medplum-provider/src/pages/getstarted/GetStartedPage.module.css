@@ -6,7 +6,7 @@
   --icon-secondary: var(--mantine-color-gray-5);
 }
 
-[data-mantine-color-scheme="dark"] .page {
+[data-mantine-color-scheme='dark'] .page {
   --text-secondary: var(--mantine-color-gray-5);
   --text-label: var(--mantine-color-gray-5);
   --icon-secondary: var(--mantine-color-gray-6);

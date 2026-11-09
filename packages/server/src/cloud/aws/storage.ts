@@ -9,6 +9,7 @@ import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { BaseBinaryStorage } from '../../storage/base';
+import { generatePresignedUrl } from '../../storage/presign';
 import type { BinarySource } from '../../storage/types';
 
 /**
@@ -102,6 +103,13 @@ export class S3Storage extends BaseBinaryStorage {
    */
   async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
+
+    // A custom S3 endpoint (Afiax: MinIO) is an in-cluster address that browsers cannot reach, and
+    // there is no CloudFront in front of it. Hand out the server's own signed /storage/ URL instead;
+    // the storage route verifies the signature and streams the file from this bucket.
+    if (config.s3Endpoint) {
+      return generatePresignedUrl(binary);
+    }
 
     if (!config.signingKey || !config.signingKeyId) {
       const Key = this.getKey(binary);

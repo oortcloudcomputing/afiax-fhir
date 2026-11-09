@@ -55,6 +55,26 @@ describe('Storage', () => {
     }
   });
 
+  test('Custom S3 endpoint hands out signed server storage URLs, never the in-cluster endpoint', async () => {
+    const config = getConfig();
+    config.s3Endpoint = 'http://minio.minio.svc.cluster.local:9000';
+    try {
+      initBinaryStorage('s3:afiax-binary');
+      const url = await getBinaryStorage().getPresignedUrl({
+        resourceType: 'Binary',
+        id: '123',
+        contentType: ContentType.TEXT,
+        meta: { versionId: '456' },
+      } as Binary);
+      expect(url.startsWith(config.storageBaseUrl + '123/456?')).toBe(true);
+      expect(url).toContain('Expires=');
+      expect(url).toContain('Signature=');
+      expect(url).not.toContain('minio');
+    } finally {
+      config.s3Endpoint = undefined;
+    }
+  });
+
   test('Multipart upload with Express Request stream succeeds', async () => {
     initBinaryStorage('s3:foo');
     const storage = getBinaryStorage();

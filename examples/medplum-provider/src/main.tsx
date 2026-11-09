@@ -12,10 +12,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
+import { MEDPLUM_BASE_URL } from './config';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  // baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
+  // The Afiax FHIR server, never Medplum's cloud (MEDPLUM_BASE_URL; see config.ts)
+  baseUrl: MEDPLUM_BASE_URL,
   cacheTime: 60000,
   autoBatchTime: 100,
 });

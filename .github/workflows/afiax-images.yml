@@ -18,7 +18,7 @@ on:
     branches: [kenya]
     paths-ignore:
       - 'packages/docs/**'
-      - 'examples/**'
+      - 'examples/**/*.test.*'
       - '**/*.md'
   workflow_dispatch:
 
@@ -57,6 +57,16 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
+      # Afiax Provider and My Afiax (examples/): built with placeholders that each container
+      # replaces at start-up (scripts/afiax/web-app/entrypoint.sh)
+      - name: Build Afiax Provider and My Afiax
+        run: npx turbo run build --filter=medplum-provider --filter=foomedical
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_PROJECT_ID: '__MEDPLUM_PROJECT_ID__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
@@ -76,3 +86,12 @@ jobs:
         run: ./scripts/build-docker-server.sh --latest
       - name: Build App Docker Image
         run: ./scripts/build-docker-app.sh --latest
+      - name: Build Afiax Provider and My Afiax images
+        run: |
+          for pair in "medplum-provider:afiax-provider" "foomedical:afiax-portal"; do
+            dir="examples/${pair%%:*}"; image="ghcr.io/oortcloudcomputing/${pair##*:}"
+            docker buildx build --push --platform "$DOCKER_PLATFORMS" \
+              -f scripts/afiax/web-app/Dockerfile --build-context web=scripts/afiax/web-app \
+              --label org.opencontainers.image.source=https://github.com/oortcloudcomputing/afiax-fhir \
+              -t "$image:latest" -t "$image:$GITHUB_SHA" "$dir/dist"
+          done

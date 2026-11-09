@@ -13,11 +13,11 @@ Afiax Clinical Suite is the clinical operating system for a health facility. It 
 | **Afiax FHIR** | The patient record and clinical data platform: patients, encounters, diagnoses (ICD-11), orders, results, care plans, tasks, audit | `fhir.afiax.africa` | [FHIR API](/docs/api), [Charting](/docs/charting), [Care planning](/docs/careplans) |
 | **Afiax Provider** | The clinician app: patient chart, visits, orders, results, prescribing | `provider.afiax.africa` | [Afiax Provider](/docs/provider) |
 | **SHA revenue cycle** | SHA eligibility checks, pre-authorisation, claim submission and claim status, built into the encounter | Part of Afiax FHIR | [Kenya billing and settlement](/docs/country-packs/kenya-billing-and-settlement) |
-| **Afiax Billing** | Finance and operations: invoices and receivables, pharmacy stock and dispensing, procurement, HR and payroll | `erp.afiax.africa` | [Afiax Billing integration](/docs/architecture/afiax-billing-boundary) |
+| **Afiax Billing** | Finance and operations: invoices and receivables, pharmacy stock and dispensing, procurement, HR and payroll | `finance.afiax.africa` (HR: `hr.afiax.africa`) | [Afiax Billing integration](/docs/architecture/afiax-billing-boundary) |
 | **Afiax Pay** | Patient payments and wallets: M-Pesa collection, co-payments, insurer and SHA remittances, refunds | `pay.afiax.africa` | [Afiax Pay integration](/docs/integration/afiax-pay) |
-| **Afiax DICOM** | Medical imaging: storing and viewing X-ray, CT, MRI and ultrasound studies, and radiology reporting | `dicom.afiax.africa` | [Afiax DICOM integration](/docs/integration/afiax-dicom) |
+| **Afiax DICOM** | Medical imaging: storing and viewing X-ray, CT, MRI and ultrasound studies, and radiology reporting | `imaging.afiax.africa` | [Afiax DICOM integration](/docs/integration/afiax-dicom) |
 | **My Afiax** (patient portal, Wave 2) | Patients see their records and results, book appointments and pay | `myafiax.afiax.africa` | |
-| **Remote patient monitoring** (Wave 2) | Readings from connected devices, with alerts to the care team | `iot.afiax.africa` | |
+| **Remote patient monitoring** (planned) | Readings from connected devices, with alerts to the care team | `virtualcare.afiax.africa` | |
 
 ## Built for Kenya
 

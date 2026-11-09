@@ -10,9 +10,9 @@ Afiax Workspace serves the people who deliver care. It helps them learn and keep
 
 | Module | What it does | Where it lives |
 | --- | --- | --- |
-| **Afiax Learn** | Courses and assessments that work on mobile and on slow connections, with certificates. CPD points are tracked and reported to KMPDC and NCK | `learn.afiax.africa` |
-| **Afiax Messaging** | Secure, end-to-end encrypted clinical messaging, team channels, file sharing and calls. Hosted in Kenya, with an audit trail: a governed replacement for WhatsApp groups | `matrix.afiax.africa` |
-| **Afiax Marketplace** | A locums marketplace: shift posting, matching, credential checks and M-Pesa payment to locums | `shop.afiax.africa` |
+| **Afiax Learn** | Courses and assessments that work on mobile and on slow connections, with certificates. CPD points are tracked and reported to KMPDC and NCK | `cpd.afiax.africa` |
+| **Afiax Messaging** | Secure, encrypted clinical messaging, team channels, file sharing and calls. Hosted in Kenya, with an audit trail: a governed replacement for WhatsApp groups | `healthtalk.afiax.africa` |
+| **Afiax Marketplace** | A locums marketplace: shift posting, matching, credential checks and M-Pesa payment to locums | `clinics.afiax.africa` |
 | **Credentialing** | Licence verification against KMPDC, NCK and PPB registers, with expiry alerts | Part of Workspace |
 | **Workforce scheduling** | Shift planning, rostering, leave and on-call | Part of Workspace |
 | **Files and analytics** | Shared documents and operational dashboards | Part of Workspace |

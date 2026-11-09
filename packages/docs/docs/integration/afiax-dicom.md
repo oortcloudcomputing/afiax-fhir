@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Afiax DICOM (Imaging)
 
-**Afiax DICOM** is the medical imaging module of Afiax Clinical Suite. It stores and serves imaging studies (X-ray, CT, MRI, ultrasound) from your modalities, and gives radiologists a viewer and reporting workflow. It runs on [Afiax Cloud](/docs/afiax-cloud) at `dicom.afiax.africa`, in Kenya, like the rest of the platform.
+**Afiax DICOM** is the medical imaging module of Afiax Clinical Suite. It stores and serves imaging studies (X-ray, CT, MRI, ultrasound) from your modalities, and gives radiologists a viewer and reporting workflow. It runs on [Afiax Cloud](/docs/afiax-cloud) at `imaging.afiax.africa`, in Kenya, like the rest of the platform.
 
 ## How imaging fits with the patient record
 

@@ -256,7 +256,7 @@ export async function loadVisitContext(req: FhirRequest): Promise<VisitContext> 
   return { encounter, patientCrId, credentials: getKenyaAfyaLinkCredentials(ctx.project) };
 }
 
-async function resolveFacility(
+export async function resolveFacility(
   context: VisitContext,
   facilityFrCode: string | undefined
 ): Promise<{ frCode: string; name: string }> {

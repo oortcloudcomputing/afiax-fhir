@@ -150,7 +150,7 @@ function requireValue(value: string | undefined, name: string): string {
   return trimmed;
 }
 
-function normalizeAuthorization(payload: Record<string, unknown>): KenyaHieAuthorization {
+export function normalizeAuthorization(payload: Record<string, unknown>): KenyaHieAuthorization {
   const capture = isRecord(payload.shaVerificationRequest) ? payload.shaVerificationRequest : {};
   return {
     guid: str(payload.guid),
@@ -250,6 +250,45 @@ export async function createKenyaHieBiometricsAuthorization(
   const result = await requestKenyaHie(credentials, 'POST', '/claims/authorize', { body });
   if (!result.ok || !isRecord(result.body)) {
     throw new KenyaHieRequestError('biometrics authorization', result);
+  }
+  return normalizeAuthorization(result.body);
+}
+
+/**
+ * Creates a pre-visit authorization by OTP (POST /claims/authorize, OTP variant), for an elective
+ * case before any visit exists. DHA returns it AUTHORIZED_PENDING_VISIT; its token is the
+ * consent_token for the elective preauth. The OTP comes from POST /claims/otp (sendKenyaHieVisitOtp).
+ * Body as in DHA's Postman collection "Create Authorization for OTP Visit" and the Pre-Visit
+ * Authorization guide (docs/claims/process/eligibility/preVisitAuthorization).
+ * @param credentials - The HIE credentials.
+ * @param input - The patient, service type, interventions and OTP.
+ * @param input.patientId - The patient's Client Registry ID.
+ * @param input.serviceType - OUTPATIENT or INPATIENT.
+ * @param input.interventionCodes - The planned interventions.
+ * @param input.otp - The OTP the patient received.
+ * @returns The authorization.
+ */
+export async function createKenyaHieOtpAuthorization(
+  credentials: KenyaAfyaLinkCredentials,
+  input: {
+    readonly patientId: string;
+    readonly serviceType: 'OUTPATIENT' | 'INPATIENT';
+    readonly interventionCodes: readonly string[];
+    readonly otp: string;
+  }
+): Promise<KenyaHieAuthorization> {
+  if (input.serviceType !== 'OUTPATIENT' && input.serviceType !== 'INPATIENT') {
+    throw new Error('A pre-visit authorization is for OUTPATIENT or INPATIENT services');
+  }
+  const body = {
+    patient_id: requireValue(input.patientId, 'The patient Client Registry ID'),
+    service_type: input.serviceType,
+    otp: requireValue(input.otp, 'The OTP'),
+    interventions: requireCodes(input.interventionCodes),
+  };
+  const result = await requestKenyaHie(credentials, 'POST', '/claims/authorize', { body });
+  if (!result.ok || !isRecord(result.body)) {
+    throw new KenyaHieRequestError('pre-visit authorization', result);
   }
   return normalizeAuthorization(result.body);
 }

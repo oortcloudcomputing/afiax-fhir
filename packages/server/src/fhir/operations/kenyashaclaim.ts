@@ -175,7 +175,7 @@ async function readAll(stream: Readable): Promise<Buffer> {
  * @param documentType - DHA's document type for it.
  * @returns The file to send to DHA.
  */
-async function loadAttachment(reference: Reference, documentType: string): Promise<KenyaHieAttachmentFile> {
+export async function loadAttachment(reference: Reference, documentType: string): Promise<KenyaHieAttachmentFile> {
   const ctx = getAuthenticatedContext();
   const [resourceType] = parseReference(reference);
   let binaryReference: string | undefined;

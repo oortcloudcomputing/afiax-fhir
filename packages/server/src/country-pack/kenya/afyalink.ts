@@ -373,6 +373,8 @@ export interface HieRequestOptions {
   readonly body?: unknown;
   /** multipart/form-data body, for attachments (DHA: files go as binary parts, never base64). */
   readonly multipart?: HieMultipart;
+  /** Extra headers, for example X-Consent-Token and X-PUID on Shared Health Record reads. */
+  readonly headers?: Record<string, string>;
 }
 
 function quoteFormValue(value: string): string {
@@ -428,6 +430,9 @@ export async function requestKenyaHie(
   if (credentials.facilityId) {
     headers['X-Facility-Id'] = credentials.facilityId;
     headers['X-Facility-Id-Type'] = 'fr-code';
+  }
+  for (const [name, value] of Object.entries(options?.headers ?? {})) {
+    headers[name] = value;
   }
   let requestBody: string | Buffer | undefined;
   if (options?.multipart) {

@@ -80,6 +80,7 @@ import { kenyaShaEmergencyHandler } from './operations/kenyashaemergency';
 import { kenyaShaPreauthHandler } from './operations/kenyashapreauth';
 import { kenyaShaRemittanceHandler } from './operations/kenyasharemittance';
 import { kenyaShaCoverageHandler, kenyaStartVisitHandler, kenyaVisitConsentHandler } from './operations/kenyashavisit';
+import { kenyaShrHandler } from './operations/kenyashr';
 import { khisWeeklyExportHandler } from './operations/khis-weekly-export';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -447,6 +448,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Encounter/:id/$kenya-sha-preauth', kenyaShaPreauthHandler);
   router.add('POST', '/Encounter/:id/$kenya-sha-emergency', kenyaShaEmergencyHandler);
   router.add('POST', '/$kenya-hie-callbacks', kenyaHieCallbacksHandler);
+  router.add('POST', '/Encounter/:id/$kenya-shr', kenyaShrHandler);
   // Kenya quality measures (DHA FUNC-QUAL-001): calculate, save the MeasureReport and a CSV export
   router.add('POST', '/Measure/$kenya-evaluate-measure', kenyaEvaluateMeasureHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);

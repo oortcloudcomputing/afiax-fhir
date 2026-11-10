@@ -11,6 +11,7 @@ import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import type { HieResult } from '../../country-pack/kenya/afyalink';
 import { getKenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
+import { getKenyaHieInterventions, getKenyaHieUtilization } from '../../country-pack/kenya/hie-coverage';
 import {
   createKenyaHieBiometricsAuthorization,
   getKenyaHiePatientContacts,
@@ -25,6 +26,12 @@ import { KenyaShaVisitClaimIdSystem, KenyaShaVisitExtension } from './kenyashavi
 jest.mock('../../country-pack/kenya/afyalink', () => ({
   ...jest.requireActual('../../country-pack/kenya/afyalink'),
   getKenyaAfyaLinkCredentials: jest.fn(),
+}));
+
+jest.mock('../../country-pack/kenya/hie-coverage', () => ({
+  ...jest.requireActual('../../country-pack/kenya/hie-coverage'),
+  getKenyaHieInterventions: jest.fn(),
+  getKenyaHieUtilization: jest.fn(),
 }));
 
 jest.mock('../../country-pack/kenya/hie-visit', () => ({
@@ -291,5 +298,46 @@ describe('Encounter SHA visit operations (Kenya)', () => {
     ]);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toContain('serviceType must be one of');
+  });
+
+  test('looks up the interventions for the visit type from the encounter class', async () => {
+    (getKenyaHieInterventions as jest.Mock).mockResolvedValueOnce({ count: 1, results: [{ code: 'SHA-19-404' }] });
+
+    const res = await call(clinicianToken, encounter.id, 'kenya-sha-coverage', [
+      { name: 'action', valueCode: 'interventions' },
+      { name: 'subBenefitCode', valueString: 'SHA-19-SC-13' },
+      { name: 'page', valueInteger: 2 },
+    ]);
+    expect(res.status).toBe(200);
+    expect(resultOf(res)).toEqual({ visitType: 'OP', count: 1, results: [{ code: 'SHA-19-404' }] });
+    expect(getKenyaHieInterventions).toHaveBeenCalledWith(credentials, 'CR9795515286992-5', {
+      visitType: 'OP',
+      subBenefitCode: 'SHA-19-SC-13',
+      page: 2,
+    });
+  });
+
+  test('reads the utilization of one intervention for an inpatient visit', async () => {
+    (getKenyaHieUtilization as jest.Mock).mockResolvedValueOnce([{ code: 'SHA-18-005', limitAvailableAmount: 140 }]);
+
+    const res = await call(clinicianToken, encounter.id, 'kenya-sha-coverage', [
+      { name: 'action', valueCode: 'utilization' },
+      { name: 'visitType', valueCode: 'ip' },
+      { name: 'interventionCode', valueString: 'SHA-18-005' },
+    ]);
+    expect(res.status).toBe(200);
+    expect(resultOf(res)).toEqual({ visitType: 'IP', results: [{ code: 'SHA-18-005', limitAvailableAmount: 140 }] });
+    expect(getKenyaHieUtilization).toHaveBeenCalledWith(credentials, 'CR9795515286992-5', 'SHA-18-005');
+  });
+
+  test('refuses an unknown coverage action or visit type', async () => {
+    const action = await call(clinicianToken, encounter.id, 'kenya-sha-coverage', [{ name: 'action', valueCode: 'x' }]);
+    expect(action.status).toBe(400);
+    const visitType = await call(clinicianToken, encounter.id, 'kenya-sha-coverage', [
+      { name: 'action', valueCode: 'benefits' },
+      { name: 'visitType', valueCode: 'MR' },
+    ]);
+    expect(visitType.status).toBe(400);
+    expect(visitType.body.issue[0].details.text).toBe('visitType must be OP or IP');
   });
 });

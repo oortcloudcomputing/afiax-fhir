@@ -19,6 +19,13 @@ import type { Encounter, Extension, OperationDefinition, Organization, Patient }
 import { getAuthenticatedContext } from '../../context';
 import type { KenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
 import { getKenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
+import type { KenyaShaVisitType } from '../../country-pack/kenya/hie-coverage';
+import {
+  getKenyaHieBenefits,
+  getKenyaHieInterventions,
+  getKenyaHieSubBenefits,
+  getKenyaHieUtilization,
+} from '../../country-pack/kenya/hie-coverage';
 import type { KenyaHieStartVisitInput, KenyaShaServiceType } from '../../country-pack/kenya/hie-visit';
 import {
   createKenyaHieBiometricsAuthorization,
@@ -111,6 +118,58 @@ export const kenyaStartVisitOperation: OperationDefinition = {
     { use: 'out', name: 'result', type: 'string', min: 1, max: '1', documentation: 'The DHA visit, as JSON.' },
   ],
 };
+
+export const kenyaShaCoverageOperation: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  id: 'encounter-kenya-sha-coverage',
+  name: 'KenyaShaCoverage',
+  title:
+    "Look up the patient's SHA coverage for an encounter: benefits, sub-benefits, interventions, utilization (Kenya)",
+  status: 'active',
+  kind: 'operation',
+  code: 'kenya-sha-coverage',
+  resource: ['Encounter'],
+  system: false,
+  type: false,
+  instance: true,
+  affectsState: false,
+  parameter: [
+    {
+      use: 'in',
+      name: 'action',
+      type: 'code',
+      min: 1,
+      max: '1',
+      documentation: 'benefits | sub-benefits | interventions | utilization',
+    },
+    {
+      use: 'in',
+      name: 'visitType',
+      type: 'code',
+      min: 0,
+      max: '1',
+      documentation: 'OP | IP. Defaults from Encounter.class (IMP = IP, else OP).',
+    },
+    { use: 'in', name: 'parentBenefitCode', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'subBenefitCode', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'interventionCode', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'search', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'page', type: 'integer', min: 0, max: '1' },
+    { use: 'in', name: 'pageSize', type: 'integer', min: 0, max: '1' },
+    { use: 'out', name: 'result', type: 'string', min: 1, max: '1', documentation: 'The DHA result, as JSON.' },
+  ],
+};
+
+interface ShaCoverageParameters {
+  readonly action: string;
+  readonly visitType?: string;
+  readonly parentBenefitCode?: string;
+  readonly subBenefitCode?: string;
+  readonly interventionCode?: string;
+  readonly search?: string;
+  readonly page?: number;
+  readonly pageSize?: number;
+}
 
 interface VisitConsentParameters {
   readonly action: string;
@@ -402,6 +461,77 @@ export async function kenyaStartVisitHandler(req: FhirRequest): Promise<FhirResp
     buildOutputParameters(kenyaStartVisitOperation, {
       encounter: createReference(updated),
       result: JSON.stringify(visit),
+    }),
+  ];
+}
+
+function getVisitType(encounter: Encounter, value: string | undefined): KenyaShaVisitType {
+  const normalized = value?.trim().toUpperCase();
+  if (normalized) {
+    if (normalized !== 'OP' && normalized !== 'IP') {
+      throw new OperationOutcomeError(badRequest('visitType must be OP or IP'));
+    }
+    return normalized;
+  }
+  return encounter.class?.code === 'IMP' ? 'IP' : 'OP';
+}
+
+/**
+ * Handles POST Encounter/:id/$kenya-sha-coverage: what the encounter's patient is covered for at
+ * this facility, following DHA's eligibility chain (run the eligibility check first). One action
+ * per call:
+ * - benefits: the parent benefits
+ * - sub-benefits: the sub-benefits billable on this visit (parentBenefitCode optional)
+ * - interventions: the interventions billable on this visit, each with DHA's flags and the
+ *   integration scenario they select (subBenefitCode, search, interventionCode, page, pageSize)
+ * - utilization: used and remaining limits for one intervention (interventionCode)
+ * @param req - The FHIR request.
+ * @returns The DHA result as JSON.
+ */
+export async function kenyaShaCoverageHandler(req: FhirRequest): Promise<FhirResponse> {
+  const params = parseInputParameters<ShaCoverageParameters>(kenyaShaCoverageOperation, req);
+  const context = await loadVisitContext(req);
+  const { credentials, patientCrId, encounter } = context;
+  const visitType = getVisitType(encounter, params.visitType);
+
+  let result: unknown;
+  switch (params.action) {
+    case 'benefits':
+      result = await callHie(() => getKenyaHieBenefits(credentials, patientCrId));
+      break;
+    case 'sub-benefits':
+      result = await callHie(() =>
+        getKenyaHieSubBenefits(credentials, patientCrId, {
+          visitType,
+          ...(params.parentBenefitCode ? { parentBenefitCode: params.parentBenefitCode } : {}),
+        })
+      );
+      break;
+    case 'interventions':
+      result = await callHie(() =>
+        getKenyaHieInterventions(credentials, patientCrId, {
+          visitType,
+          ...(params.subBenefitCode ? { subBenefitCode: params.subBenefitCode } : {}),
+          ...(params.search ? { search: params.search } : {}),
+          ...(params.interventionCode ? { code: params.interventionCode } : {}),
+          ...(params.page !== undefined ? { page: params.page } : {}),
+          ...(params.pageSize !== undefined ? { pageSize: params.pageSize } : {}),
+        })
+      );
+      break;
+    case 'utilization':
+      result = await callHie(() => getKenyaHieUtilization(credentials, patientCrId, params.interventionCode ?? ''));
+      break;
+    default:
+      throw new OperationOutcomeError(
+        badRequest('action must be benefits, sub-benefits, interventions or utilization')
+      );
+  }
+
+  return [
+    allOk,
+    buildOutputParameters(kenyaShaCoverageOperation, {
+      result: JSON.stringify({ visitType, ...(Array.isArray(result) ? { results: result } : (result as object)) }),
     }),
   ];
 }

@@ -219,7 +219,8 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
   if (!(Actions as readonly string[]).includes(params.action)) {
     throw new OperationOutcomeError(badRequest(`action must be one of ${Actions.join(', ')}`));
   }
-  const context = await loadVisitContext(req);
+  // An emergency case may still be for an unidentified patient; only the discharge OTP needs the CR ID.
+  const context = await loadVisitContext(req, { allowUnidentified: true });
   const { credentials, encounter, patientCrId } = context;
   const visit = getExistingVisit(encounter);
   const consentToken = visit && visitValue(visit, KenyaShaVisitExtension.consentToken);
@@ -231,6 +232,10 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
   const action = params.action as (typeof Actions)[number];
 
   const readOnly = action === 'preview' || action === 'payer-preview';
+  // DHA bills emergency case claims by protocol and submits them in their own flow.
+  if (visitValue(visit, KenyaShaVisitExtension.claimType) === 'emergency-case' && !readOnly) {
+    throw new OperationOutcomeError(badRequest('This is an emergency case claim: use $kenya-sha-emergency.'));
+  }
   if (dispatched === 'partial') {
     // The patient has left; the facility may still finish the documents, then finalize.
     if (!readOnly && action !== 'finalize' && !(BillingActions as readonly string[]).includes(action)) {
@@ -317,6 +322,9 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
       break;
     }
     case 'send-discharge-otp':
+      if (!patientCrId) {
+        throw new OperationOutcomeError(badRequest('The patient has no DHA Client Registry ID.'));
+      }
       result = await callHie(() => sendKenyaHieDischargeOtp(credentials, consentToken, patientCrId));
       break;
     case 'submit': {

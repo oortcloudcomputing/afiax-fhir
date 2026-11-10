@@ -380,6 +380,10 @@ export async function kenyaShaPreauthHandler(req: FhirRequest): Promise<FhirResp
   const context = await loadVisitContext(req);
   const { credentials, encounter, patientCrId } = context;
   const visit = getExistingVisit(encounter);
+  if (visit?.extension?.some((e) => e.url === KenyaShaVisitExtension.claimType && e.valueString === 'emergency-case')) {
+    // DHA: emergency claims need no preauth; the doctor's consent is requested instead.
+    throw new OperationOutcomeError(badRequest('Emergency case claims do not take a preauth.'));
+  }
   const visitToken = visit?.extension?.find((e) => e.url === KenyaShaVisitExtension.consentToken)?.valueString;
   const preauth = getPreauthExtension(encounter);
   const storedIntervention = value(preauth, KenyaShaPreauthExtension.interventionCode);

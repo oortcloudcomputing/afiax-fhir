@@ -52,6 +52,15 @@ export const KenyaShaVisitExtension = {
   workflowState: 'workflowState',
   schemeName: 'schemeName',
   startedAt: 'startedAt',
+  claimType: 'claimType',
+  identified: 'identified',
+  modeOfArrival: 'modeOfArrival',
+  broughtBy: 'broughtBy',
+  referenceNumber: 'referenceNumber',
+  notes: 'notes',
+  doctorIdentificationNumber: 'doctorIdentificationNumber',
+  doctorIdentificationType: 'doctorIdentificationType',
+  doctorRegulator: 'doctorRegulator',
   dispatch: 'dispatch',
   invoiceNumber: 'invoiceNumber',
   dispatchedAt: 'dispatchedAt',
@@ -226,9 +235,14 @@ export function getExistingVisit(encounter: Encounter): Extension | undefined {
  * Loads the Encounter as the caller (so their access policy applies), checks they may update it,
  * and resolves the patient's Client Registry ID and the project's HIE credentials.
  * @param req - The FHIR request.
+ * @param options - allowUnidentified: an emergency patient may have no Client Registry ID yet (patientCrId is then '').
+ * @param options.allowUnidentified - Whether a patient without a Client Registry ID is allowed.
  * @returns The visit context.
  */
-export async function loadVisitContext(req: FhirRequest): Promise<VisitContext> {
+export async function loadVisitContext(
+  req: FhirRequest,
+  options?: { readonly allowUnidentified?: boolean }
+): Promise<VisitContext> {
   const ctx = getAuthenticatedContext();
   if (getProjectCountryPack(ctx.project)?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
@@ -245,7 +259,7 @@ export async function loadVisitContext(req: FhirRequest): Promise<VisitContext> 
   }
   const patient = await ctx.repo.readResource<Patient>('Patient', patientId);
   const patientCrId = patient.identifier?.find((id) => id.system === KenyaClientRegistryIdSystem)?.value?.trim();
-  if (!patientCrId) {
+  if (!patientCrId && !options?.allowUnidentified) {
     throw new OperationOutcomeError(
       badRequest(
         'The patient has no DHA Client Registry ID. Look the patient up in the Client Registry before starting an SHA visit.'
@@ -253,7 +267,7 @@ export async function loadVisitContext(req: FhirRequest): Promise<VisitContext> 
     );
   }
 
-  return { encounter, patientCrId, credentials: getKenyaAfyaLinkCredentials(ctx.project) };
+  return { encounter, patientCrId: patientCrId ?? '', credentials: getKenyaAfyaLinkCredentials(ctx.project) };
 }
 
 export async function resolveFacility(

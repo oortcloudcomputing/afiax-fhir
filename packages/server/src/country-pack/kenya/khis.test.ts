@@ -22,6 +22,7 @@ function buildProject(overrides?: Partial<Project>): Project {
       },
     ],
     secret: [
+      { name: 'kenyaKhisBaseUrl', valueString: 'https://hiskenya-staging.example/' },
       { name: 'kenyaKhisUsername', valueString: 'admin' },
       { name: 'kenyaKhisPassword', valueString: 'secret' },
     ],
@@ -35,8 +36,32 @@ describe('getKhisCredentials', () => {
     expect(creds.username).toBe('admin');
     expect(creds.password).toBe('secret');
     expect(creds.moh505DataSetUid).toBe('MOH505_UID');
-    expect(creds.baseUrl).toContain('hiskenya');
+    expect(creds.baseUrl).toBe('https://hiskenya-staging.example');
     expect(creds.dataElementMapping['A00']?.suspected).toBe('CHOLERA_S_UID');
+  });
+
+  test('production defaults to KHIS at hiskenya.dha.go.ke', () => {
+    const project = buildProject({
+      setting: [
+        { name: 'kenyaKhisEnvironment', valueString: 'production' },
+        { name: 'kenyaKhisMoh505DataSetUid', valueString: 'MOH505_UID' },
+      ],
+      secret: [
+        { name: 'kenyaKhisUsername', valueString: 'admin' },
+        { name: 'kenyaKhisPassword', valueString: 'secret' },
+      ],
+    });
+    expect(getKhisCredentials(project).baseUrl).toBe('https://hiskenya.dha.go.ke');
+  });
+
+  test('UAT requires the KHIS staging URL issued by DHA', () => {
+    const project = buildProject({
+      secret: [
+        { name: 'kenyaKhisUsername', valueString: 'admin' },
+        { name: 'kenyaKhisPassword', valueString: 'secret' },
+      ],
+    });
+    expect(() => getKhisCredentials(project)).toThrow('KHIS base URL not configured for uat');
   });
 
   test('throws when username/password missing', () => {

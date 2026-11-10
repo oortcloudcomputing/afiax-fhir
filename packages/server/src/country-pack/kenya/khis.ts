@@ -87,7 +87,12 @@ export function getKhisConnection(project: Project): KhisConnection {
       `KHIS credentials (${KenyaKhisSecretNames.username}, ${KenyaKhisSecretNames.password}) not found in ${source}.`
     );
   }
-  return { baseUrl, username, password };
+  if (!baseUrl) {
+    throw new Error(
+      `KHIS base URL not configured for ${envKey}. There is no public KHIS test instance; set ${KenyaKhisSecretNames.baseUrl} to the KHIS staging URL issued by DHA.`
+    );
+  }
+  return { baseUrl: baseUrl.replace(/\/+$/, ''), username, password };
 }
 
 export function getKhisCredentials(project: Project): KhisCredentials {

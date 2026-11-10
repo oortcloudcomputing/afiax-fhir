@@ -2072,10 +2072,16 @@ export const KenyaKhisWeeklyConditionDisplay: Record<string, string> = Object.fr
   ...KenyaKhisWeeklyNotifiableConditions.map((c) => [c.icd10, c.display]),
 ]);
 
-export const KenyaKhisBaseUrls = {
-  uat: 'https://hiskenya-uat.health.go.ke',
-  production: 'https://hiskenya.org',
-} as const;
+/**
+ * KHIS (Kenya's national DHIS2) base URLs. KHIS is operated by DHA at hiskenya.dha.go.ke (checked
+ * 2026-11-10); the old hiskenya.org address serves a certificate for hiskenya.dha.go.ke and fails
+ * TLS verification. There is no public KHIS test instance: the staging URL is issued by DHA with
+ * the KHIS credentials, so UAT must set it in the kenyaKhisBaseUrl secret.
+ */
+export const KenyaKhisBaseUrls: Readonly<Record<'uat' | 'production', string | undefined>> = {
+  uat: undefined,
+  production: 'https://hiskenya.dha.go.ke',
+};
 
 export const KenyaKhisCorrelationIdSystem = 'https://afiax.africa/identifier/khis-export-correlation-id';
 

@@ -112,6 +112,7 @@ describe('IDSR reporting to KHIS', () => {
           { name: 'kenyaIdsrNotificationEmail', valueString: 'surveillance@kisumu.go.ke' },
         ],
         secret: [
+          { name: 'kenyaKhisBaseUrl', valueString: 'https://hiskenya-staging.example' },
           { name: 'kenyaKhisUsername', valueString: 'afiax' },
           { name: 'kenyaKhisPassword', valueString: 'secret' },
         ],

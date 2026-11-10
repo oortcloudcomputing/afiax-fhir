@@ -16,8 +16,17 @@ then pushes the counts to the Kenya Health Information System (KHIS) via the DHI
 ## What KHIS is
 
 KHIS (Kenya Health Information System) is Kenya's national HMIS, built on DHIS2.
-The URL for the production instance is `https://hiskenya.org`.
-The UAT/test instance is `https://hiskenya-uat.health.go.ke`.
+KHIS is Kenya's national DHIS2. It is operated by DHA at `https://hiskenya.dha.go.ke`, and that is
+the production default. The old `https://hiskenya.org` address now serves a certificate for
+hiskenya.dha.go.ke, so it fails TLS verification; do not use it.
+
+There is no public KHIS test instance. DHA issues the staging URL together with the KHIS
+credentials (through the DHA Help Desk / MoH). Set it in the `kenyaKhisBaseUrl` secret: UAT has no
+default and reports "KHIS base URL not configured" until it is set.
+
+Until KHIS credentials are configured, the weekly export still generates the MOH 505 report and
+keeps it as a DocumentReference (`moh505-weekly-report`). The export Task is left on-hold, marked
+not submitted.
 
 MOH 505 is the weekly aggregate epidemiological bulletin. Data entry in KHIS covers:
 - Suspected cases per disease per facility per epi-week
@@ -72,7 +81,7 @@ Conditions are counted once per table entry: a child code (e.g. `1F40.0`) counts
 Obtain the UIDs from your KHIS administrator or from the DHIS2 metadata API:
 
 ```
-GET https://hiskenya.org/api/dataElements?fields=id,name,code&filter=dataSetElements.dataSet.id:eq:<MOH505_UID>
+GET https://hiskenya.dha.go.ke/api/dataElements?fields=id,name,code&filter=dataSetElements.dataSet.id:eq:<MOH505_UID>
 ```
 
 Example mapping (UIDs are illustrative — use actual values from your KHIS instance):

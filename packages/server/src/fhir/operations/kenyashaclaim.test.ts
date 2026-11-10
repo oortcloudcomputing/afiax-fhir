@@ -12,10 +12,14 @@ import { loadTestConfig } from '../../config/loader';
 import { getKenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
 import {
   addKenyaHieClaimAttachment,
+  addKenyaHieClaimDiagnosis,
   addKenyaHieClaimLine,
   dischargeKenyaHiePatient,
+  editKenyaHieClaimLine,
   finalizeKenyaHiePartialClaim,
   previewKenyaHieClaim,
+  resendKenyaHieClaim,
+  resubmitKenyaHieClaim,
   sendKenyaHieDischargeOtp,
   submitKenyaHieClaim,
 } from '../../country-pack/kenya/hie-claims';
@@ -37,6 +41,10 @@ jest.mock('../../country-pack/kenya/hie-claims', () => ({
   submitKenyaHieClaim: jest.fn(),
   finalizeKenyaHiePartialClaim: jest.fn(),
   dischargeKenyaHiePatient: jest.fn(),
+  addKenyaHieClaimDiagnosis: jest.fn(),
+  resubmitKenyaHieClaim: jest.fn(),
+  editKenyaHieClaimLine: jest.fn(),
+  resendKenyaHieClaim: jest.fn(),
 }));
 
 const app = express();
@@ -241,7 +249,9 @@ describe('Encounter SHA claim operation (Kenya)', () => {
       { name: 'quantity', valueDecimal: 1 },
     ]);
     expect(again.status).toBe(400);
-    expect(again.body.issue[0].details.text).toBe('The SHA claim for this encounter is already submitted.');
+    expect(again.body.issue[0].details.text).toBe(
+      'The SHA claim for this encounter is already submitted; if SHA returned it, use resubmit.'
+    );
 
     (previewKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ id: 'claim-1', workflow_state: 'SUBMITTED' });
     const preview = await call(encounter.id, [{ name: 'action', valueCode: 'preview' }]);
@@ -318,5 +328,98 @@ describe('Encounter SHA claim operation (Kenya)', () => {
     const res = await call(encounter.id, [{ name: 'action', valueCode: 'remove-line' }]);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('lineId is required for this action');
+  });
+
+  test('resubmission: reopen, correct within DHA limits, send again without first-time fields', async () => {
+    const encounter = await newEncounter(
+      visitExtension('OUTPATIENT', [
+        { url: KenyaShaVisitExtension.dispatch, valueCode: 'submitted' },
+        { url: KenyaShaVisitExtension.invoiceNumber, valueString: 'OPD/9' },
+      ])
+    );
+    const blocked = await call(encounter.id, [{ name: 'action', valueCode: 'add-diagnosis' }]);
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.issue[0].details.text).toContain('use resubmit');
+    const earlyEdit = await call(encounter.id, [
+      { name: 'action', valueCode: 'edit-line' },
+      { name: 'lineId', valueString: 'l1' },
+      { name: 'unitPrice', valueDecimal: 100 },
+      { name: 'quantity', valueDecimal: 1 },
+    ]);
+    expect(earlyEdit.status).toBe(400);
+
+    (resubmitKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ status: 'DRAFT_RESUBMIT' });
+    const reopened = await call(encounter.id, [{ name: 'action', valueCode: 'resubmit' }]);
+    expect(reopened.status).toBe(200);
+    expect(resubmitKenyaHieClaim).toHaveBeenCalledWith(credentials, 'K5HLPJVDNV');
+
+    const addLine = await call(encounter.id, [
+      { name: 'action', valueCode: 'add-line' },
+      { name: 'interventionCode', valueString: 'SHA-09-021' },
+      { name: 'unitPrice', valueDecimal: 300 },
+      { name: 'quantity', valueDecimal: 1 },
+    ]);
+    expect(addLine.status).toBe(400);
+    expect(addLine.body.issue[0].details.text).toContain('only adding attachments or diagnoses');
+
+    (addKenyaHieClaimDiagnosis as jest.Mock).mockResolvedValueOnce({ claim_diagnosis_id: 1 });
+    const diagnosis = await call(encounter.id, [
+      { name: 'action', valueCode: 'add-diagnosis' },
+      { name: 'interventionCode', valueString: 'SHA-09-021' },
+      { name: 'icdCode', valueString: '1F40' },
+    ]);
+    expect(diagnosis.status).toBe(200);
+
+    const line = { id: 'l1', intervention_code: 'SHA-09-021', quantity: '2', unit_price: '300', line_net_amount: 600 };
+    (previewKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ invoices: [{ lines: [line] }] });
+    const up = await call(encounter.id, [
+      { name: 'action', valueCode: 'edit-line' },
+      { name: 'lineId', valueString: 'l1' },
+      { name: 'unitPrice', valueDecimal: 400 },
+      { name: 'quantity', valueDecimal: 2 },
+    ]);
+    expect(up.status).toBe(400);
+    expect(up.body.issue[0].details.text).toContain('only to go down');
+
+    (previewKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ invoices: [{ lines: [line] }] });
+    (editKenyaHieClaimLine as jest.Mock).mockResolvedValueOnce({ id: 'l1' });
+    const down = await call(encounter.id, [
+      { name: 'action', valueCode: 'edit-line' },
+      { name: 'lineId', valueString: 'l1' },
+      { name: 'unitPrice', valueDecimal: 250 },
+      { name: 'quantity', valueDecimal: 2 },
+    ]);
+    expect(down.status).toBe(200);
+    expect(editKenyaHieClaimLine).toHaveBeenCalledWith(credentials, 'K5HLPJVDNV', {
+      lineId: 'l1',
+      unitPrice: 250,
+      quantity: 2,
+    });
+
+    (resendKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ workflow_state: 'SUBMITTED' });
+    const sent = await call(encounter.id, [{ name: 'action', valueCode: 'submit' }]);
+    expect(sent.status).toBe(200);
+    expect(resendKenyaHieClaim).toHaveBeenCalledWith(credentials, 'K5HLPJVDNV', 'submit');
+    expect(submitKenyaHieClaim).not.toHaveBeenCalledWith(
+      credentials,
+      'K5HLPJVDNV',
+      expect.objectContaining({ invoiceNumber: 'OPD/9' })
+    );
+  });
+
+  test('FAILED_TO_SUBMIT seen in the preview is sent again, not resubmitted', async () => {
+    const encounter = await newEncounter(
+      visitExtension('INPATIENT', [{ url: KenyaShaVisitExtension.dispatch, valueCode: 'discharged' }]),
+      'IMP'
+    );
+    (previewKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ workflow_state: 'FAILED_TO_SUBMIT' });
+    const preview = await call(encounter.id, [{ name: 'action', valueCode: 'preview' }]);
+    expect(preview.status).toBe(200);
+    expect(out(preview, 'encounter')).toBeDefined();
+
+    (resendKenyaHieClaim as jest.Mock).mockResolvedValueOnce({ workflow_state: 'SUBMITTED' });
+    const again = await call(encounter.id, [{ name: 'action', valueCode: 'discharge' }]);
+    expect(again.status).toBe(200);
+    expect(resendKenyaHieClaim).toHaveBeenCalledWith(credentials, 'K5HLPJVDNV', 'discharge');
   });
 });

@@ -565,3 +565,82 @@ export async function closeKenyaHieClaim(
   };
   return ok(await requestKenyaHie(credentials, 'POST', '/claims/close', { body }), 'close claim');
 }
+
+// Resubmission (docs/claims/guides/claim-resubmission, Resubmit Claim and Edit Claim Line guides,
+// last modified 2026-09-28). A claim the payer returned (rejected, sent back, clarification,
+// missing documents) is reopened with resubmit; while it is DRAFT_RESUBMIT* the facility may add
+// attachments, add diagnoses and edit a line's price or quantity downwards only; then it is sent
+// again through the normal submit (outpatient) or discharge (inpatient) route, without the
+// first-time fields (invoice number, discharge reason, consent). A claim in FAILED_TO_SUBMIT never
+// reached the payer: it is not resubmitted, the submit or discharge route is simply called again,
+// also without those fields.
+//
+// DHA's sources disagree on two points:
+// - The resubmit path: the eClaims API reference (and the guide's "Resubmit Claim" API link) says
+//   POST /claims/lines/resubmit; the Postman collection says POST /claims/resubmit. The API
+//   reference is followed. To verify against DHA UAT.
+// - Edit Claim Line: the guide and the API reference agree on consent_token, line_id, unit_price and
+//   an integer quantity; the Postman request (claim_line_id, scheme_code, no consent token) is a
+//   stub and is not followed.
+
+/** The resubmit route, per the eClaims API reference (Postman differs; see above). */
+export const KenyaHieResubmitPath = '/claims/lines/resubmit';
+
+/**
+ * Reopens a returned claim for corrections (POST /claims/lines/resubmit).
+ * @param credentials - The HIE credentials.
+ * @param consentToken - The visit's consent token.
+ * @returns DHA's response.
+ */
+export async function resubmitKenyaHieClaim(
+  credentials: KenyaAfyaLinkCredentials,
+  consentToken: string
+): Promise<unknown> {
+  const body = { consent_token: required(consentToken, 'The visit consent token') };
+  return ok(await requestKenyaHie(credentials, 'POST', KenyaHieResubmitPath, { body }), 'resubmit claim');
+}
+
+/**
+ * Edits a line's unit price and quantity on a claim reopened for resubmission
+ * (PATCH /claims/lines/edit). DHA allows only a lower amount.
+ * @param credentials - The HIE credentials.
+ * @param consentToken - The visit's consent token.
+ * @param input - The line and its new price and quantity.
+ * @param input.lineId - The line id from the claim's invoices.lines.
+ * @param input.unitPrice - The new unit price.
+ * @param input.quantity - The new quantity (a whole number).
+ * @returns DHA's line.
+ */
+export async function editKenyaHieClaimLine(
+  credentials: KenyaAfyaLinkCredentials,
+  consentToken: string,
+  input: { readonly lineId: string; readonly unitPrice: number; readonly quantity: number }
+): Promise<unknown> {
+  if (!Number.isInteger(input.quantity) || input.quantity < 1) {
+    throw new Error('The quantity must be a whole number of at least 1');
+  }
+  const body = {
+    consent_token: required(consentToken, 'The visit consent token'),
+    line_id: required(input.lineId, 'The line id'),
+    unit_price: amount(input.unitPrice, 'The unit price'),
+    quantity: input.quantity,
+  };
+  return ok(await requestKenyaHie(credentials, 'PATCH', '/claims/lines/edit', { body }), 'edit claim line');
+}
+
+/**
+ * Sends a claim again after resubmission corrections, or after FAILED_TO_SUBMIT, through the normal
+ * route with only the consent token (the first-time fields were captured on the original submission).
+ * @param credentials - The HIE credentials.
+ * @param consentToken - The visit's consent token.
+ * @param route - submit (outpatient) or discharge (inpatient).
+ * @returns The DHA claim.
+ */
+export async function resendKenyaHieClaim(
+  credentials: KenyaAfyaLinkCredentials,
+  consentToken: string,
+  route: 'submit' | 'discharge'
+): Promise<unknown> {
+  const body = { consent_token: required(consentToken, 'The visit consent token') };
+  return ok(await requestKenyaHie(credentials, 'POST', `/claims/${route}`, { body }), `re-send claim (${route})`);
+}

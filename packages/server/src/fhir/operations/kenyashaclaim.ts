@@ -23,12 +23,15 @@ import {
   addKenyaHieClaimLine,
   closeKenyaHieClaim,
   dischargeKenyaHiePatient,
+  editKenyaHieClaimLine,
   finalizeKenyaHiePartialClaim,
   getKenyaHiePayerClaim,
   previewKenyaHieClaim,
   removeKenyaHieClaimAttachment,
   removeKenyaHieClaimDiagnosis,
   removeKenyaHieClaimLine,
+  resendKenyaHieClaim,
+  resubmitKenyaHieClaim,
   sendKenyaHieDischargeOtp,
   submitKenyaHieClaim,
   summarizeKenyaHieClaim,
@@ -63,7 +66,18 @@ const BillingActions = [
   'send-discharge-otp',
 ] as const;
 const DispatchActions = ['submit', 'discharge', 'close'] as const;
-const Actions = [...BillingActions, ...DispatchActions, 'finalize', 'preview', 'payer-preview'] as const;
+const Actions = [
+  ...BillingActions,
+  ...DispatchActions,
+  'finalize',
+  'resubmit',
+  'edit-line',
+  'preview',
+  'payer-preview',
+] as const;
+
+/** DHA: the corrections allowed while a claim is reopened for resubmission, and re-sending it. */
+const ResubmissionActions = ['add-attachment', 'add-diagnosis', 'edit-line', 'submit', 'discharge'];
 
 export const kenyaShaClaimOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -236,13 +250,40 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
   if (visitValue(visit, KenyaShaVisitExtension.claimType) === 'emergency-case' && !readOnly) {
     throw new OperationOutcomeError(badRequest('This is an emergency case claim: use $kenya-sha-emergency.'));
   }
+  const workflowState = visitValue(visit, KenyaShaVisitExtension.workflowState);
+  // DHA: a claim reopened for resubmission, or one that FAILED_TO_SUBMIT (never reached the payer),
+  // is sent again through submit/discharge without the first-time fields.
+  const resending =
+    (action === 'submit' || action === 'discharge') &&
+    (dispatched === 'resubmission' ||
+      ((dispatched === 'submitted' || dispatched === 'discharged') && workflowState === 'FAILED_TO_SUBMIT'));
   if (dispatched === 'partial') {
     // The patient has left; the facility may still finish the documents, then finalize.
     if (!readOnly && action !== 'finalize' && !(BillingActions as readonly string[]).includes(action)) {
       throw new OperationOutcomeError(badRequest('The claim was discharged PARTIAL: use finalize to submit it.'));
     }
+  } else if (dispatched === 'resubmission') {
+    if (!readOnly && !ResubmissionActions.includes(action)) {
+      throw new OperationOutcomeError(
+        badRequest(
+          'While a claim is reopened for resubmission DHA allows only adding attachments or diagnoses, editing a line down, and sending it again.'
+        )
+      );
+    }
+  } else if (dispatched === 'submitted' || dispatched === 'discharged') {
+    if (!readOnly && action !== 'resubmit' && !resending) {
+      throw new OperationOutcomeError(
+        badRequest(`The SHA claim for this encounter is already ${dispatched}; if SHA returned it, use resubmit.`)
+      );
+    }
   } else if (dispatched && !readOnly) {
     throw new OperationOutcomeError(badRequest(`The SHA claim for this encounter is already ${dispatched}.`));
+  }
+  if (action === 'resubmit' && dispatched !== 'submitted' && dispatched !== 'discharged') {
+    throw new OperationOutcomeError(badRequest('Only a claim already sent to SHA can be resubmitted.'));
+  }
+  if (action === 'edit-line' && dispatched !== 'resubmission') {
+    throw new OperationOutcomeError(badRequest('DHA allows editing a claim line only on resubmission.'));
   }
 
   const consent = {
@@ -253,6 +294,8 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
 
   let result: unknown;
   let dispatch: string | undefined;
+  /** A new DHA workflow state to keep on the encounter, without a dispatch. */
+  let stateOnly: string | undefined;
   switch (action) {
     case 'add-line': {
       const attachments = params.attachment
@@ -313,9 +356,41 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
         })
       );
       break;
-    case 'preview':
-      result = summarizeKenyaHieClaim(await callHie(() => previewKenyaHieClaim(credentials, consentToken)));
+    case 'preview': {
+      const preview = summarizeKenyaHieClaim(await callHie(() => previewKenyaHieClaim(credentials, consentToken)));
+      result = preview;
+      // DHA: the preview is how FAILED_TO_SUBMIT is detected, so keep DHA's state on the encounter.
+      if (preview.workflowState && preview.workflowState !== workflowState) {
+        stateOnly = preview.workflowState;
+      }
       break;
+    }
+    case 'resubmit':
+      result = await callHie(() => resubmitKenyaHieClaim(credentials, consentToken));
+      dispatch = 'resubmission';
+      break;
+    case 'edit-line': {
+      const lineId = requireParam(params.lineId, 'lineId');
+      const unitPrice = requireParam(params.unitPrice, 'unitPrice');
+      const quantity = requireParam(params.quantity, 'quantity');
+      // DHA: on resubmission a line amount may only go down.
+      const current = summarizeKenyaHieClaim(
+        await callHie(() => previewKenyaHieClaim(credentials, consentToken))
+      ).lines.find((l) => l.id === lineId);
+      if (!current) {
+        throw new OperationOutcomeError(badRequest(`Line ${lineId} is not on this claim.`));
+      }
+      const before = current.netAmount ?? (current.unitPrice ?? 0) * (current.quantity ?? 0);
+      if (unitPrice * quantity > before) {
+        throw new OperationOutcomeError(
+          badRequest(
+            `On resubmission DHA allows a line only to go down (now ${before}, asked ${unitPrice * quantity}).`
+          )
+        );
+      }
+      result = await callHie(() => editKenyaHieClaimLine(credentials, consentToken, { lineId, unitPrice, quantity }));
+      break;
+    }
     case 'payer-preview': {
       const invoiceNumber = params.invoiceNumber ?? visitValue(visit, KenyaShaVisitExtension.invoiceNumber);
       result = await callHie(() => getKenyaHiePayerClaim(credentials, requireParam(invoiceNumber, 'invoiceNumber')));
@@ -330,6 +405,11 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
     case 'submit': {
       if (serviceType === 'INPATIENT') {
         throw new OperationOutcomeError(badRequest('An inpatient claim is dispatched with discharge, not submit.'));
+      }
+      if (resending) {
+        result = summarizeKenyaHieClaim(await callHie(() => resendKenyaHieClaim(credentials, consentToken, 'submit')));
+        dispatch = 'submitted';
+        break;
       }
       const status = params.dischargeStatus?.trim().toUpperCase();
       if (status && status !== 'FULL' && status !== 'PARTIAL') {
@@ -362,6 +442,13 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
           badRequest('Only an inpatient claim is dispatched with discharge; use submit.')
         );
       }
+      if (resending) {
+        result = summarizeKenyaHieClaim(
+          await callHie(() => resendKenyaHieClaim(credentials, consentToken, 'discharge'))
+        );
+        dispatch = 'discharged';
+        break;
+      }
       result = summarizeKenyaHieClaim(
         await callHie(() =>
           dischargeKenyaHiePatient(credentials, consentToken, {
@@ -387,30 +474,38 @@ export async function kenyaShaClaimHandler(req: FhirRequest): Promise<FhirRespon
       break;
   }
 
-  if (!dispatch) {
+  if (!dispatch && !stateOnly) {
     return [allOk, buildOutputParameters(kenyaShaClaimOperation, { result: JSON.stringify(result) })];
   }
 
-  // Record the dispatch on the encounter's SHA visit, as the caller, failing if it changed meanwhile.
-  const summary = result as ReturnType<typeof summarizeKenyaHieClaim>;
-  const replace = new Map<string, Extension>([
-    [KenyaShaVisitExtension.dispatch, { url: KenyaShaVisitExtension.dispatch, valueCode: dispatch }],
-    [
-      KenyaShaVisitExtension.dispatchedAt,
-      { url: KenyaShaVisitExtension.dispatchedAt, valueDateTime: new Date().toISOString() },
-    ],
-  ]);
-  const invoiceNumber = params.invoiceNumber?.trim() || summary.invoiceNumber;
-  if (invoiceNumber) {
-    replace.set(KenyaShaVisitExtension.invoiceNumber, {
-      url: KenyaShaVisitExtension.invoiceNumber,
-      valueString: invoiceNumber,
+  // Record the dispatch (or DHA's new state) on the encounter's SHA visit, as the caller, failing
+  // if it changed meanwhile.
+  const replace = new Map<string, Extension>();
+  if (dispatch) {
+    const summary = result as Partial<ReturnType<typeof summarizeKenyaHieClaim>>;
+    replace.set(KenyaShaVisitExtension.dispatch, { url: KenyaShaVisitExtension.dispatch, valueCode: dispatch });
+    replace.set(KenyaShaVisitExtension.dispatchedAt, {
+      url: KenyaShaVisitExtension.dispatchedAt,
+      valueDateTime: new Date().toISOString(),
     });
+    const invoiceNumber = params.invoiceNumber?.trim() || summary.invoiceNumber;
+    if (invoiceNumber) {
+      replace.set(KenyaShaVisitExtension.invoiceNumber, {
+        url: KenyaShaVisitExtension.invoiceNumber,
+        valueString: invoiceNumber,
+      });
+    }
+    if (summary.workflowState) {
+      replace.set(KenyaShaVisitExtension.workflowState, {
+        url: KenyaShaVisitExtension.workflowState,
+        valueString: summary.workflowState,
+      });
+    }
   }
-  if (summary.workflowState) {
+  if (stateOnly) {
     replace.set(KenyaShaVisitExtension.workflowState, {
       url: KenyaShaVisitExtension.workflowState,
-      valueString: summary.workflowState,
+      valueString: stateOnly,
     });
   }
   const values = [...(visit.extension ?? []).filter((e) => !replace.has(e.url)), ...replace.values()];

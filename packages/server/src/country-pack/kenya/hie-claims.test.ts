@@ -9,9 +9,12 @@ import {
   addKenyaHieClaimLine,
   closeKenyaHieClaim,
   dischargeKenyaHiePatient,
+  editKenyaHieClaimLine,
   finalizeKenyaHiePartialClaim,
   getKenyaHiePayerClaim,
   removeKenyaHieClaimLine,
+  resendKenyaHieClaim,
+  resubmitKenyaHieClaim,
   sendKenyaHieDischargeOtp,
   submitKenyaHieClaim,
   summarizeKenyaHieClaim,
@@ -271,5 +274,36 @@ describe('Kenya HIE claim dispatch', () => {
         consent: { otp: '000000' },
       })
     ).rejects.toBeInstanceOf(KenyaHieRequestError);
+  });
+});
+
+describe('Kenya HIE claim resubmission', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+    clearKenyaHieTokenCache();
+  });
+
+  test('reopens a returned claim at the API reference path', async () => {
+    mockHie(200, { status: 'DRAFT_RESUBMIT' });
+    await resubmitKenyaHieClaim(credentials, Token);
+    expect(lastRequest()).toMatchObject({ url: `${Base}/claims/lines/resubmit`, method: 'POST' });
+    expect(json()).toEqual({ consent_token: Token });
+  });
+
+  test('edits a line with an integer quantity (guide and API reference)', async () => {
+    mockHie(200, { id: 'l1' });
+    await editKenyaHieClaimLine(credentials, Token, { lineId: 'l1', unitPrice: 250, quantity: 2 });
+    expect(lastRequest()).toMatchObject({ url: `${Base}/claims/lines/edit`, method: 'PATCH' });
+    expect(json()).toEqual({ consent_token: Token, line_id: 'l1', unit_price: '250', quantity: 2 });
+    await expect(
+      editKenyaHieClaimLine(credentials, Token, { lineId: 'l1', unitPrice: 250, quantity: 1.5 })
+    ).rejects.toThrow('whole number');
+  });
+
+  test('sends again with only the consent token', async () => {
+    mockHie(200, { workflow_state: 'SUBMITTED' });
+    await resendKenyaHieClaim(credentials, Token, 'discharge');
+    expect(lastRequest().url).toBe(`${Base}/claims/discharge`);
+    expect(json()).toEqual({ consent_token: Token });
   });
 });

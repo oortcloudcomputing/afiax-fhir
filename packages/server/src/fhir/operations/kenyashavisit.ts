@@ -15,7 +15,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Encounter, Extension, OperationDefinition, Organization, Patient } from '@medplum/fhirtypes';
+import type { Encounter, Extension, Identifier, OperationDefinition, Organization, Patient } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import type { KenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
 import { getKenyaAfyaLinkCredentials } from '../../country-pack/kenya/afyalink';
@@ -67,6 +67,29 @@ export const KenyaShaVisitExtension = {
 } as const;
 
 export const KenyaShaVisitClaimIdSystem = 'https://afiax.africa/kenya/identifier/sha-visit-claim-id';
+
+/**
+ * DHA consent tokens on the encounter, so a DHA status callback (which carries consent_token) finds
+ * its encounter.
+ */
+export const KenyaShaConsentTokenSystem = 'https://afiax.africa/kenya/identifier/sha-consent-token';
+
+/**
+ * Adds a consent token identifier to a list of identifiers, once.
+ * @param identifiers - The encounter's identifiers.
+ * @param token - The consent token.
+ * @returns The identifiers.
+ */
+export function withConsentToken(
+  identifiers: Identifier[] | undefined,
+  token: string | null | undefined
+): Identifier[] {
+  const list = identifiers ?? [];
+  if (!token || list.some((i) => i.system === KenyaShaConsentTokenSystem && i.value === token)) {
+    return list;
+  }
+  return [...list, { system: KenyaShaConsentTokenSystem, value: token }];
+}
 
 const FacilityFrCodePattern = /^FID-[\w-]+$/i;
 
@@ -480,10 +503,13 @@ export async function kenyaStartVisitHandler(req: FhirRequest): Promise<FhirResp
   const updated = await ctx.repo.updateResource<Encounter>(
     {
       ...encounter,
-      identifier: [
-        ...(encounter.identifier ?? []),
-        ...(visit.claimId ? [{ system: KenyaShaVisitClaimIdSystem, value: visit.claimId }] : []),
-      ],
+      identifier: withConsentToken(
+        [
+          ...(encounter.identifier ?? []),
+          ...(visit.claimId ? [{ system: KenyaShaVisitClaimIdSystem, value: visit.claimId }] : []),
+        ],
+        visit.consentToken
+      ),
       extension: [...(encounter.extension ?? []), { url: KenyaShaVisitExtension.url, extension: values }],
     },
     { ifMatch: encounter.meta?.versionId }

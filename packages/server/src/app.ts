@@ -41,6 +41,7 @@ import { cleanupReservedDatabaseConnections, healthcheckHandler } from './health
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { initKafkaProducer, shutdownKafkaProducer } from './kafka';
+import { kenyaHieRouter } from './kenya-hie/routes';
 import { keyValueRouter } from './keyvalue/routes';
 import { getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
@@ -218,6 +219,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/fhir/R4/', fhirRouter);
   apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
   apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
+  apiRouter.use('/kenya/hie/', kenyaHieRouter);
   apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);

@@ -40,6 +40,7 @@ import {
   KenyaShaVisitExtension,
   loadVisitContext,
   parsePractitioner,
+  withConsentToken,
 } from './kenyashavisit';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -225,10 +226,14 @@ async function saveVisit(
   return ctx.repo.updateResource<Encounter>(
     {
       ...encounter,
-      identifier:
+      identifier: withConsentToken(
         identifier && !identifiers.some((i) => i.system === KenyaShaVisitClaimIdSystem)
           ? [...identifiers, { system: KenyaShaVisitClaimIdSystem, value: identifier }]
           : identifiers,
+        typeof values[KenyaShaVisitExtension.consentToken] === 'string'
+          ? (values[KenyaShaVisitExtension.consentToken] as string)
+          : undefined
+      ),
       extension: [...others, { url: KenyaShaVisitExtension.url, extension: next }],
     },
     { ifMatch: encounter.meta?.versionId }

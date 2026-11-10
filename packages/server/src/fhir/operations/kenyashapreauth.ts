@@ -37,7 +37,14 @@ import {
 } from '../../country-pack/kenya/hie-visit';
 import { loadAttachment } from './kenyashaclaim';
 import type { VisitContext } from './kenyashavisit';
-import { callHie, getExistingVisit, KenyaShaVisitExtension, loadVisitContext, resolveFacility } from './kenyashavisit';
+import {
+  callHie,
+  getExistingVisit,
+  KenyaShaVisitExtension,
+  loadVisitContext,
+  resolveFacility,
+  withConsentToken,
+} from './kenyashavisit';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 export const KenyaShaPreauthExtension = {
@@ -349,7 +356,16 @@ async function save(
   const ctx = getAuthenticatedContext();
   // As the caller, failing if the encounter changed since it was read.
   return ctx.repo.updateResource<Encounter>(
-    { ...encounter, extension: [...others, { url: KenyaShaPreauthExtension.url, extension: next }] },
+    {
+      ...encounter,
+      identifier: withConsentToken(
+        encounter.identifier,
+        typeof values[KenyaShaPreauthExtension.authorizationToken] === 'string'
+          ? (values[KenyaShaPreauthExtension.authorizationToken] as string)
+          : undefined
+      ),
+      extension: [...others, { url: KenyaShaPreauthExtension.url, extension: next }],
+    },
     { ifMatch: encounter.meta?.versionId }
   );
 }

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { KenyaIcd10System, KenyaIcd11System, KenyaKhisWeeklyNotifiableConditions } from '@medplum/core';
 import type { Condition } from '@medplum/fhirtypes';
+import { loadTestConfig } from '../../config/loader';
 import type { AuthenticatedRequestContext } from '../../context';
-import { aggregateConditionsForWeek } from './khis-export';
+import { aggregateConditionsForWeek, handleKhisWeeklyExport } from './khis-export';
 
 function condition(codings: { system: string; code: string }[], verification = 'confirmed'): Condition {
   return {
@@ -143,5 +144,88 @@ describe('aggregateConditionsForWeek', () => {
     await expect(aggregateConditionsForWeek(ctxWith(many), 'facility-1', weekStart, weekEnd)).rejects.toThrow(
       'weekly counts would be incomplete'
     );
+  });
+});
+
+describe('facilities known by FR code only', () => {
+  test('a facility with only a DHA Facility Registry code reports its cases', async () => {
+    const frOnly = {
+      resourceType: 'Organization',
+      id: 'facility-fr',
+      identifier: [{ system: 'https://afiax.africa/kenya/identifier/fr-code', value: 'FID-47-105963-0' }],
+    };
+    const cholera = [{ system: KenyaIcd11System, code: '1A00' }];
+    const ctx = ctxWith([condition(cholera), condition(cholera)], [frOnly]);
+    const [row] = nonZero(
+      await aggregateConditionsForWeek(ctx, 'facility-fr', new Date('2026-10-05'), new Date('2026-10-11'))
+    );
+    expect(row).toMatchObject({ code: '1A00', confirmed: 2 });
+  });
+});
+
+describe('handleKhisWeeklyExport without KHIS credentials', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
+  test('generates and keeps the MOH 505 report, marked not submitted', async () => {
+    const facility = {
+      resourceType: 'Organization',
+      id: 'facility-fr',
+      name: 'HALCYON HEALTHCARE LIMITED',
+      identifier: [{ system: 'https://afiax.africa/kenya/identifier/fr-code', value: 'FID-47-105963-0' }],
+    };
+    const cholera = [{ system: KenyaIcd11System, code: '1A00' }];
+    const ctx = ctxWith([condition(cholera), condition(cholera, 'provisional')], [facility]);
+    const created: { resourceType: string; [key: string]: unknown }[] = [];
+    const updated: { resourceType: string; [key: string]: unknown }[] = [];
+    Object.assign(ctx.repo, { readResource: jest.fn(async () => facility) });
+    Object.assign(ctx.systemRepo, {
+      readResource: jest.fn(async () => ({ resourceType: 'Project', id: 'project-1', secret: [] })),
+      createResource: jest.fn(async (r: { resourceType: string }) => {
+        const saved = { ...r, id: `${r.resourceType.toLowerCase()}-${created.length}` };
+        created.push(saved);
+        return saved;
+      }),
+      updateResource: jest.fn(async (r: { resourceType: string }) => {
+        updated.push(r);
+        return r;
+      }),
+    });
+
+    const result = await handleKhisWeeklyExport({
+      ctx,
+      period: '2026W41',
+      facilityId: 'facility-fr',
+      correlationId: 'c-1',
+    });
+
+    expect(result).toMatchObject({ status: 'pending', facilityOrgUnit: 'FID-47-105963-0', conditionCount: 2 });
+    expect(result.message).toContain('not submitted to KHIS');
+    const doc = created.find((r) => r.resourceType === 'DocumentReference') as unknown as {
+      status: string;
+      type: { coding: { code: string }[] };
+      content: { attachment: { data: string } }[];
+    };
+    expect(doc.status).toBe('current');
+    expect(doc.type.coding[0].code).toBe('moh505-weekly-report');
+    const report = JSON.parse(Buffer.from(doc.content[0].attachment.data, 'base64').toString('utf8'));
+    expect(report).toMatchObject({
+      reportType: 'MOH 505 IDSR weekly epidemiological report',
+      period: '2026W41',
+      facility: 'HALCYON HEALTHCARE LIMITED',
+      totals: { suspected: 1, confirmed: 1, deaths: 0 },
+    });
+    // Zero reporting: every weekly notifiable disease is listed
+    expect(report.diseases).toHaveLength(distinctWeeklyCodes);
+    expect(report.diseases.find((d: { icd11: string }) => d.icd11 === '1A00')).toMatchObject({
+      suspected: 1,
+      confirmed: 1,
+    });
+    const task = updated.find((r) => r.resourceType === 'Task') as unknown as {
+      status: string;
+      businessStatus: { text: string };
+    };
+    expect(task).toMatchObject({ status: 'on-hold', businessStatus: { text: 'pending' } });
   });
 });

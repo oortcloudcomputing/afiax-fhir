@@ -28,7 +28,7 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
-import { KenyaFacilityAttribution } from './facility-attribution';
+import { getKenyaFacilityReportingCode, KenyaFacilityAttribution } from './facility-attribution';
 import type { KenyaContext } from './job-context';
 import type { KhisConditionAggregate, KhisDataValueSet } from './khis';
 import { buildKhisDataValueSet, getKhisCredentials, pushKhisDataValueSet } from './khis';
@@ -66,9 +66,7 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   let facilityOrgUnit: string | undefined;
   try {
     facility = await ctx.repo.readResource<Organization>('Organization', facilityId);
-    facilityOrgUnit =
-      facility.identifier?.find((id) => id.system === 'https://afiax.africa/kenya/identifier/mfl-code')?.value ??
-      facilityId;
+    facilityOrgUnit = getKenyaFacilityReportingCode(facility) ?? facilityId;
   } catch (err) {
     return makeErrorResult(
       correlationId,
@@ -120,7 +118,20 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
   try {
     credentials = getKhisCredentials(project);
   } catch (err) {
-    return makeErrorResult(correlationId, period, facilityId, exportedAt, normalizeErrorString(err));
+    // Without KHIS credentials the report is still generated and kept, so the week's surveillance
+    // data is never lost; it is marked as not submitted, with the reason.
+    return generateReportWithoutSubmission(ctx, {
+      facility,
+      facilityOrgUnit,
+      period,
+      weekStart,
+      weekEnd,
+      aggregates,
+      correlationId,
+      exportedAt,
+      reason: normalizeErrorString(err),
+      unattributed: attributionStats.unattributed,
+    });
   }
 
   const payload = buildKhisDataValueSet(credentials, period, facilityOrgUnit, aggregates);
@@ -207,6 +218,110 @@ export async function handleKhisWeeklyExport(input: KhisWeeklyExportInput): Prom
     exportedAt,
     task: createReference(task),
     documentReference: docRef ? createReference(docRef) : undefined,
+  };
+}
+
+interface WeeklyReportInput {
+  readonly facility: Organization & { id: string };
+  readonly facilityOrgUnit: string;
+  readonly period: string;
+  readonly weekStart: Date;
+  readonly weekEnd: Date;
+  readonly aggregates: KhisConditionAggregate[];
+  readonly correlationId: string;
+  readonly exportedAt: string;
+  readonly reason: string;
+  readonly unattributed: number;
+}
+
+/**
+ * The MOH 505 weekly report as a readable document: every weekly notifiable disease with its
+ * suspected and confirmed cases and deaths (zero reporting included), for one facility and week.
+ * @param input - The week's data.
+ * @returns The report content.
+ */
+export function buildKenyaMoh505WeeklyReport(input: WeeklyReportInput): Record<string, unknown> {
+  const names = new Map(KenyaKhisWeeklyNotifiableConditions.map((c) => [c.icd11, c.display]));
+  return {
+    reportType: 'MOH 505 IDSR weekly epidemiological report',
+    period: input.period,
+    weekStart: input.weekStart.toISOString().slice(0, 10),
+    weekEnd: input.weekEnd.toISOString().slice(0, 10),
+    facility: input.facility.name,
+    facilityCode: input.facilityOrgUnit,
+    generatedAt: input.exportedAt,
+    totals: {
+      suspected: input.aggregates.reduce((n, a) => n + a.suspected, 0),
+      confirmed: input.aggregates.reduce((n, a) => n + a.confirmed, 0),
+      deaths: input.aggregates.reduce((n, a) => n + a.deaths, 0),
+    },
+    unattributedCases: input.unattributed,
+    diseases: input.aggregates.map((a) => ({
+      icd11: a.code,
+      icd10: a.legacyCode,
+      disease: names.get(a.code) ?? a.code,
+      suspected: a.suspected,
+      confirmed: a.confirmed,
+      deaths: a.deaths,
+    })),
+  };
+}
+
+async function generateReportWithoutSubmission(
+  ctx: KenyaContext,
+  input: WeeklyReportInput
+): Promise<KhisWeeklyExportResult> {
+  const { facility, period, correlationId, exportedAt } = input;
+  const report = buildKenyaMoh505WeeklyReport(input);
+  const task = await createExportTask(ctx, facility, period, correlationId, exportedAt);
+  const docRef = await ctx.systemRepo.createResource<DocumentReference>({
+    resourceType: 'DocumentReference',
+    meta: { project: ctx.project.id },
+    status: 'current',
+    docStatus: 'final',
+    type: {
+      coding: [
+        {
+          system: 'https://afiax.africa/CodeSystem/kenya-document-type',
+          code: 'moh505-weekly-report',
+          display: 'MOH 505 IDSR weekly report',
+        },
+      ],
+      text: 'MOH 505 IDSR weekly report',
+    },
+    subject: createReference(facility) as DocumentReference['subject'],
+    date: exportedAt,
+    description: `MOH 505 IDSR weekly report for ${period}, ${facility.name ?? facility.id} (not submitted to KHIS)`,
+    content: [
+      {
+        attachment: {
+          contentType: 'application/json',
+          data: Buffer.from(JSON.stringify(report, null, 2)).toString('base64'),
+          title: `moh505-${period}-${facility.id}.json`,
+          creation: exportedAt,
+        },
+      },
+    ],
+    context: {
+      related: [createReference(task)],
+      period: { start: input.weekStart.toISOString(), end: input.weekEnd.toISOString() },
+    },
+  });
+  const message = `MOH 505 weekly report generated for ${period}; not submitted to KHIS: ${input.reason}`;
+  await updateExportTask(ctx, task, 'pending', message, correlationId, undefined, undefined);
+  await createExportAuditEvent(ctx, facility, task, period, 'pending', AuditEventOutcome.Success);
+  return {
+    status: 'pending',
+    correlationId,
+    period,
+    facilityId: facility.id,
+    facilityOrgUnit: input.facilityOrgUnit,
+    conditionCount: input.aggregates.reduce((s, a) => s + a.suspected + a.confirmed, 0),
+    dataValueCount: 0,
+    message,
+    exportedAt,
+    task: createReference(task),
+    documentReference: createReference(docRef),
   };
 }
 
@@ -419,6 +534,13 @@ export function getKhisWeeklyPeriodKey(facilityId: string, period: string): stri
   return `${facilityId}|${period}`;
 }
 
+function taskStatusFor(status: KhisWeeklyExportStatus): Task['status'] {
+  if (status === 'error') {
+    return 'failed';
+  }
+  return status === 'pending' ? 'on-hold' : 'completed';
+}
+
 async function updateExportTask(
   ctx: KenyaContext,
   task: Task & { id: string },
@@ -431,7 +553,8 @@ async function updateExportTask(
   const end = new Date().toISOString();
   await ctx.systemRepo.updateResource<Task>({
     ...task,
-    status: status === 'error' ? 'failed' : 'completed',
+    // pending: the report was generated but not submitted to KHIS (for example, no credentials yet)
+    status: taskStatusFor(status),
     businessStatus: { text: status },
     lastModified: end,
     executionPeriod: { start: task.authoredOn, end },

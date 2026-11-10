@@ -23,8 +23,24 @@ export function getMflCode(organization: Organization | undefined): string | und
   return organization?.identifier?.find((i) => i.system === KenyaMflCodeSystem && i.value)?.value;
 }
 
+/** DHA Facility Registry code (FID-...), for facilities the registry knows by FR code only. */
+export const KenyaFrCodeSystem = 'https://afiax.africa/kenya/identifier/fr-code';
+
 /**
- * Returns the project's facilities: Organizations with an MFL code.
+ * The code a facility is identified by in Kenyan reporting: its MFL code, or else its DHA Facility
+ * Registry (FR) code. Some registered facilities have no MFL code (the registry has none for them).
+ * KHIS submissions still need the MFL code: see getMflCode.
+ * @param organization - The facility.
+ * @returns The MFL code, else the FR code, else undefined.
+ */
+export function getKenyaFacilityReportingCode(organization: Organization | undefined): string | undefined {
+  return (
+    getMflCode(organization) ?? organization?.identifier?.find((i) => i.system === KenyaFrCodeSystem && i.value)?.value
+  );
+}
+
+/**
+ * Returns the project's facilities: Organizations with an MFL code or a DHA Facility Registry code.
  * @param ctx - The context.
  * @returns The facilities.
  */
@@ -34,7 +50,7 @@ export async function getKenyaFacilities(ctx: KenyaContext): Promise<WithId<Orga
     filters: [{ code: '_project', operator: Operator.EQUALS, value: ctx.project.id }],
     count: 1000,
   });
-  return organizations.filter((o) => !!getMflCode(o));
+  return organizations.filter((o) => !!getKenyaFacilityReportingCode(o));
 }
 
 /** Resolves the reporting facility of Conditions, caching Encounter lookups. */

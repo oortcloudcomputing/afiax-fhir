@@ -189,7 +189,7 @@ describe('Kenya HIE connector', () => {
         sub_county: 'DAGORETTI NORTH',
         operational_status: 'ACTIVE',
         sha_operational_status: 'ACTIVE',
-        current_license_expiry_date: '2026-12-31T00:00:00+03:00',
+        current_license_expiry_date: '2026-12-31',
       });
     });
 
@@ -346,16 +346,14 @@ describe('Kenya HIE connector', () => {
     });
 
     test('reports a member with no schemes as ineligible with the DHA status', async () => {
-      mockFetch
-        .mockResolvedValueOnce(tokenResponse())
-        .mockResolvedValueOnce(
-          jsonResponse(200, {
-            requestIdNumber: '33333333',
-            isAlive: true,
-            statusCode: '00',
-            statusDesc: 'Member Not found!',
-          })
-        );
+      mockFetch.mockResolvedValueOnce(tokenResponse()).mockResolvedValueOnce(
+        jsonResponse(200, {
+          requestIdNumber: '33333333',
+          isAlive: true,
+          statusCode: '00',
+          statusDesc: 'Member Not found!',
+        })
+      );
 
       const result = await searchAfyaLinkEligibility(credentials, 'CR ID', 'CR-9');
 

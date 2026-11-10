@@ -86,6 +86,8 @@ describe('verifyKenyaFacilityAuthority', () => {
       status: 'verified',
       facilityAuthorityIdentifier: '12345',
       registryFound: true,
+      // The registry's date-time in Kenya time becomes the calendar date (stored as a FHIR date)
+      currentLicenseExpiryDate: '2026-12-31',
       nextState: 'ready-for-registry-check',
     });
   });

@@ -449,6 +449,17 @@ function getFacilityIdentifierType(facilityCode: string): 'fr-code' | 'mfl' {
   return FacilityIdentifierPattern.test(facilityCode.trim()) ? 'fr-code' : 'mfl';
 }
 
+/**
+ * The registry sends dates as date-times in Kenya time (2026-12-31T00:00:00+03:00). Keep the
+ * calendar date as written: converting to UTC would move midnight EAT to the previous day.
+ * @param value - The registry value.
+ * @returns The YYYY-MM-DD date, or the value unchanged if it is not dated.
+ */
+function toCalendarDate(value: string | null): string | null {
+  const match = value?.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : value;
+}
+
 function normalizeFacilityRecord(payload: Record<string, unknown>, facilityCode: string): AfyaLinkFacilityMessage {
   const address = isRecord(payload.address) ? payload.address : {};
   const regulatory = isRecord(payload.regulatoryOperationalStatus) ? payload.regulatoryOperationalStatus : {};
@@ -479,7 +490,7 @@ function normalizeFacilityRecord(payload: Record<string, unknown>, facilityCode:
     ward: str(address.ward),
     operational_status: str(regulatory.operationalStatus),
     sha_operational_status: str(sha.operationalStatus),
-    current_license_expiry_date: str(payload.facilityLicenseEndDate),
+    current_license_expiry_date: toCalendarDate(str(payload.facilityLicenseEndDate)),
   };
 }
 

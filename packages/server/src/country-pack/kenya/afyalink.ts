@@ -24,6 +24,7 @@ import {
 } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 
 export const KenyaHieSecretNames = {
   baseUrl: 'kenyaHieBaseUrl',
@@ -353,9 +354,55 @@ export interface HieResult {
   readonly text: string;
 }
 
+export interface HieMultipartFile {
+  /** The form part name. */
+  readonly field: string;
+  /** DHA infers the file type from the extension, so it must be correct (for example CLAIM_FORM.pdf). */
+  readonly filename: string;
+  readonly contentType: string;
+  readonly data: Buffer;
+}
+
+export interface HieMultipart {
+  readonly fields: Record<string, string>;
+  readonly files: readonly HieMultipartFile[];
+}
+
 export interface HieRequestOptions {
   readonly params?: Record<string, string>;
   readonly body?: unknown;
+  /** multipart/form-data body, for attachments (DHA: files go as binary parts, never base64). */
+  readonly multipart?: HieMultipart;
+}
+
+function quoteFormValue(value: string): string {
+  return value.replace(/[\r\n"]/g, (c) => encodeURIComponent(c));
+}
+
+/**
+ * Builds a multipart/form-data body.
+ * @param multipart - The fields and files.
+ * @returns The body and its content type with the boundary.
+ */
+export function buildHieMultipartBody(multipart: HieMultipart): { body: Buffer; contentType: string } {
+  const boundary = `----afiax${randomUUID().replace(/-/g, '')}`;
+  const parts: Buffer[] = [];
+  for (const [name, value] of Object.entries(multipart.fields)) {
+    parts.push(
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${quoteFormValue(name)}"\r\n\r\n${value}\r\n`)
+    );
+  }
+  for (const file of multipart.files) {
+    parts.push(
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="${quoteFormValue(file.field)}"; filename="${quoteFormValue(file.filename)}"\r\nContent-Type: ${file.contentType}\r\n\r\n`
+      ),
+      file.data,
+      Buffer.from('\r\n')
+    );
+  }
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  return { body: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
 /**
@@ -382,15 +429,21 @@ export async function requestKenyaHie(
     headers['X-Facility-Id'] = credentials.facilityId;
     headers['X-Facility-Id-Type'] = 'fr-code';
   }
-  if (options?.body !== undefined) {
+  let requestBody: string | Buffer | undefined;
+  if (options?.multipart) {
+    const multipart = buildHieMultipartBody(options.multipart);
+    headers['Content-Type'] = multipart.contentType;
+    requestBody = multipart.body;
+  } else if (options?.body !== undefined) {
     headers['Content-Type'] = 'application/json';
+    requestBody = JSON.stringify(options.body);
   }
 
   const query = options?.params ? `?${new URLSearchParams(options.params).toString()}` : '';
   const response = await fetch(`${credentials.baseUrl}${path}${query}`, {
     method,
     headers,
-    ...(options?.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    ...(requestBody !== undefined ? { body: requestBody } : {}),
   });
   const text = await response.text();
   let body: unknown = undefined;

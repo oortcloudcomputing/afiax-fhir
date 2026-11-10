@@ -52,6 +52,9 @@ export const KenyaShaVisitExtension = {
   workflowState: 'workflowState',
   schemeName: 'schemeName',
   startedAt: 'startedAt',
+  dispatch: 'dispatch',
+  invoiceNumber: 'invoiceNumber',
+  dispatchedAt: 'dispatchedAt',
 } as const;
 
 export const KenyaShaVisitClaimIdSystem = 'https://afiax.africa/kenya/identifier/sha-visit-claim-id';
@@ -194,7 +197,7 @@ interface StartVisitParameters {
   readonly practitionerRegulator?: string;
 }
 
-interface VisitContext {
+export interface VisitContext {
   readonly encounter: Encounter & { id: string };
   readonly patientCrId: string;
   readonly credentials: KenyaAfyaLinkCredentials;
@@ -215,7 +218,7 @@ function parseServiceType(value: string | undefined): KenyaShaServiceType {
   return normalized as KenyaShaServiceType;
 }
 
-function getExistingVisit(encounter: Encounter): Extension | undefined {
+export function getExistingVisit(encounter: Encounter): Extension | undefined {
   return encounter.extension?.find((extension) => extension.url === KenyaShaVisitExtension.url);
 }
 
@@ -225,7 +228,7 @@ function getExistingVisit(encounter: Encounter): Extension | undefined {
  * @param req - The FHIR request.
  * @returns The visit context.
  */
-async function loadVisitContext(req: FhirRequest): Promise<VisitContext> {
+export async function loadVisitContext(req: FhirRequest): Promise<VisitContext> {
   const ctx = getAuthenticatedContext();
   if (getProjectCountryPack(ctx.project)?.id !== 'kenya') {
     throw new OperationOutcomeError(badRequest('This operation requires the Kenya country pack.'));
@@ -281,7 +284,7 @@ async function resolveFacility(
   return { frCode, name };
 }
 
-async function callHie<T>(action: () => Promise<T>): Promise<T> {
+export async function callHie<T>(action: () => Promise<T>): Promise<T> {
   try {
     return await action();
   } catch (err) {
@@ -372,6 +375,41 @@ export async function kenyaVisitConsentHandler(req: FhirRequest): Promise<FhirRe
 }
 
 /**
+ * Reads the optional attending practitioner parameters (identification number, type and regulator).
+ * @param params - The operation parameters.
+ * @param params.practitionerIdentificationType - registration_number (default), National ID, Alien ID or Refugee ID.
+ * @param params.practitionerIdentificationNumber - The identification number; without it there is no practitioner.
+ * @param params.practitionerRegulator - KMPDC, COC, NCK or PPB.
+ * @returns The practitioner, or undefined.
+ */
+export function parsePractitioner(params: {
+  readonly practitionerIdentificationType?: string;
+  readonly practitionerIdentificationNumber?: string;
+  readonly practitionerRegulator?: string;
+}): KenyaHieStartVisitInput['practitioner'] {
+  if (!params.practitionerIdentificationNumber?.trim()) {
+    return undefined;
+  }
+  const regulator = params.practitionerRegulator?.trim().toUpperCase();
+  const identificationType = params.practitionerIdentificationType?.trim() || 'registration_number';
+  if (regulator !== 'KMPDC' && regulator !== 'COC' && regulator !== 'NCK' && regulator !== 'PPB') {
+    throw new OperationOutcomeError(badRequest('practitionerRegulator must be KMPDC, COC, NCK or PPB'));
+  }
+  if (!['registration_number', 'National ID', 'Alien ID', 'Refugee ID'].includes(identificationType)) {
+    throw new OperationOutcomeError(
+      badRequest('practitionerIdentificationType must be registration_number, National ID, Alien ID or Refugee ID')
+    );
+  }
+  return {
+    identificationType: identificationType as NonNullable<
+      KenyaHieStartVisitInput['practitioner']
+    >['identificationType'],
+    identificationNumber: params.practitionerIdentificationNumber.trim(),
+    regulator,
+  };
+}
+
+/**
  * Handles POST Encounter/:id/$kenya-start-visit: starts the SHA visit with the patient's OTP or an
  * authorized fingerprint consent, then records the visit on the Encounter (extension kenya-sha-visit
  * and a visit claim identifier). The consent token saved there is needed by every later claim step.
@@ -389,26 +427,7 @@ export async function kenyaStartVisitHandler(req: FhirRequest): Promise<FhirResp
   }
 
   const interventionCodes = asArray(params.interventionCode);
-  let practitioner: KenyaHieStartVisitInput['practitioner'];
-  if (params.practitionerIdentificationNumber?.trim()) {
-    const regulator = params.practitionerRegulator?.trim().toUpperCase();
-    const identificationType = params.practitionerIdentificationType?.trim() || 'registration_number';
-    if (regulator !== 'KMPDC' && regulator !== 'COC' && regulator !== 'NCK' && regulator !== 'PPB') {
-      throw new OperationOutcomeError(badRequest('practitionerRegulator must be KMPDC, COC, NCK or PPB'));
-    }
-    if (!['registration_number', 'National ID', 'Alien ID', 'Refugee ID'].includes(identificationType)) {
-      throw new OperationOutcomeError(
-        badRequest('practitionerIdentificationType must be registration_number, National ID, Alien ID or Refugee ID')
-      );
-    }
-    practitioner = {
-      identificationType: identificationType as NonNullable<
-        KenyaHieStartVisitInput['practitioner']
-      >['identificationType'],
-      identificationNumber: params.practitionerIdentificationNumber.trim(),
-      regulator,
-    };
-  }
+  const practitioner = parsePractitioner(params);
 
   const visit = await callHie(() =>
     startKenyaHieVisit(context.credentials, {

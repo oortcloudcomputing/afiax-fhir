@@ -168,6 +168,31 @@ describe('Patient Everything Operation', () => {
       .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8.status).toBe(200);
+
+    // Execute the operation with _type as a comma-separated list (one query parameter)
+    const res9 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?_type=Patient,Condition`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res9.status).toBe(200);
+    const typed = res9.body as Bundle;
+    expect(
+      typed.entry
+        ?.filter((e) => e.search?.mode === 'match')
+        .map((e) => getReferenceString(e.resource as Resource))
+        .sort()
+    ).toStrictEqual([getReferenceString(condition), getReferenceString(patient)].sort());
+
+    // _type repeated as separate query parameters
+    const res10 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?_type=Observation&_type=Patient`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res10.status).toBe(200);
+    expect(
+      (res10.body as Bundle).entry
+        ?.filter((e) => e.search?.mode === 'match')
+        .map((e) => e.resource?.resourceType)
+        .sort()
+    ).toStrictEqual(['Observation', 'Observation', 'Patient']);
   });
 });
 

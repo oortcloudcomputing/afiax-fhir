@@ -79,7 +79,7 @@ export async function getPatientEverything(
 ): Promise<Bundle<WithId<Resource>>> {
   // First get all compartment resources
   const search: Partial<SearchRequest> = {
-    types: params?._type,
+    types: normalizeTypes(params?._type),
     count: params?._count,
     offset: params?._offset,
   };
@@ -102,13 +102,32 @@ export async function getPatientEverything(
   return bundle;
 }
 
+/**
+ * Normalizes the _type parameter. A GET query (?_type=Patient,Encounter) arrives as one
+ * comma-separated string, a repeated parameter or a Parameters body as an array.
+ * @param types - The _type parameter value.
+ * @returns The resource types, or undefined for all compartment types.
+ */
+function normalizeTypes(types: ResourceType[] | string | undefined): ResourceType[] | undefined {
+  if (!types) {
+    return undefined;
+  }
+  const list = (Array.isArray(types) ? types : [types])
+    .flatMap((t) => String(t).split(','))
+    .map((t) => t.trim())
+    .filter(Boolean) as ResourceType[];
+  return list.length > 0 ? list : undefined;
+}
+
 export async function searchPatientCompartment(
   repo: Repository,
   target: WithId<Resource>,
   search?: Partial<SearchRequest>
 ): Promise<Bundle<WithId<Resource>>> {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = search?.types ?? flatMapFilter(resourceList, (r) => (r.code === 'Binary' ? undefined : r.code));
+  const types = search?.types
+    ? [...search.types]
+    : flatMapFilter(resourceList, (r) => (r.code === 'Binary' ? undefined : r.code));
   types.push(target.resourceType);
   sortStringArray(types);
 

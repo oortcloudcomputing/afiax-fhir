@@ -30,6 +30,9 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
     expect(res.body.redis).toBe(true);
+    // No operating system or runtime disclosure on this public endpoint
+    expect(res.body.platform).toBeUndefined();
+    expect(res.body.runtime).toBeUndefined();
     expect(res.body.redisInstances).toEqual({
       default: true,
       rateLimit: true,

@@ -57,11 +57,12 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     redisResult[label] = ok;
   }
 
+  // Public and unauthenticated: no operating system or Node.js runtime version, which security
+  // scanners flag as disclosure (DHA field test, SEC-BCK-001 endpoint). The server version stays: the
+  // FHIR CapabilityStatement publishes it anyway, and the CLI's update-server reads it.
   res.json({
     ok: true,
     version: MEDPLUM_VERSION,
-    platform: process.platform,
-    runtime: process.version,
     postgres: postgresWriterOk,
     redis: redisResult.default,
     redisInstances: redisResult,

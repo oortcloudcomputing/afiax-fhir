@@ -577,13 +577,14 @@ export async function closeKenyaHieClaim(
 //
 // DHA's sources disagree on two points:
 // - The resubmit path: the eClaims API reference (and the guide's "Resubmit Claim" API link) says
-//   POST /claims/lines/resubmit; the Postman collection says POST /claims/resubmit. The API
-//   reference is followed. To verify against DHA UAT.
+//   POST /claims/lines/resubmit; the Postman collection says POST /claims/resubmit. Verified on
+//   DHA UAT 2026-11-10 with an invalid token: /claims/lines/resubmit is handled ("failed to
+//   resubmit claim line: ... no valid active virtual claim found"), /claims/resubmit is a 404.
 // - Edit Claim Line: the guide and the API reference agree on consent_token, line_id, unit_price and
 //   an integer quantity; the Postman request (claim_line_id, scheme_code, no consent token) is a
 //   stub and is not followed.
 
-/** The resubmit route, per the eClaims API reference (Postman differs; see above). */
+/** The resubmit route: the eClaims API reference, confirmed live on DHA UAT (Postman's is a 404). */
 export const KenyaHieResubmitPath = '/claims/lines/resubmit';
 
 /**

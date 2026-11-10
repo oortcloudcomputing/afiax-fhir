@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getProjectSettingString, normalizeErrorString } from '@medplum/core';
+import { getProjectSettingString, KenyaFacilityRegistryCodeSystem, normalizeErrorString } from '@medplum/core';
 import type { Identifier, Project } from '@medplum/fhirtypes';
 import type { CountryPackVerifyFacilityAuthorityInput, VerifyFacilityAuthorityResult } from '../types';
 import { getKenyaAfyaLinkCredentials, searchAfyaLinkFacility } from './afyalink';
@@ -8,7 +8,7 @@ import { getKenyaAfyaLinkCredentials, searchAfyaLinkFacility } from './afyalink'
 export const KENYA_FACILITY_AUTHORITY_IDENTIFIER_SYSTEM = 'https://afiax.africa/kenya/identifier/mfl-code';
 
 function isFacilityAuthorityIdentifier(identifier: Identifier, preferredSystem: string): boolean {
-  if (identifier.system === preferredSystem) {
+  if (identifier.system === preferredSystem || identifier.system === KenyaFacilityRegistryCodeSystem) {
     return true;
   }
 
@@ -75,7 +75,7 @@ export async function verifyKenyaFacilityAuthority(
         facilityName,
         facilityAuthorityIdentifier: authorityIdentifier.value,
         facilityAuthoritySystem: authorityIdentifier.system ?? preferredSystem,
-        message: `Facility ${facilityName} was not found in the AfyaLink facility registry for facility code ${authorityIdentifier.value}.`,
+        message: `Facility ${facilityName} was not found in the DHA Facility Registry for facility code ${authorityIdentifier.value}.`,
         nextState: 'review-facility-authority-id',
       };
     }
@@ -103,7 +103,7 @@ export async function verifyKenyaFacilityAuthority(
         facilityApprovalStatus: approvalStatus,
         facilityOperationalStatus: operationalStatus,
         currentLicenseExpiryDate: message.current_license_expiry_date ?? undefined,
-        message: `Facility ${facilityName} was found in AfyaLink but is currently inactive or non-operational.`,
+        message: `Facility ${facilityName} was found in the DHA Facility Registry but is currently inactive or non-operational.`,
         nextState: 'reactivate-or-correct-facility',
       };
     }
@@ -120,7 +120,7 @@ export async function verifyKenyaFacilityAuthority(
         facilityApprovalStatus: approvalStatus,
         facilityOperationalStatus: operationalStatus,
         currentLicenseExpiryDate: message.current_license_expiry_date ?? undefined,
-        message: `Facility ${facilityName} was found in AfyaLink but is not approved for use.`,
+        message: `Facility ${facilityName} was found in the DHA Facility Registry but is not approved for use.`,
         nextState: 'review-facility-approval-status',
       };
     }
@@ -136,7 +136,7 @@ export async function verifyKenyaFacilityAuthority(
       facilityApprovalStatus: approvalStatus,
       facilityOperationalStatus: operationalStatus,
       currentLicenseExpiryDate: message.current_license_expiry_date ?? undefined,
-      message: `Facility ${facilityName} was found in AfyaLink using facility code ${authorityIdentifier.value}.`,
+      message: `Facility ${facilityName} was found in the DHA Facility Registry (HIE) using facility code ${authorityIdentifier.value}.`,
       nextState: 'ready-for-registry-check',
     };
   } catch (err) {
@@ -147,7 +147,7 @@ export async function verifyKenyaFacilityAuthority(
       facilityName,
       facilityAuthorityIdentifier: authorityIdentifier.value,
       facilityAuthoritySystem: authorityIdentifier.system ?? preferredSystem,
-      message: `AfyaLink facility verification failed: ${normalizeErrorString(err)}`,
+      message: `DHA Facility Registry verification failed: ${normalizeErrorString(err)}`,
       nextState: 'retry-or-review-afyalink-credentials',
     };
   }

@@ -38,6 +38,7 @@ import {
   KenyaCoverageNationalIdIdentifierSystem,
   KenyaFacilityAuthorityIdentifierSystem,
   KenyaFacilityRegistrationIdentifierSystem,
+  KenyaFacilityRegistryCodeSystem,
   KenyaFacilityVerificationExtension,
   KenyaIcd10System,
   KenyaIcd11System,
@@ -813,5 +814,24 @@ describe('getKenyaIcd11DiagnosisIssues', () => {
     const issues = getKenyaIcd11DiagnosisIssues(claim);
     expect(issues).toHaveLength(1);
     expect(issues[0].expression).toBe('Claim.diagnosis[1].diagnosisCodeableConcept');
+  });
+});
+
+describe('Kenya facility authority identifier system', () => {
+  test('a DHA Facility Registry code (FID-...) is stored under the FR code system, not MFL', () => {
+    const org = setKenyaFacilityAuthorityIdentifier(
+      {
+        resourceType: 'Organization',
+        identifier: [{ system: KenyaFacilityAuthorityIdentifierSystem, value: 'FID-47-105963-0' }],
+      },
+      ' FID-47-105963-0 '
+    );
+    expect(org.identifier).toHaveLength(1);
+    expect(org.identifier?.[0]).toMatchObject({ system: KenyaFacilityRegistryCodeSystem, value: 'FID-47-105963-0' });
+  });
+
+  test('a numeric MFL code stays under the MFL code system', () => {
+    const org = setKenyaFacilityAuthorityIdentifier({ resourceType: 'Organization' }, '13023');
+    expect(org.identifier?.[0]).toMatchObject({ system: KenyaFacilityAuthorityIdentifierSystem, value: '13023' });
   });
 });

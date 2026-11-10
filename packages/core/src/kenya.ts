@@ -48,6 +48,18 @@ export const KenyaFacilityVerificationExtension = {
 } as const;
 
 export const KenyaFacilityAuthorityIdentifierSystem = 'https://afiax.africa/kenya/identifier/mfl-code';
+/** DHA Facility Registry (FR) codes, for example FID-47-105963-0. Not MFL codes. */
+export const KenyaFacilityRegistryCodeSystem = 'https://afiax.africa/kenya/identifier/fr-code';
+
+/**
+ * The identifier system for a facility authority code: DHA Facility Registry codes (FID-...) go
+ * under the FR code system, anything else under the MFL code system.
+ * @param value - The facility code.
+ * @returns The identifier system.
+ */
+export function getKenyaFacilityAuthoritySystemForValue(value: string): string {
+  return /^FID-/i.test(value.trim()) ? KenyaFacilityRegistryCodeSystem : KenyaFacilityAuthorityIdentifierSystem;
+}
 export const KenyaFacilityRegistrationIdentifierSystem =
   'https://afiax.africa/kenya/identifier/facility-registration-number';
 export const KenyaPractitionerAuthorityIdentifierSystem =
@@ -255,11 +267,13 @@ export function getKenyaFacilityAuthorityIdentifier(
 export function setKenyaFacilityAuthorityIdentifier(
   organization: Organization,
   value: string,
-  preferredSystem = KenyaFacilityAuthorityIdentifierSystem
+  preferredSystem?: string
 ): Organization {
   const trimmed = value.trim();
+  // An FID-... code is a DHA Facility Registry code, never an MFL code.
+  const system = preferredSystem ?? getKenyaFacilityAuthoritySystemForValue(trimmed);
   const nextIdentifier: Identifier = {
-    system: preferredSystem,
+    system,
     value: trimmed,
     type: {
       text: 'Facility authority identifier',
@@ -268,9 +282,7 @@ export function setKenyaFacilityAuthorityIdentifier(
   };
 
   const identifiers = [...(organization.identifier ?? [])];
-  const existingIndex = identifiers.findIndex((identifier) =>
-    isKenyaFacilityAuthorityIdentifier(identifier, preferredSystem)
-  );
+  const existingIndex = identifiers.findIndex((identifier) => isKenyaFacilityAuthorityIdentifier(identifier, system));
   if (existingIndex >= 0) {
     identifiers[existingIndex] = {
       ...identifiers[existingIndex],
@@ -432,7 +444,7 @@ function isKenyaFacilityAuthorityIdentifier(identifier: Identifier | undefined, 
     return false;
   }
 
-  if (identifier.system === preferredSystem) {
+  if (identifier.system === preferredSystem || identifier.system === KenyaFacilityRegistryCodeSystem) {
     return true;
   }
 

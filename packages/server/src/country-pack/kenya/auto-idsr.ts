@@ -9,6 +9,7 @@
 // (within 24 hours) to the County Director of Health is mandatory.
 // The auto-trigger ensures no clinician-created Condition is silently missed.
 
+import type { WithId } from '@medplum/core';
 import { getKenyaIdsrConditionCode, getKenyaIdsrNotificationSnapshot, getProjectSettingString } from '@medplum/core';
 import type { FhirResponse } from '@medplum/fhir-router';
 import type { Condition } from '@medplum/fhirtypes';
@@ -17,6 +18,7 @@ import type { AuthenticatedRequestContext } from '../../context';
 import { getLogger } from '../../logger';
 import { applyIdsrNotificationExtension, handleKenyaIdsrNotification } from './idsr';
 import { flagKenyaIhrCondition } from './ihr';
+import { maybeDetectKenyaOutbreak } from './outbreak';
 
 /**
  * Called in the FHIR write path after a successful Condition create or update.
@@ -101,4 +103,32 @@ export function maybeAutoFlagIhr(ctx: AuthenticatedRequestContext, method: strin
   flagKenyaIhrCondition(ctx, resource as Condition & { id: string }).catch((err) => {
     getLogger().error('IHR flagging failed', { condition: resource.id, err });
   });
+}
+
+/**
+ * Called in the FHIR write path after a successful Condition create or update. Checks the case
+ * against the project's outbreak thresholds (DHA REP-PHE-001). Non-blocking.
+ * @param ctx - The authenticated request context of the write.
+ * @param method - The HTTP method of the write.
+ * @param result - The FHIR response returned by the write.
+ */
+export function maybeDetectKenyaOutbreakFromResponse(
+  ctx: AuthenticatedRequestContext,
+  method: string,
+  result: FhirResponse
+): void {
+  if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+    return;
+  }
+  if (result.length < 2) {
+    return;
+  }
+  const resource = result[1];
+  if (resource?.resourceType !== 'Condition' || !resource.id) {
+    return;
+  }
+  if (getProjectSettingString(ctx.project, 'countryPack') !== 'kenya') {
+    return;
+  }
+  maybeDetectKenyaOutbreak(ctx, resource as WithId<Condition>);
 }

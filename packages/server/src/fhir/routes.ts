@@ -9,7 +9,11 @@ import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
-import { maybeAutoFlagIhr, maybeAutoTriggerIdsr } from '../country-pack/kenya/auto-idsr';
+import {
+  maybeAutoFlagIhr,
+  maybeAutoTriggerIdsr,
+  maybeDetectKenyaOutbreakFromResponse,
+} from '../country-pack/kenya/auto-idsr';
 import { maybeRecordKenyaCdsAlerts } from '../country-pack/kenya/cds';
 import { enforceKenyaSecurityLabels } from '../country-pack/kenya/security-labels';
 import { authenticateRequest } from '../oauth/middleware';
@@ -580,6 +584,8 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   maybeAutoTriggerIdsr(ctx, request.method, result);
   // Kenya: flag IHR (2005) Annex 2 diseases for WHO notification or assessment
   maybeAutoFlagIhr(ctx, request.method, result);
+  // Kenya: detect outbreaks (public health events) against the project's thresholds (DHA REP-PHE-001)
+  maybeDetectKenyaOutbreakFromResponse(ctx, request.method, result);
   // Kenya: record clinical decision support alerts for critical results and overridden prescriptions
   maybeRecordKenyaCdsAlerts(ctx, request.method, result);
 

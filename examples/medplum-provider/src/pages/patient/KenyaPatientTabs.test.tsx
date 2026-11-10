@@ -43,7 +43,7 @@ describe('Kenya patient chart in the provider app', () => {
       identifier: [{ system: 'https://dosespot.com/clinician-id', value: '1' }],
     };
     const kenyaTabs = getPatientPageTabs(doseSpotMember, true).map((t) => t.label);
-    expect(kenyaTabs).toEqual(expect.arrayContaining(['Clinical summary', 'National records']));
+    expect(kenyaTabs).toEqual(expect.arrayContaining(['Clinical summary', 'Vaccinations', 'National records']));
     expect(kenyaTabs).not.toContain('DoseSpot');
     expect(getPatientPageTabs(undefined).map((t) => t.label)).not.toContain('Clinical summary');
   });
@@ -51,6 +51,12 @@ describe('Kenya patient chart in the provider app', () => {
   test('the Clinical summary tab shows the Kenya clinical summary', async () => {
     await setup(kenyaClient(), `/Patient/${HomerSimpson.id}/kenya-summary`);
     expect(await screen.findByText('Clinical summary', { selector: 'h4' })).toBeInTheDocument();
+  });
+
+  test('the Vaccinations tab shows the history and the record form', async () => {
+    await setup(kenyaClient(), `/Patient/${HomerSimpson.id}/kenya-immunizations`);
+    expect(await screen.findByText('Record vaccination')).toBeInTheDocument();
+    expect(screen.getByText('Vaccination history')).toBeInTheDocument();
   });
 
   test('the National records tab shows the DHA identity and SHR publication panels', async () => {

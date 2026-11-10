@@ -39,7 +39,11 @@ import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
-import { KenyaClinicalSummaryTab, KenyaNationalRecordsTab } from './pages/patient/KenyaPatientTabs';
+import {
+  KenyaClinicalSummaryTab,
+  KenyaImmunizationsTab,
+  KenyaNationalRecordsTab,
+} from './pages/patient/KenyaPatientTabs';
 import { KenyaRegistrationPage } from './pages/patient/KenyaRegistrationPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
@@ -199,6 +203,7 @@ export function App(): JSX.Element | null {
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 {isKenya && <Route path="kenya-summary" element={<KenyaClinicalSummaryTab />} />}
+                {isKenya && <Route path="kenya-immunizations" element={<KenyaImmunizationsTab />} />}
                 {isKenya && <Route path="kenya-national" element={<KenyaNationalRecordsTab />} />}
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />

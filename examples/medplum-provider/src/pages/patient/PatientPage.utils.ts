@@ -50,9 +50,10 @@ export function getPatientPageTabs(membership: ProjectMembership | undefined, is
   ];
 }
 
-/** Kenya projects: the clinical summary and national records (DHA identity, Shared Health Record). */
+/** Kenya projects: the clinical summary, vaccinations and national records (DHA identity, Shared Health Record). */
 export const KenyaPatientPageTabs: PatientPageTabInfo[] = [
   { id: 'kenya-summary', url: 'kenya-summary', label: 'Clinical summary' },
+  { id: 'kenya-immunizations', url: 'kenya-immunizations', label: 'Vaccinations' },
   { id: 'kenya-national', url: 'kenya-national', label: 'National records' },
 ];
 

@@ -22,6 +22,8 @@ export * from './coding/kenya-visit-type';
 export * from './coding/KenyaVisitTypeSelect';
 export * from './coding/KnhtsCodeInput';
 export * from './common/ConfirmButton';
+export * from './immunization/kenya-immunization';
+export * from './immunization/KenyaImmunizations';
 export * from './nursing/kenya-nursing';
 export * from './nursing/KenyaMedicationAdministrationRecord';
 export * from './nursing/KenyaNursingNotes';

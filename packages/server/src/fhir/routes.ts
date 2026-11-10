@@ -72,6 +72,7 @@ import { kenyaClaimHandler } from './operations/kenyaclaim';
 import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaInvoicePaymentHandler } from './operations/kenyainvoicepayment';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
+import { kenyaEvaluateMeasureHandler } from './operations/kenyaqualitymeasure';
 import { kenyaRegistryLookupHandler } from './operations/kenyaregistrylookup';
 import { kenyaShaRemittanceHandler } from './operations/kenyasharemittance';
 import { kenyaStartVisitHandler, kenyaVisitConsentHandler } from './operations/kenyashavisit';
@@ -437,6 +438,8 @@ function initInternalFhirRouter(): FhirRouter {
   // SHA visit through the DHA HIE: patient consent (OTP or fingerprints), then start the visit
   router.add('POST', '/Encounter/:id/$kenya-visit-consent', kenyaVisitConsentHandler);
   router.add('POST', '/Encounter/:id/$kenya-start-visit', kenyaStartVisitHandler);
+  // Kenya quality measures (DHA FUNC-QUAL-001): calculate, save the MeasureReport and a CSV export
+  router.add('POST', '/Measure/$kenya-evaluate-measure', kenyaEvaluateMeasureHandler);
   router.add('GET', '/$knhts-search', knhtsSearchHandler);
 
   // $khis-weekly-export operation (Kenya MOH 505 / DHIS2 — IDSR weekly reporting)

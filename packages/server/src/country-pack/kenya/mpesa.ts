@@ -10,6 +10,8 @@ export interface KenyaMpesaCredentials {
   readonly shortCode: string;
   readonly passkey: string;
   readonly callbackUrl: string;
+  /** Safaricom Daraja: production, or the sandbox when the project sets `kenyaMpesaSandbox`. */
+  readonly darajaBaseUrl?: string;
 }
 
 export interface MpesaStkPushResult {
@@ -31,6 +33,17 @@ export interface MpesaCallbackPayload {
 }
 
 const MpesaDarajaBaseUrl = 'https://api.safaricom.co.ke';
+const MpesaDarajaSandboxUrl = 'https://sandbox.safaricom.co.ke';
+
+/**
+ * Project setting for the Daraja sandbox (dev and UAT): prompts go to Safaricom's test system with
+ * the sandbox shortcode and keys. Production projects leave it off.
+ */
+export const KenyaMpesaSandboxSetting = 'kenyaMpesaSandbox';
+
+function darajaBaseUrl(credentials: KenyaMpesaCredentials): string {
+  return credentials.darajaBaseUrl ?? MpesaDarajaBaseUrl;
+}
 
 function getProjectSystemSecret(project: Project, name: string): string | undefined {
   return project.systemSecret?.find((entry) => entry.name === name)?.valueString?.trim() || undefined;
@@ -60,12 +73,15 @@ export function getKenyaMpesaCredentials(project: Project, baseUrl: string, proj
     shortCode: requireSystemSecret(project, KenyaMpesaSecretNames.shortCode),
     passkey: requireSystemSecret(project, KenyaMpesaSecretNames.passkey),
     callbackUrl: `${baseUrl}/kenya/mpesa-callback/${projectId}`,
+    darajaBaseUrl: project.setting?.find((s) => s.name === KenyaMpesaSandboxSetting)?.valueBoolean
+      ? MpesaDarajaSandboxUrl
+      : MpesaDarajaBaseUrl,
   };
 }
 
 async function getMpesaAccessToken(credentials: KenyaMpesaCredentials): Promise<string> {
   const auth = Buffer.from(`${credentials.consumerKey}:${credentials.consumerSecret}`).toString('base64');
-  const response = await fetch(`${MpesaDarajaBaseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
+  const response = await fetch(`${darajaBaseUrl(credentials)}/oauth/v1/generate?grant_type=client_credentials`, {
     method: 'GET',
     headers: { Authorization: `Basic ${auth}` },
   });
@@ -118,7 +134,7 @@ export async function sendMpesaStkPush(
     TransactionDesc: description,
   };
 
-  const response = await fetch(`${MpesaDarajaBaseUrl}/mpesa/stkpush/v1/processrequest`, {
+  const response = await fetch(`${darajaBaseUrl(credentials)}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -175,7 +191,7 @@ export async function queryMpesaStkPushStatus(
   const token = await getMpesaAccessToken(credentials);
   const timestamp = buildTimestamp();
 
-  const response = await fetch(`${MpesaDarajaBaseUrl}/mpesa/stkpushquery/v1/query`, {
+  const response = await fetch(`${darajaBaseUrl(credentials)}/mpesa/stkpushquery/v1/query`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

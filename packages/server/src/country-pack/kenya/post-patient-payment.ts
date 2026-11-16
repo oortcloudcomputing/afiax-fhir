@@ -8,7 +8,6 @@ import {
   createReference,
   getKenyaErpNextPatientSnapshot,
   getKenyaErpNextSubmissionSnapshot,
-  getProjectSettingBoolean,
   normalizeErrorString,
 } from '@medplum/core';
 import type { AuditEvent, Claim, Patient, PaymentNotice, Project, Reference, Task } from '@medplum/fhirtypes';
@@ -200,12 +199,14 @@ async function handleSynchronousPayment(
 // ---------------------------------------------------------------------------
 
 /**
- * Project setting that allows the legacy direct Safaricom Daraja STK Push client. M-Pesa goes
- * through Afiax Pay (ADR-010, change register 3.9); the direct client exists only for dev and UAT
- * until Afiax Pay's payment-request API is available, and must not be enabled in production.
+ * M-Pesa goes direct to Safaricom Daraja (change register 3.9, user decision 2026-11-16): the
+ * facility's own shortcode and keys are the project's system secrets, and the money goes straight to
+ * the facility. Afiax Pay moved to Wave 2; a project that has Afiax Pay credentials still uses it, so
+ * it can come back without rework.
+ * @param input - The payment request.
+ * @param postedAt - When the payment was posted.
+ * @returns The pending payment result.
  */
-export const KenyaMpesaDirectDarajaSetting = 'kenyaMpesaDirectDaraja';
-
 async function handleMpesaStkPayment(
   input: PostPatientPaymentInput,
   postedAt: string
@@ -220,12 +221,12 @@ async function handleMpesaStkPayment(
     return handleMpesaStkViaAfiaxPay(input, postedAt);
   }
 
-  if (getProjectSettingBoolean(project, KenyaMpesaDirectDarajaSetting)) {
+  if (hasKenyaMpesaCredentials(project)) {
     return handleMpesaStkViaDaraja(input, postedAt);
   }
 
   throw new Error(
-    'M-Pesa payments go through Afiax Pay, and Afiax Pay credentials are not configured for this project.'
+    "M-Pesa is not set up for this facility yet: add its Daraja shortcode and keys in the facility's settings."
   );
 }
 
@@ -296,7 +297,7 @@ async function handleMpesaStkViaAfiaxPay(
 }
 
 /**
- * Legacy direct Daraja STK Push (dev/UAT only, behind KenyaMpesaDirectDarajaSetting).
+ * Direct Daraja STK Push to the facility's own shortcode; the callback is checked with Daraja's status query.
  * @param input - The payment request.
  * @param postedAt - When the payment was posted.
  * @returns The pending payment result.

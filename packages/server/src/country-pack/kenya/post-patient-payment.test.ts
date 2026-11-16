@@ -274,7 +274,7 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
     expect(snap?.paymentStatus).toBe('pending');
   });
 
-  test('uses direct Daraja only when the dev/UAT setting allows it and Afiax Pay is not configured', async () => {
+  test('uses direct Daraja when the facility has its Daraja keys and no Afiax Pay', async () => {
     mockOkResponse({ access_token: 'test-mpesa-token' });
     mockOkResponse({
       CheckoutRequestID: 'ws_CO_18062026_001',
@@ -286,7 +286,6 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
 
     const project = makeProject();
     project.systemSecret = project.systemSecret?.filter((e) => !e.name?.startsWith('afiaxPay'));
-    project.setting = [...(project.setting ?? []), { name: 'kenyaMpesaDirectDaraja', valueBoolean: true }];
 
     const repo = makeRepo();
     const result = await handlePostPatientPayment({
@@ -310,9 +309,41 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
     expect(gatewayIdentifier?.value).toBe('ws_CO_18062026_001');
   });
 
-  test('refuses direct Daraja when Afiax Pay is not configured and the setting is off', async () => {
+  test('uses the Daraja sandbox when the project says so (dev and UAT)', async () => {
+    mockOkResponse({ access_token: 'test-mpesa-token' });
+    mockOkResponse({
+      CheckoutRequestID: 'ws_CO_SANDBOX_001',
+      MerchantRequestID: 'MR-002',
+      ResponseCode: '0',
+      ResponseDescription: 'Success. Request accepted for processing',
+      CustomerMessage: 'Success. Request accepted for processing',
+    });
     const project = makeProject();
     project.systemSecret = project.systemSecret?.filter((e) => !e.name?.startsWith('afiaxPay'));
+    project.setting = [...(project.setting ?? []), { name: 'kenyaMpesaSandbox', valueBoolean: true }];
+    const result = await handlePostPatientPayment({
+      ctx: makeCtx(makeRepo()),
+      claim: makeClaimWithInvoice(),
+      method: 'mpesa-stk',
+      amount: 2000,
+      currency: 'KES',
+      phone: '0712345678',
+      correlationId: 'corr-stk-sandbox',
+      project,
+      baseUrl: 'https://api.afiax.africa',
+    });
+    expect(result.status).toBe('pending');
+    expect(mockFetch.mock.calls[0][0] as string).toContain('https://sandbox.safaricom.co.ke/oauth/v1/generate');
+    expect(mockFetch.mock.calls[1][0] as string).toContain(
+      'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+    );
+  });
+
+  test('refuses M-Pesa when the facility has neither Daraja keys nor Afiax Pay', async () => {
+    const project = makeProject();
+    project.systemSecret = project.systemSecret?.filter(
+      (e) => !e.name?.startsWith('afiaxPay') && !e.name?.startsWith('mpesa')
+    );
 
     const repo = makeRepo();
     const result = await handlePostPatientPayment({
@@ -327,7 +358,7 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
       baseUrl: 'https://api.afiax.africa',
     });
     expect(result.status).toBe('error');
-    expect(result.message).toContain('go through Afiax Pay');
+    expect(result.message).toContain('M-Pesa is not set up for this facility');
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -361,7 +392,7 @@ describe('handlePostPatientPayment — mpesa-stk', () => {
       baseUrl: 'https://api.afiax.africa',
     });
     expect(result.status).toBe('error');
-    expect(result.message).toContain('Afiax Pay credentials are not configured');
+    expect(result.message).toContain('M-Pesa is not set up for this facility');
   });
 });
 

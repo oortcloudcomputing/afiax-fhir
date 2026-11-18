@@ -4,10 +4,8 @@ import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@med
 import {
   allOk,
   badRequest,
-  concatUrls,
   conflict,
   createReference,
-  formatHumanName,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -23,12 +21,11 @@ import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
-import { getConfig } from '../config/loader';
-import type { AuthenticatedRequestContext } from '../context';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
+import type { ActingPerson } from '../email/helpers';
+import { getActingPerson, getAppLink, getSupportEmail } from '../email/helpers';
 import { renderEmail } from '../email/templates';
-import { extractEmailFromAddress } from '../email/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -60,7 +57,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     inviteRequest.project = ctx.project;
   }
   // Always set from the signed-in user, never from the request body.
-  inviteRequest.invitedBy = await getInviter(ctx);
+  inviteRequest.invitedBy = await getActingPerson(ctx);
 
   const { membership } = await inviteUser(inviteRequest);
   return sendFhirResponse(req, res, allOk, membership);
@@ -69,40 +66,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 export interface ServerInviteRequest extends InviteRequest {
   project: WithId<Project>;
   /** The person who sent the invite, named in the email. Left out for bots and client applications. */
-  invitedBy?: Inviter;
-}
-
-export interface Inviter {
-  readonly name: string;
-  readonly email?: string;
-}
-
-/**
- * Returns the person making an invite request, for the invite email.
- * Bots and client applications are not people, so they return undefined.
- * @param ctx - The authenticated request context.
- * @returns The inviter's name and email, if the request was made by a person.
- */
-async function getInviter(ctx: AuthenticatedRequestContext): Promise<Inviter | undefined> {
-  const { membership } = ctx;
-  const profileType = membership.profile?.reference?.split('/')[0];
-  if (profileType !== 'Practitioner' && profileType !== 'Patient' && profileType !== 'RelatedPerson') {
-    return undefined;
-  }
-  try {
-    const profile = await ctx.systemRepo.readReference(membership.profile as Reference<ProfileResource>);
-    const name = formatHumanName(profile.name?.[0]);
-    if (!name) {
-      return undefined;
-    }
-    const user = membership.user?.reference?.startsWith('User/')
-      ? await ctx.systemRepo.readReference(membership.user as Reference<User>)
-      : undefined;
-    return { name, email: user?.email };
-  } catch (err) {
-    getLogger().warn('Could not read inviter for invite email', { error: normalizeErrorString(err) });
-    return undefined;
-  }
+  invitedBy?: ActingPerson;
 }
 
 export interface ServerInviteResponse {
@@ -450,9 +414,7 @@ async function sendInviteEmail(
   resetPasswordUrl: string | undefined
 ): Promise<void> {
   // Content and wording: specs/invite.md in oortcloud-email-templates.
-  const config = getConfig();
-  const signInUrl = concatUrls(config.appBaseUrl, 'signin');
-  const signInAddress = new URL(signInUrl);
+  const signIn = getAppLink('signin');
   const newUser = !existing && !!resetPasswordUrl;
 
   const { subject, html, text } = renderEmail('invite', {
@@ -464,13 +426,13 @@ async function sendInviteEmail(
     inviterEmail: request.invitedBy?.email,
     newUser,
     setPasswordUrl: newUser ? resetPasswordUrl : undefined,
-    signInUrl,
-    signInHost: signInAddress.host + signInAddress.pathname,
+    signInUrl: signIn.url,
+    signInHost: signIn.display,
     mfaRequired: !!user.mfaRequired,
     isStaff: request.resourceType === 'Practitioner',
     isPatient: request.resourceType === 'Patient',
     isCarer: request.resourceType === 'RelatedPerson',
-    supportEmail: extractEmailFromAddress(config.supportEmail) ?? config.supportEmail,
+    supportEmail: getSupportEmail(),
   });
 
   const options: Mail.Options = { to: user.email, subject, html, text };

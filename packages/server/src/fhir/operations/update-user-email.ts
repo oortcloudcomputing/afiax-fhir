@@ -8,6 +8,7 @@ import {
   concatUrls,
   forbidden,
   getReferenceString,
+  normalizeErrorString,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -17,6 +18,10 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import type { ActingPerson } from '../../email/helpers';
+import { formatEmailTime, getActingPerson, getAppLink, getSupportEmail, maskEmail } from '../../email/helpers';
+import { renderEmail } from '../../email/templates';
+import { getLogger } from '../../logger';
 import { getProjectSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
@@ -76,7 +81,8 @@ type InputParams = {
 const profileTypesWithTelecom: ResourceType[] = ['Patient', 'Practitioner', 'RelatedPerson'];
 
 export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirResponse> {
-  const { project, membership } = getAuthenticatedContext();
+  const ctx = getAuthenticatedContext();
+  const { project, membership } = ctx;
   if (!project.superAdmin && !membership.admin) {
     return [forbidden];
   }
@@ -84,11 +90,40 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
   const params = parseInputParameters<InputParams>(op, req);
   const id = req.params.id;
 
-  const user = await updateUser(id, params, project);
+  const changedBy = await getActingPerson(ctx);
+  const changedAt = formatEmailTime(new Date());
+  const { user, oldEmail } = await updateUser(id, params, project, changedBy, changedAt);
+
+  // Tell the previous address, after the change is saved: if someone else made it, this is how the
+  // account holder finds out. Best effort: a mail failure must not undo a saved change.
+  if (oldEmail && oldEmail !== user.email) {
+    try {
+      const { subject, html, text } = renderEmail('email-change-notice', {
+        firstName: user.firstName,
+        newEmailMasked: maskEmail(params.email),
+        changedByName: changedBy?.name,
+        projectName: project.superAdmin ? undefined : project.name,
+        changedAt,
+        supportEmail: getSupportEmail(),
+      });
+      await sendEmail(getProjectSystemRepo(project), { to: oldEmail, subject, html, text });
+    } catch (err) {
+      getLogger().error('Email change notice to the previous address not sent', {
+        user: id,
+        error: normalizeErrorString(err),
+      });
+    }
+  }
   return [allOk, user];
 }
 
-async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
+async function updateUser(
+  userId: string,
+  params: InputParams,
+  project: WithId<Project>,
+  changedBy: ActingPerson | undefined,
+  changedAt: string
+): Promise<{ user: User; oldEmail: string | undefined }> {
   const systemRepo = getProjectSystemRepo(project);
   return systemRepo.withTransaction(async () => {
     let user = await systemRepo.readResource<User>('User', userId);
@@ -108,23 +143,22 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       const { id, secret } = await verifyEmail(user);
       const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
-      await sendEmail(systemRepo, {
-        to: params.email,
-        subject: 'Afiax Connected Healthcare — Email Address Update',
-        text: [
-          'A request to update the email address associated with your Afiax Connected Healthcare account.',
-          '',
-          'Please click on the following link to verify your ability to receive emails:',
-          '',
-          url,
-          '',
-          'If you received this in error, you can safely ignore it.',
-          '',
-          'Thank you,',
-          'Afiax Connected Healthcare',
-          '',
-        ].join('\n'),
+      // Content and wording: specs/email-change.md in oortcloud-email-templates.
+      const signIn = getAppLink('signin');
+      const { subject, html, text } = renderEmail('email-change-verify', {
+        firstName: user.firstName,
+        newEmail: params.email,
+        oldEmailMasked: oldEmail ? maskEmail(oldEmail) : undefined,
+        changedByName: changedBy?.name,
+        projectName: project.superAdmin ? undefined : project.name,
+        changedAt,
+        verifyUrl: url,
+        signInUrl: signIn.url,
+        signInHost: signIn.display,
+        oldNotified: !!oldEmail && oldEmail !== params.email,
+        supportEmail: getSupportEmail(),
       });
+      await sendEmail(systemRepo, { to: params.email, subject, html, text });
     }
 
     if (params.updateProfileTelecom && user.project?.reference) {
@@ -158,6 +192,6 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       }
     }
 
-    return user;
+    return { user, oldEmail };
   });
 }

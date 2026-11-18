@@ -13,6 +13,8 @@ import {
 import type { AuditEvent, Flag, Patient, Project, Reference } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import { formatEmailTime, getActingPerson, getAppLink, getSupportEmail } from '../../email/helpers';
+import { renderEmail } from '../../email/templates';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -20,6 +22,9 @@ import {
   OperationInteraction,
   RestfulOperationType,
 } from '../../util/auditevent';
+
+// Every emergency access must be reviewed within this many hours of starting.
+const BreakGlassReviewHours = 24;
 
 // IHE ATNA / HL7 v3 purpose-of-use code system
 const ActReasonCodeSystem = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
@@ -81,17 +86,7 @@ export async function handleBreakGlassAccess(input: BreakGlassInput): Promise<Br
   let alertSent = false;
   try {
     const project = await ctx.systemRepo.readResource<Project>('Project', ctx.project.id);
-    await sendBreakGlassAlert(
-      ctx,
-      project,
-      patient,
-      patientDisplay,
-      reason,
-      declaredAt,
-      expiresAt,
-      declaredByRef,
-      correlationId
-    );
+    await sendBreakGlassAlert(ctx, project, flag, declaredAt, expiresAt, durationHours, correlationId);
     alertSent = true;
   } catch (err) {
     // Log but don't fail the declaration — alert failure must not block emergency access
@@ -219,47 +214,41 @@ async function createBreakGlassAuditEvent(
   logAuditEvent(saved);
 }
 
+/**
+ * Emails the organisation's security alert contact. Content and wording: specs/break-glass-alert.md in
+ * oortcloud-email-templates. The patient's name, ID and the reason are clinical information, so the email
+ * leaves them out and links to the Flag, which the reviewer opens after signing in.
+ * @param ctx - The request context of the person who declared emergency access.
+ * @param project - Their project, with its settings.
+ * @param flag - The break-glass Flag.
+ * @param declaredAt - When access started (ISO).
+ * @param expiresAt - When access ends by itself (ISO).
+ * @param durationHours - How long access lasts.
+ * @param correlationId - The reference shared by the Flag, AuditEvent and alert.
+ */
 async function sendBreakGlassAlert(
   ctx: AuthenticatedRequestContext,
   project: Project,
-  patient: Patient & { id: string },
-  patientDisplay: string,
-  reason: string,
+  flag: Flag & { id: string },
   declaredAt: string,
   expiresAt: string,
-  declaredBy: string,
+  durationHours: number,
   correlationId: string
 ): Promise<void> {
-  const alertEmail = getKenyaSecurityAlertEmail(project);
   const projectName = project.name ?? ctx.project.id;
+  const declaredBy = await getActingPerson(ctx);
 
-  await sendEmail(ctx.systemRepo as any, {
-    to: alertEmail,
-    subject: `[SECURITY ALERT] Break-glass emergency access — ${patientDisplay} — ${projectName}`,
-    text: [
-      'BREAK-GLASS EMERGENCY ACCESS DECLARATION',
-      '=========================================',
-      '',
-      `Project:     ${projectName}`,
-      `Patient:     ${patientDisplay} (Patient/${patient.id})`,
-      `Declared by: ${declaredBy}`,
-      `Declared at: ${declaredAt}`,
-      `Expires at:  ${expiresAt}`,
-      `Reason:      ${reason}`,
-      `Correlation: ${correlationId}`,
-      '',
-      'This access declaration requires post-hoc review within 24 hours.',
-      '',
-      'Review actions:',
-      '  1. Confirm the clinical emergency that required this access',
-      '  2. Verify the declared reason matches the clinical record',
-      '  3. Revoke the Flag resource if access was not justified',
-      '  4. Document the outcome of this review in the patient record',
-      '',
-      'If this access appears to be unauthorized, escalate to the Data Protection Officer immediately.',
-      '',
-      'Afiax Connected Healthcare — Security Team',
-      'This is an automated security alert.',
-    ].join('\n'),
+  const { subject, html, text } = renderEmail('break-glass-alert', {
+    projectName,
+    declaredByName: declaredBy?.name ?? 'A staff member',
+    declaredAt: formatEmailTime(declaredAt),
+    expiresAt: formatEmailTime(expiresAt),
+    durationHours,
+    reviewBy: formatEmailTime(new Date(Date.parse(declaredAt) + BreakGlassReviewHours * 3600 * 1000)),
+    correlationId,
+    reviewUrl: getAppLink(`Flag/${flag.id}`).url,
+    supportEmail: getSupportEmail(),
   });
+
+  await sendEmail(ctx.systemRepo, { to: getKenyaSecurityAlertEmail(project), subject, html, text });
 }

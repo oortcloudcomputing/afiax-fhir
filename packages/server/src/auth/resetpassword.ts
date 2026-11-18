@@ -7,6 +7,8 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
+import { describeDevice, formatEmailTime, getAppLink, getSupportEmail } from '../email/helpers';
+import { renderEmail } from '../email/templates';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -71,23 +73,21 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   const url = await resetPassword(systemRepo, user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
-    await sendEmail(systemRepo, {
-      to: user.email,
-      subject: 'Afiax Connected Healthcare — Password Reset',
-      text: [
-        'Someone requested to reset your Afiax Connected Healthcare password.',
-        '',
-        'Please click on the following link:',
-        '',
-        url,
-        '',
-        'If you received this in error, you can safely ignore it.',
-        '',
-        'Thank you,',
-        'Afiax Connected Healthcare',
-        '',
-      ].join('\n'),
+    // Content and wording: specs/password-reset.md in oortcloud-email-templates.
+    const signIn = getAppLink('signin');
+    const { subject, html, text } = renderEmail('password-reset', {
+      firstName: user.firstName,
+      email: user.email,
+      requestedAt: formatEmailTime(new Date()),
+      device: describeDevice(req.get('User-Agent')),
+      resetUrl: url,
+      signInUrl: signIn.url,
+      signInHost: signIn.display,
+      securityUrl: getAppLink('security').url,
+      mfaEnrolled: !!user.mfaEnrolled,
+      supportEmail: getSupportEmail(),
     });
+    await sendEmail(systemRepo, { to: user.email, subject, html, text });
   }
 
   sendOutcome(res, allOk);

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Flag, Patient, Project } from '@medplum/fhirtypes';
+import { loadTestConfig } from '../../config/loader';
 import { handleBreakGlassAccess } from './break-glass';
 
 jest.mock('../../util/auditevent', () => ({
@@ -41,6 +42,7 @@ function buildCtx(
   return {
     project: mockProject,
     profile: { reference: 'Practitioner/prac-1' },
+    membership: { profile: { reference: 'Practitioner/prac-1' }, user: { reference: 'User/user-1' } },
     logger: { warn: jest.fn() },
     repo: {},
     systemRepo: {
@@ -48,11 +50,20 @@ function buildCtx(
         overrides?.createResource ?? jest.fn(async (r: any) => ({ ...r, id: `${r.resourceType}-1`.toLowerCase() })),
       updateResource: overrides?.updateResource ?? jest.fn(async (r: any) => r),
       readResource: overrides?.readResource ?? jest.fn(async () => mockProject),
+      readReference: jest.fn(async (ref: { reference: string }) =>
+        ref.reference.startsWith('Practitioner/')
+          ? { resourceType: 'Practitioner', name: [{ prefix: ['Dr'], given: ['Peter'], family: 'Mwangi' }] }
+          : { resourceType: 'User', email: 'peter@example.com' }
+      ),
     },
   };
 }
 
 describe('handleBreakGlassAccess', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   beforeEach(() => (sendEmail as jest.Mock).mockClear());
 
   test('creates Flag, persists extension on Patient, and sends alert email', async () => {
@@ -98,9 +109,17 @@ describe('handleBreakGlassAccess', () => {
     // Alert email sent
     expect(sendEmail).toHaveBeenCalledTimes(1);
     const emailCall = (sendEmail as jest.Mock).mock.calls[0][1];
-    expect(emailCall.subject).toContain('Break-glass');
-    expect(emailCall.text).toContain('Kamau');
+    expect(emailCall.subject).toBe('Security alert: emergency access used at Test Clinic');
+    expect(emailCall.text).toContain('Dr Peter Mwangi used emergency');
     expect(emailCall.text).toContain('corr-1');
+    expect(emailCall.text).toContain('/Flag/res-1');
+    expect(emailCall.html).toContain('Review in Afiax');
+    // No patient name, ID or reason anywhere in the alert
+    for (const part of [emailCall.subject, emailCall.text, emailCall.html]) {
+      expect(part).not.toContain('Kamau');
+      expect(part).not.toContain('patient-1');
+      expect(part).not.toContain('Unconscious');
+    }
     expect(emailCall.to).toBe('security@afiax.africa');
   });
 

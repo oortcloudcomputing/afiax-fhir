@@ -4,8 +4,10 @@ import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@med
 import {
   allOk,
   badRequest,
+  concatUrls,
   conflict,
   createReference,
+  formatHumanName,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -22,8 +24,11 @@ import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import type { AuthenticatedRequestContext } from '../context';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
+import { renderEmail } from '../email/templates';
+import { extractEmailFromAddress } from '../email/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -54,6 +59,8 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   } else {
     inviteRequest.project = ctx.project;
   }
+  // Always set from the signed-in user, never from the request body.
+  inviteRequest.invitedBy = await getInviter(ctx);
 
   const { membership } = await inviteUser(inviteRequest);
   return sendFhirResponse(req, res, allOk, membership);
@@ -61,6 +68,41 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
 export interface ServerInviteRequest extends InviteRequest {
   project: WithId<Project>;
+  /** The person who sent the invite, named in the email. Left out for bots and client applications. */
+  invitedBy?: Inviter;
+}
+
+export interface Inviter {
+  readonly name: string;
+  readonly email?: string;
+}
+
+/**
+ * Returns the person making an invite request, for the invite email.
+ * Bots and client applications are not people, so they return undefined.
+ * @param ctx - The authenticated request context.
+ * @returns The inviter's name and email, if the request was made by a person.
+ */
+async function getInviter(ctx: AuthenticatedRequestContext): Promise<Inviter | undefined> {
+  const { membership } = ctx;
+  const profileType = membership.profile?.reference?.split('/')[0];
+  if (profileType !== 'Practitioner' && profileType !== 'Patient' && profileType !== 'RelatedPerson') {
+    return undefined;
+  }
+  try {
+    const profile = await ctx.systemRepo.readReference(membership.profile as Reference<ProfileResource>);
+    const name = formatHumanName(profile.name?.[0]);
+    if (!name) {
+      return undefined;
+    }
+    const user = membership.user?.reference?.startsWith('User/')
+      ? await ctx.systemRepo.readReference(membership.user as Reference<User>)
+      : undefined;
+    return { name, email: user?.email };
+  } catch (err) {
+    getLogger().warn('Could not read inviter for invite email', { error: normalizeErrorString(err) });
+    return undefined;
+  }
 }
 
 export interface ServerInviteResponse {
@@ -148,7 +190,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
 
   if (email && request.sendEmail !== false) {
-    await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
+    await sendInviteEmail(systemRepo, request, user, membership, existingUser, passwordResetUrl);
   }
 
   return { user, profile, membership };
@@ -403,39 +445,35 @@ async function sendInviteEmail(
   systemRepo: SystemRepository,
   request: ServerInviteRequest,
   user: User,
+  membership: ProjectMembership,
   existing: boolean,
   resetPasswordUrl: string | undefined
 ): Promise<void> {
-  const options: Mail.Options = { to: user.email };
-  if (existing) {
-    // Existing user
-    options.subject = `Afiax Connected Healthcare — Welcome to ${request.project.name}`;
-    options.text = [
-      `You were invited to ${request.project.name}`,
-      '',
-      `The next time you sign in, you will see ${request.project.name} as an option.`,
-      '',
-      `You can sign in here: ${getConfig().appBaseUrl}signin`,
-      '',
-      'Thank you,',
-      'Afiax Connected Healthcare',
-      '',
-    ].join('\n');
-  } else {
-    // New user
-    options.subject = 'Welcome to Afiax Connected Healthcare';
-    options.text = [
-      `You were invited to ${request.project.name}`,
-      '',
-      'Please click on the following link to create your account:',
-      '',
-      resetPasswordUrl,
-      '',
-      'Thank you,',
-      'Afiax Connected Healthcare',
-      '',
-    ].join('\n');
-  }
+  // Content and wording: specs/invite.md in oortcloud-email-templates.
+  const config = getConfig();
+  const signInUrl = concatUrls(config.appBaseUrl, 'signin');
+  const signInAddress = new URL(signInUrl);
+  const newUser = !existing && !!resetPasswordUrl;
+
+  const { subject, html, text } = renderEmail('invite', {
+    firstName: user.firstName,
+    email: user.email,
+    projectName: request.project.name,
+    roleLabel: await getRoleLabel(systemRepo, request, membership),
+    inviterName: request.invitedBy?.name,
+    inviterEmail: request.invitedBy?.email,
+    newUser,
+    setPasswordUrl: newUser ? resetPasswordUrl : undefined,
+    signInUrl,
+    signInHost: signInAddress.host + signInAddress.pathname,
+    mfaRequired: !!user.mfaRequired,
+    isStaff: request.resourceType === 'Practitioner',
+    isPatient: request.resourceType === 'Patient',
+    isCarer: request.resourceType === 'RelatedPerson',
+    supportEmail: extractEmailFromAddress(config.supportEmail) ?? config.supportEmail,
+  });
+
+  const options: Mail.Options = { to: user.email, subject, html, text };
   try {
     await sendEmail(systemRepo, options);
   } catch (err) {
@@ -457,4 +495,39 @@ async function sendInviteEmail(
       ],
     });
   }
+}
+
+const ROLE_BY_PROFILE: Record<ServerInviteRequest['resourceType'], string> = {
+  Practitioner: 'Staff member',
+  Patient: 'Patient',
+  RelatedPerson: 'Family member or carer',
+};
+
+/**
+ * Returns the invitee's role in plain words, for the invite email.
+ * @param systemRepo - The system repository.
+ * @param request - The invite request.
+ * @param membership - The membership the invite created or updated.
+ * @returns Administrator, the access policy's name, or a label for the profile type.
+ */
+async function getRoleLabel(
+  systemRepo: SystemRepository,
+  request: ServerInviteRequest,
+  membership: ProjectMembership
+): Promise<string> {
+  if (membership.admin) {
+    return 'Administrator';
+  }
+  const policy = membership.accessPolicy ?? membership.access?.[0]?.policy;
+  if (policy) {
+    try {
+      const accessPolicy = await systemRepo.readReference(policy);
+      if (accessPolicy.name) {
+        return accessPolicy.name;
+      }
+    } catch (_err) {
+      // Fall back to the profile type below.
+    }
+  }
+  return ROLE_BY_PROFILE[request.resourceType];
 }

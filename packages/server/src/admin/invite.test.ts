@@ -87,7 +87,11 @@ describe('Admin Invite', () => {
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
-    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
+    expect(parsed.subject).toBe('Alice Smith invited you to Alice Project on Afiax');
+    expect(parsed.html).toContain('Create my password');
+    expect(parsed.html).toContain('Staff member');
+    expect(parsed.text).toContain('Invited by:          Alice Smith');
+    expect(parsed.text).toMatch(/\/setpassword\//);
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
@@ -141,7 +145,9 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Afiax Connected Healthcare — Welcome to Alice Project');
+    expect(parsed.subject).toBe('You now have access to Alice Project on Afiax');
+    expect(parsed.html).toContain('Sign in to Afiax');
+    expect(parsed.html).not.toContain('Create my password');
 
     const rows = await new SelectQuery('User')
       .column('content')
@@ -660,6 +666,37 @@ describe('Admin Invite', () => {
     expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceRegistration.project));
   });
 
+  test('Invite email names the signed-in inviter, not one sent in the request', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Carol',
+        lastName: 'Otieno',
+        email: `carol${randomUUID()}@example.com`,
+        invitedBy: { name: 'Mallory', email: 'mallory@example.com' },
+      });
+
+    expect(res.status).toBe(200);
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.subject).toBe('Alice Smith invited you to Alice Project on Afiax');
+    expect(parsed.text).not.toContain('Mallory');
+    expect(parsed.text).toContain('Your role:           Patient');
+    expect(parsed.text).toContain('see the health information they share with you');
+  });
+
   test('Convert capitalized email to lower case', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
@@ -695,7 +732,7 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(lowerBobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
+    expect(parsed.subject).toBe('Alice Smith invited you to Alice Project on Afiax');
   });
 
   test('Invite user with existing membership', async () => {
@@ -1120,9 +1157,10 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Welcome to Afiax Connected Healthcare');
+    expect(parsed.subject).toBe('Alice Smith invited you to Alice Project on Afiax');
+    expect(parsed.text).toContain('Set up two-step sign-in');
 
-    const setPasswordUrl = parsed.text?.match(/http[s]?:\/\/[^\s]+/)?.[0];
+    const setPasswordUrl = parsed.text?.match(/http[s]?:\/\/\S+\/setpassword\/\S+/)?.[0];
     expect(setPasswordUrl).toBeDefined();
 
     const setPasswordUrlParts = setPasswordUrl?.split('/') as string[];

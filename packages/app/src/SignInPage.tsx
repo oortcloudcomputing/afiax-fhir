@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
+import { AfiaxIamButton, getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -45,6 +45,13 @@ export function SignInPage(): JSX.Element {
         <Title order={3} py="lg" ta="center">
           Sign in again to create a new project
         </Title>
+      )}
+      {/* Afiax IAM first: staff of every facility, any email domain (ADR-015 section 11) */}
+      {searchParams.get('project') !== 'new' && !searchParams.get('login') && (
+        <AfiaxIamButton
+          projectId={searchParams.get('project') || undefined}
+          autoStart={searchParams.get('iam') === '1'}
+        />
       )}
     </SignInForm>
   );

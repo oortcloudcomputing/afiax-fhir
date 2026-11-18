@@ -1,92 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import type { JSX } from 'react';
-import { MemoryRouter } from 'react-router';
-import { act, render } from './test-utils/render';
-import { DEFAULT_IDLE_TIMEOUT_MINUTES, LAST_ACTIVITY_KEY, useIdleSignOut } from './useIdleSignOut';
+import { getConfig } from './config';
+import { DEFAULT_IDLE_TIMEOUT_MINUTES, getIdleTimeoutMs } from './useIdleSignOut';
 
-function Harness(): JSX.Element {
-  useIdleSignOut();
-  return <div>harness</div>;
-}
+jest.mock('./config', () => ({ getConfig: jest.fn(() => ({})) }));
 
-async function setup(medplum: MockClient): Promise<void> {
-  await act(async () => {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <Harness />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  });
-}
-
-describe('useIdleSignOut', () => {
-  const timeoutMs = DEFAULT_IDLE_TIMEOUT_MINUTES * 60_000;
-
-  beforeEach(() => {
-    jest.useFakeTimers();
-    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+describe('getIdleTimeoutMs', () => {
+  test('Defaults to 15 minutes', () => {
+    (getConfig as jest.Mock).mockReturnValue({});
+    expect(getIdleTimeoutMs()).toBe(DEFAULT_IDLE_TIMEOUT_MINUTES * 60_000);
+    expect(DEFAULT_IDLE_TIMEOUT_MINUTES).toBe(15);
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  test('Reads the configured minutes; 0 switches it off', () => {
+    (getConfig as jest.Mock).mockReturnValue({ idleTimeoutMinutes: '30' });
+    expect(getIdleTimeoutMs()).toBe(30 * 60_000);
+    (getConfig as jest.Mock).mockReturnValue({ idleTimeoutMinutes: 0 });
+    expect(getIdleTimeoutMs()).toBe(0);
   });
 
-  test('Signs out after the idle timeout', async () => {
-    const medplum = new MockClient();
-    const signOut = jest.spyOn(medplum, 'signOut');
-    await setup(medplum);
-
-    await act(async () => {
-      jest.advanceTimersByTime(timeoutMs - 60_000);
-    });
-    expect(signOut).not.toHaveBeenCalled();
-
-    await act(async () => {
-      jest.advanceTimersByTime(90_000);
-    });
-    expect(signOut).toHaveBeenCalled();
-  });
-
-  test('Activity resets the timer', async () => {
-    const medplum = new MockClient();
-    const signOut = jest.spyOn(medplum, 'signOut');
-    await setup(medplum);
-
-    for (let i = 0; i < 4; i++) {
-      await act(async () => {
-        jest.advanceTimersByTime(timeoutMs / 2);
-        window.dispatchEvent(new KeyboardEvent('keydown'));
-      });
-    }
-    expect(signOut).not.toHaveBeenCalled();
-  });
-
-  test('Activity in another tab keeps the session', async () => {
-    const medplum = new MockClient();
-    const signOut = jest.spyOn(medplum, 'signOut');
-    await setup(medplum);
-
-    await act(async () => {
-      jest.advanceTimersByTime(timeoutMs - 60_000);
-      window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-      jest.advanceTimersByTime(120_000);
-    });
-    expect(signOut).not.toHaveBeenCalled();
-  });
-
-  test('Does nothing when signed out', async () => {
-    const medplum = new MockClient({ profile: null });
-    const signOut = jest.spyOn(medplum, 'signOut');
-    await setup(medplum);
-
-    await act(async () => {
-      jest.advanceTimersByTime(timeoutMs * 2);
-    });
-    expect(signOut).not.toHaveBeenCalled();
+  test('Ignores a value that is not a number', () => {
+    (getConfig as jest.Mock).mockReturnValue({ idleTimeoutMinutes: 'soon' });
+    expect(getIdleTimeoutMs()).toBe(DEFAULT_IDLE_TIMEOUT_MINUTES * 60_000);
   });
 });

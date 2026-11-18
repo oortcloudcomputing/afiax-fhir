@@ -9,6 +9,7 @@ import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { signOutEverywhere } from '../auth/AfiaxIam';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { getAppName } from '../utils/app';
@@ -105,8 +106,10 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
       <Menu.Item
         leftSection={<IconLogout size={14} stroke={1.5} />}
         onClick={async () => {
-          await medplum.signOut();
-          navigate('/signin');
+          // Also signs out of Afiax IAM after an Afiax IAM sign-in (ADR-015 section 11)
+          if (!(await signOutEverywhere(medplum))) {
+            navigate('/signin');
+          }
         }}
       >
         Sign out

@@ -20,6 +20,7 @@ import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
+import { AFIAX_IAM_DOMAIN, getAllowedSignInPage } from './iam';
 
 /*
  * External authentication callback
@@ -83,7 +84,13 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     }
   }
 
-  if (body.domain && !email?.endsWith('@' + body.domain)) {
+  if (body.domain === AFIAX_IAM_DOMAIN) {
+    // Afiax IAM serves every email domain, so the email itself must be one it has verified
+    if (userInfo.email_verified !== true && userInfo.email_verified !== 'true') {
+      sendOutcome(res, badRequest('Afiax IAM has not verified this email address'));
+      return;
+    }
+  } else if (body.domain && !email?.endsWith('@' + body.domain)) {
     sendOutcome(res, badRequest('Email address does not match domain'));
     return;
   }
@@ -138,7 +145,10 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
   }
 
   const signInPage = login.launch ? 'oauth' : 'signin';
-  const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
+  // An Afiax IAM sign-in goes back to the app it started from (provider., app.), whose storage
+  // holds the PKCE verifier (ADR-015 section 11)
+  const appSignIn = !login.launch && body.domain === AFIAX_IAM_DOMAIN ? getAllowedSignInPage(body.redirectUri) : undefined;
+  const redirectUrl = appSignIn ?? new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);

@@ -20,6 +20,20 @@ export interface ProviderAppConfig {
   readonly helpUrl?: string;
   /** Afiax support e-mail. Undefined: "contact your Afiax administrator". */
   readonly supportEmail?: string;
+  /** Minutes without activity before signing out; 0 switches it off (change register 1.7). */
+  readonly idleTimeoutMinutes?: string;
+}
+
+export const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
+
+/**
+ * The idle sign-out: 15 minutes unless configured (shared ward computers).
+ * @returns The idle time in milliseconds; 0 when switched off.
+ */
+export function getIdleTimeoutMs(): number {
+  const configured = Number(getConfig().idleTimeoutMinutes);
+  const minutes = Number.isFinite(configured) && configured >= 0 ? configured : DEFAULT_IDLE_TIMEOUT_MINUTES;
+  return minutes * 60_000;
 }
 
 export function readEnv(value: string | undefined): string | undefined {
@@ -33,6 +47,7 @@ const config: ProviderAppConfig = {
   adminAppUrl: readEnv(import.meta.env?.MEDPLUM_ADMIN_APP_URL),
   helpUrl: readEnv(import.meta.env?.MEDPLUM_HELP_URL),
   supportEmail: readEnv(import.meta.env?.MEDPLUM_SUPPORT_EMAIL),
+  idleTimeoutMinutes: readEnv(import.meta.env?.MEDPLUM_IDLE_TIMEOUT_MINUTES),
 };
 
 export function getConfig(): ProviderAppConfig {

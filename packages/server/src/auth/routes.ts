@@ -8,6 +8,7 @@ import { changePasswordHandler, changePasswordValidator } from './changepassword
 import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
+import { afiaxIamHandler } from './iam';
 import { googleHandler, googleValidator } from './google';
 import { loginHandler, loginValidator } from './login';
 import { meHandler } from './me';
@@ -29,6 +30,8 @@ export const authRouter = Router();
 authRouter.use('/mfa', mfaRouter);
 authRouter.post('/method', methodValidator, methodHandler);
 authRouter.get('/external', externalCallbackHandler);
+// Afiax IAM for any email domain (ADR-015 section 11)
+authRouter.get('/iam', afiaxIamHandler);
 authRouter.get('/me', authenticateRequest, meHandler);
 authRouter.post('/newuser', newUserValidator, validateRecaptcha(projectRegistrationAllowed), newUserHandler);
 authRouter.post('/newproject', newProjectValidator, newProjectHandler);

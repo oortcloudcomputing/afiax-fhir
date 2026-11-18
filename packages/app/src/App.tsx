@@ -3,7 +3,7 @@
 import { getProjectSettingString, MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
+import { AppShell, IdleSignOut, Loading, Logo, useMedplum } from '@medplum/react';
 import {
   IconBrandAsana,
   IconBuilding,
@@ -25,7 +25,7 @@ import type { FunctionComponent, JSX } from 'react';
 import { Suspense } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { useIdleSignOut } from './useIdleSignOut';
+import { getIdleTimeoutMs } from './useIdleSignOut';
 
 import './App.css';
 
@@ -34,7 +34,6 @@ export function App(): JSX.Element {
   const config = medplum.getUserConfiguration();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  useIdleSignOut();
 
   if (medplum.isLoading()) {
     return <Loading />;
@@ -52,6 +51,7 @@ export function App(): JSX.Element {
       <Suspense fallback={<Loading />}>
         <AppRoutes />
       </Suspense>
+      <IdleSignOut timeoutMs={getIdleTimeoutMs()} />
     </AppShell>
   );
 }

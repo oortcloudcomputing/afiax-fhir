@@ -166,16 +166,33 @@ describe('IDSR reporting to KHIS', () => {
     );
   });
 
-  test('Failed KHIS delivery is retried', async () => {
+  test('Failed KHIS delivery is retried; the county is emailed once and the failures are one note', async () => {
     mockKhisAvailable = false;
     const condition = await createCholera();
     const failed = await waitForNotificationTask(condition, 'delivery-failed');
     expect(failed?.note?.at(-1)?.text).toContain('ECONNREFUSED');
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const mail = (sendEmail as jest.Mock).mock.calls[0][1];
+    expect(mail.subject).toBe('IDSR immediate notification: Cholera at Kisumu Test Hospital');
+    expect(mail.text).toContain('THIS CASE IS NOT IN KHIS YET');
+    expect(mail.html).toContain('Cholera');
+
+    // Two more hourly retries while KHIS is still down: no more emails, and one note that counts
+    for (let i = 0; i < 2; i++) {
+      await withTestContext(() => retryFailedKenyaIdsrDeliveries(buildKenyaJobContext(project)));
+    }
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const stillFailed = await waitForNotificationTask(condition, 'delivery-failed');
+    const failureNotes = stillFailed?.note?.filter((n) => n.text?.startsWith('KHIS delivery failed')) ?? [];
+    expect(failureNotes).toHaveLength(1);
+    expect(failureNotes[0]?.text).toMatch(/^KHIS delivery failed 3 times/);
 
     mockKhisAvailable = true;
     const result = await withTestContext(() => retryFailedKenyaIdsrDeliveries(buildKenyaJobContext(project)));
     expect(result.delivered).toBeGreaterThanOrEqual(1);
     expect(await waitForNotificationTask(condition, 'reported')).toBeDefined();
+    // Reported at last, still without a second email to the county
+    expect(sendEmail).toHaveBeenCalledTimes(1);
   });
 
   test('Weekly MOH 505 report is submitted automatically, once per week (DHA REP-IDSR-001)', async () => {

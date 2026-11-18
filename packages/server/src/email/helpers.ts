@@ -65,6 +65,25 @@ export function formatEmailTime(time: Date | string): string {
   return `${EAT.format(typeof time === 'string' ? new Date(time) : time)} EAT`;
 }
 
+const EAT_DATE = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Africa/Nairobi',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+/**
+ * Formats a date for an email, in East Africa Time: "19 Nov 2026".
+ * @param time - The date, as a Date or ISO string. A bare date ("2026-11-19") is taken as that day.
+ * @returns The formatted date.
+ */
+export function formatEmailDate(time: Date | string): string {
+  if (typeof time === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(time)) {
+    return EAT_DATE.format(new Date(`${time}T12:00:00+03:00`));
+  }
+  return EAT_DATE.format(typeof time === 'string' ? new Date(time) : time);
+}
+
 /**
  * Hides most of an email address's name part: "akinyi.otieno@example.co.ke" becomes "ak***@example.co.ke".
  * @param email - The email address.

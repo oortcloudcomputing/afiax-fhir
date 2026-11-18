@@ -222,8 +222,13 @@ describe('Kenya outbreak detection on Condition save (REP-PHE-001)', () => {
     expect(sendEmail).toHaveBeenCalledTimes(1);
     const mail = (sendEmail as jest.Mock).mock.calls[0][1];
     expect(mail.to).toEqual(['dsru@example.go.ke', 'county-surveillance@example.go.ke']);
-    expect(mail.subject).toContain('[PUBLIC HEALTH ALERT] Measles: 5 cases in 3 day(s), Ahero Health Centre');
-    expect(mail.text).not.toContain('Patient/');
+    expect(mail.subject).toBe('Public health alert: 5 Measles cases in 3 days at Ahero Health Centre');
+    // The branded template (oortcloud-email-templates outbreak-alert), HTML and plain text, de-identified
+    expect(mail.html).toContain('Ahero Health Centre');
+    expect(mail.text).toContain('5 Measles cases in 3 days at Ahero Health Centre');
+    for (const part of [mail.subject, mail.text, mail.html]) {
+      expect(part).not.toContain('Patient/');
+    }
 
     const reportRef = event.output?.[0]?.valueReference?.reference as string;
     const report = (

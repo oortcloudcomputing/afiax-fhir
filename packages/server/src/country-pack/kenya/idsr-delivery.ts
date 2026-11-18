@@ -18,8 +18,10 @@ import {
   normalizeErrorString,
   Operator,
 } from '@medplum/core';
-import type { AuditEvent, Condition, Organization, Patient, Project, Task } from '@medplum/fhirtypes';
+import type { Annotation, AuditEvent, Condition, Organization, Patient, Project, Task } from '@medplum/fhirtypes';
 import { sendEmail } from '../../email/email';
+import { formatEmailDate, formatEmailTime, getSupportEmail } from '../../email/helpers';
+import { renderEmail } from '../../email/templates';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import {
@@ -104,7 +106,11 @@ export async function deliverKenyaIdsrNotification(
     khisError = normalizeErrorString(err);
   }
 
-  const emailedTo = await emailCountyContacts(ctx, project, condition, disease, facility, khisEventUid, khisError);
+  // The county is emailed once per case, not on every hourly retry while KHIS keeps failing
+  const alreadyEmailed = task.output?.some((o) => o.type?.text === EmailedToOutput) ?? false;
+  const emailedTo = alreadyEmailed
+    ? []
+    : await emailCountyContacts(ctx, project, condition, code, disease, facility, khisEventUid);
 
   const delivered = !!khisEventUid;
   const message = delivered
@@ -112,21 +118,24 @@ export async function deliverKenyaIdsrNotification(
     : `KHIS delivery failed: ${khisError}. Will retry hourly.`;
 
   const status: KenyaIdsrDeliveryStatus = delivered ? 'reported' : 'delivery-failed';
+  let emailNote = ' No notification email configured.';
+  if (alreadyEmailed) {
+    emailNote = '';
+  } else if (emailedTo.length) {
+    emailNote = ` Emailed ${emailedTo.join(', ')}.`;
+  }
+  const output = [
+    ...(task.output ?? []),
+    ...(emailedTo.length ? [{ type: { text: EmailedToOutput }, valueString: emailedTo.join(', ') }] : []),
+    ...(delivered ? [{ type: { text: 'khisEventUid' }, valueString: khisEventUid }] : []),
+  ];
   await ctx.systemRepo.updateResource<Task>({
     ...task,
     status: delivered ? 'completed' : 'in-progress',
     businessStatus: { coding: [{ system: KenyaIdsrDeliveryStatusSystem, code: status }], text: status },
     lastModified: now,
-    note: [
-      ...(task.note ?? []),
-      {
-        time: now,
-        text: message + (emailedTo.length ? ` Emailed ${emailedTo.join(', ')}.` : ' No notification email configured.'),
-      },
-    ],
-    ...(delivered
-      ? { output: [...(task.output ?? []), { type: { text: 'khisEventUid' }, valueString: khisEventUid }] }
-      : {}),
+    note: addDeliveryNote(task.note ?? [], now, message + emailNote, !delivered),
+    ...(output.length ? { output } : {}),
   });
 
   await createDeliveryAuditEvent(ctx, condition, task, `IDSR delivery to KHIS: ${disease}: ${message}`, delivered);
@@ -205,37 +214,59 @@ async function readPatient(ctx: KenyaContext, condition: Condition): Promise<Pat
   }
 }
 
+/** Task output recording who was emailed, so the hourly KHIS retry does not email them again. */
+const EmailedToOutput = 'emailedTo';
+
+/**
+ * Adds a delivery note. Repeated KHIS failures replace the previous failure note with one that counts
+ * them, so an hourly retry does not add a note every hour (REP-IMM-001 Tasks had 200+).
+ * @param notes - The Task's notes.
+ * @param time - Now.
+ * @param text - The note.
+ * @param failed - Whether delivery failed.
+ * @returns The new notes.
+ */
+export function addDeliveryNote(notes: Annotation[], time: string, text: string, failed: boolean): Annotation[] {
+  const last = notes[notes.length - 1];
+  const previous = last?.text?.match(/^KHIS delivery failed(?: (\d+) times)?/);
+  if (failed && previous) {
+    const count = (previous[1] ? Number(previous[1]) : 1) + 1;
+    return [...notes.slice(0, -1), { time, text: text.replace(/^KHIS delivery failed/, `KHIS delivery failed ${count} times`) }];
+  }
+  return [...notes, { time, text }];
+}
+
 async function emailCountyContacts(
   ctx: KenyaContext,
   project: Project,
   condition: WithId<Condition>,
+  code: string,
   disease: string,
   facility: Organization | undefined,
-  khisEventUid: string | undefined,
-  khisError: string | undefined
+  khisEventUid: string | undefined
 ): Promise<string[]> {
   const to = getKenyaIdsrNotificationEmails(project);
   if (to.length === 0) {
     return [];
   }
-  const facilityName = facility?.name ?? project.name ?? 'Unknown facility';
   try {
-    await sendEmail(ctx.systemRepo as unknown as Repository, {
-      to,
-      subject: `[IDSR IMMEDIATE] ${disease} - ${facilityName}`,
-      text: [
-        'IDSR IMMEDIATE NOTIFICATION (Kenya Health Act 2017 s.57)',
-        '',
-        `Disease:            ${disease}`,
-        `Verification:       ${condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed'}`,
-        `Onset date:         ${condition.onsetDateTime ?? 'not recorded'}`,
-        `Reporting facility: ${facilityName}`,
-        `Record:             Condition/${condition.id}`,
-        `KHIS submission:    ${khisEventUid ? `accepted, DHIS2 event ${khisEventUid}` : `FAILED (${khisError})`}`,
-        '',
-        'Patient identifiers are not included in this email. Open the record in Afiax for case details.',
-      ].join('\n'),
+    // De-identified: no patient name, ID numbers, contact details or address (template idsr-immediate)
+    const { subject, html, text } = renderEmail('idsr-immediate', {
+      diseaseName: disease,
+      icd11Code: code || undefined,
+      caseStatus: condition.verificationStatus?.coding?.[0]?.code ?? 'unconfirmed',
+      onsetDate: condition.onsetDateTime ? formatEmailDate(condition.onsetDateTime) : 'not recorded',
+      facilityName: facility?.name ?? project.name ?? 'the reporting facility',
+      mflCode: getMflCode(facility),
+      facilityPhone: facility?.telecom?.find((t) => t.system === 'phone')?.value,
+      projectName: project.name,
+      notifiedAt: formatEmailTime(new Date()),
+      khisAccepted: !!khisEventUid,
+      khisEventUid,
+      reference: `Condition/${condition.id}`,
+      supportEmail: getSupportEmail(),
     });
+    await sendEmail(ctx.systemRepo as unknown as Repository, { to, subject, html, text });
     return to;
   } catch (err) {
     getLogger().error('IDSR notification email failed', { condition: condition.id, err });

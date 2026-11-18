@@ -42,6 +42,8 @@ import type {
 import type { AuthenticatedRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { sendEmail } from '../../email/email';
+import { formatEmailDate, formatEmailTime, getAppLink, getSupportEmail } from '../../email/helpers';
+import { renderEmail } from '../../email/templates';
 import { getLogger } from '../../logger';
 import {
   AuditEventOutcome,
@@ -531,11 +533,8 @@ export async function recordKenyaOutbreakEvent(
   let alertError: string | undefined;
   if (recipients.length > 0) {
     try {
-      await sendEmail(ctx.systemRepo as Parameters<typeof sendEmail>[0], {
-        to: recipients,
-        subject: `[PUBLIC HEALTH ALERT] ${detection.rule.display}: ${detection.cases.length} cases in ${detection.rule.windowDays} day(s), ${detection.placeLabel}`,
-        text: formatAlertEmail(content),
-      });
+      const { subject, html, text } = renderEmail('outbreak-alert', outbreakAlertView(ctx, detection, content, report.id));
+      await sendEmail(ctx.systemRepo as Parameters<typeof sendEmail>[0], { to: recipients, subject, html, text });
       alertSent = true;
     } catch (err) {
       alertError = normalizeErrorString(err);
@@ -598,7 +597,22 @@ function getAlertRecipients(ctx: KenyaOutbreakContext): string[] {
   return configured.length > 0 ? configured : getKenyaIdsrNotificationEmails(ctx.project);
 }
 
-function formatAlertEmail(content: Record<string, unknown>): string {
+/**
+ * The outbreak alert's view (template outbreak-alert in oortcloud-email-templates). Cases are
+ * de-identified: date, status, sex, age and area only, never names, IDs or contact details.
+ * @param ctx - The outbreak context.
+ * @param detection - The detection.
+ * @param content - The event report content (buildKenyaOutbreakReport).
+ * @param reportId - The event report's DocumentReference id.
+ * @returns The template view.
+ */
+export function outbreakAlertView(
+  ctx: KenyaOutbreakContext,
+  detection: KenyaOutbreakDetection,
+  content: Record<string, unknown>,
+  reportId: string
+): Record<string, unknown> {
+  const countyScope = detection.rule.scope === 'county';
   const cases = content.cases as {
     caseNumber: number;
     date: string;
@@ -607,29 +621,40 @@ function formatAlertEmail(content: Record<string, unknown>): string {
     ageYears?: number;
     county?: string;
     subCounty?: string;
+    facility?: string;
   }[];
-  return [
-    'PUBLIC HEALTH EVENT: OUTBREAK THRESHOLD REACHED',
-    '===============================================',
-    '',
-    `Event:      ${String(content.eventId)}`,
-    `Disease:    ${String(content.disease)} (ICD-11 ${String(content.icd11Code)})`,
-    `Place:      ${String(content.place)}`,
-    `Cases:      ${String(content.caseCount)} (${String(content.confirmedCount)} confirmed)`,
-    `Rule:       ${(content.rule as { description: string }).description}`,
-    `Detected:   ${String(content.generatedAt)}`,
-    '',
-    'Cases (de-identified):',
-    ...cases.map(
-      (c) =>
-        `  ${c.caseNumber}. ${c.date.slice(0, 10)}  ${c.verificationStatus}  ${c.sex}${c.ageYears === undefined ? '' : `, ${c.ageYears}y`}  ${[c.subCounty, c.county].filter(Boolean).join(', ')}`
-    ),
-    '',
-    'Recommended actions:',
-    ...(content.recommendedActions as string[]).map((a) => `  - ${a}`),
-    '',
-    'Afiax Connected Healthcare: automated disease surveillance alert.',
-  ].join('\n');
+  const days = detection.rule.windowDays;
+  const facility = detection.cases[detection.cases.length - 1]?.facility;
+  return {
+    diseaseName: detection.rule.display,
+    icd11Code: detection.rule.icd11,
+    placeLabel: detection.placeLabel,
+    placePhrase: countyScope ? `in ${detection.placeLabel}` : `at ${detection.placeLabel}`,
+    countyScope,
+    projectName: ctx.project.name,
+    caseCount: content.caseCount,
+    confirmedCount: content.confirmedCount,
+    threshold: detection.rule.threshold,
+    windowLabel: days === 1 ? '1 day' : `${days} days`,
+    ruleDescription: (content.rule as { description: string }).description,
+    firstCaseDate: formatEmailDate(String(content.firstCaseDate)),
+    lastCaseDate: formatEmailDate(String(content.lastCaseDate)),
+    detectedAt: formatEmailTime(String(content.generatedAt)),
+    eventId: content.eventId,
+    cases: cases.map((c) => ({
+      caseNumber: c.caseNumber,
+      date: formatEmailDate(c.date),
+      status: c.verificationStatus,
+      sex: c.sex,
+      age: c.ageYears,
+      area: [c.subCounty, c.county].filter(Boolean).join(', ') || 'not recorded',
+      facility: c.facility ?? 'not recorded',
+    })),
+    recommendedActions: (content.recommendedActions as string[]).map((text, i) => ({ number: i + 1, text })),
+    reportUrl: getAppLink(`DocumentReference/${reportId}`).url,
+    facilityPhone: countyScope ? undefined : facility?.telecom?.find((t) => t.system === 'phone')?.value,
+    supportEmail: getSupportEmail(),
+  };
 }
 
 async function writeAuditEvent(

@@ -1,11 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { describeDevice, formatEmailTime, getActingPerson, maskEmail } from './helpers';
+import { describeDevice, formatEmailDate, formatEmailTime, getActingPerson, maskEmail } from './helpers';
 
 describe('Email helpers', () => {
   test('formatEmailTime uses East Africa Time', () => {
     expect(formatEmailTime('2026-11-19T11:05:00Z')).toBe('19 Nov 2026, 14:05 EAT');
     expect(formatEmailTime(new Date('2026-12-31T22:30:00Z'))).toBe('1 Jan 2027, 01:30 EAT');
+  });
+
+  test('formatEmailDate uses the East Africa date', () => {
+    expect(formatEmailDate('2026-11-19')).toBe('19 Nov 2026');
+    expect(formatEmailDate('2026-11-18T22:30:00Z')).toBe('19 Nov 2026');
   });
 
   test('maskEmail hides most of the name part', () => {

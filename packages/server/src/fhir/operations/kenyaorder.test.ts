@@ -29,6 +29,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { buildKenyaPrescriptionDocument, isPrintableKenyaPrescription } from '../../country-pack/kenya/prescription-pdf';
 import { createTestProject } from '../../test.setup';
 
 const app = express();
@@ -229,6 +230,45 @@ describe('Kenya CPOE (DHA FUNC-CPOE-001)', () => {
       ])
     );
     expect(noFrequency.status).toBe(400);
+  });
+
+  test('the visit prescription prints as a PDF with a QR code per medicine', async () => {
+    const res = await fhir('get', `Encounter/${encounter.id}/$kenya-prescription`).set('Accept', 'application/pdf');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect(Buffer.from(res.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+
+    // The QR codes hold the prescription codes only
+    const prescriptions = (
+      (await fhir('get', `MedicationRequest?encounter=Encounter/${encounter.id}&status=active`)).body as Bundle
+    ).entry?.map((e) => e.resource as MedicationRequest);
+    const printable = (prescriptions ?? []).filter(isPrintableKenyaPrescription);
+    expect(printable.length).toBeGreaterThan(0);
+    const definition = JSON.stringify(
+      buildKenyaPrescriptionDocument({
+        encounter,
+        patient,
+        requests: printable,
+        prescribers: {},
+        printedAt: '2026-11-19T08:00:00.000Z',
+      })
+    );
+    const qrs = [...definition.matchAll(/"qr":"([^"]+)"/g)].map((m) => m[1]);
+    expect(qrs).toEqual(printable.map((p) => getKenyaPrescriptionCode(p)));
+    expect(qrs.every((q) => /^RX-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{2}$/.test(q))).toBe(true);
+  });
+
+  test('a visit without prescriptions has nothing to print', async () => {
+    const empty = (
+      await fhir('post', 'Encounter').send({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
+        subject: createReference(patient),
+      })
+    ).body;
+    const res = await fhir('get', `Encounter/${empty.id}/$kenya-prescription`);
+    expect(res.status).toBe(400);
   });
 
   test('orders are validated', async () => {

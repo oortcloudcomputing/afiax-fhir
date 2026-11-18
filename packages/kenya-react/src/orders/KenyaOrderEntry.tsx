@@ -1,10 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
+import { Button, Group, NativeSelect, NumberInput, Select, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { KenyaCdsAlert, KenyaOrderCategoryCode } from '@medplum/core';
-import { getKenyaOrderCategory, KenyaDepartments, KenyaOrderCategories, normalizeErrorString } from '@medplum/core';
-import type { Coding, Encounter, MedicationRequest, Parameters } from '@medplum/fhirtypes';
+import {
+  getKenyaFrequency,
+  getKenyaOrderCategory,
+  getKenyaPrescriptionCode,
+  KenyaDepartments,
+  KenyaDoseUnits,
+  KenyaFrequencies,
+  KenyaOrderCategories,
+  KenyaRoutes,
+  normalizeErrorString,
+} from '@medplum/core';
+import type { Coding, Encounter, MedicationRequest, Parameters, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -12,6 +22,7 @@ import { CdsAlertList } from '../clinical/CdsAlertList';
 import { parseCdsAlerts } from '../clinical/clinical-utils';
 import type { KnhtsSearchKind } from '../coding/KnhtsCodeInput';
 import { KnhtsCodeInput } from '../coding/KnhtsCodeInput';
+import { suggestKenyaDispenseQuantity, suggestKenyaDoseDefaults } from './kenya-prescribing';
 
 const searchKindByCategory: Record<KenyaOrderCategoryCode, KnhtsSearchKind> = {
   medication: 'medication',
@@ -46,7 +57,12 @@ export function KenyaOrderEntry(props: KenyaOrderEntryProps): JSX.Element {
   const [priority, setPriority] = useState<string>('routine');
   const [note, setNote] = useState('');
   const [dosage, setDosage] = useState('');
-  const [quantity, setQuantity] = useState<number | string>('');
+  const [doseValue, setDoseValue] = useState<number | string>('');
+  const [doseUnit, setDoseUnit] = useState('');
+  const [frequency, setFrequency] = useState('');
+  const [route, setRoute] = useState('');
+  // Undefined until the prescriber types a quantity; until then it is worked out from the dose
+  const [typedQuantity, setTypedQuantity] = useState<number | string>();
   const [duration, setDuration] = useState<number | string>('');
   // CDS alerts for the chosen medicine, keyed by its code so a stale result is never shown
   const [checked, setChecked] = useState<{ code: string; alerts: KenyaCdsAlert[] }>();
@@ -75,14 +91,26 @@ export function KenyaOrderEntry(props: KenyaOrderEntryProps): JSX.Element {
 
   const alerts = isMedication && checked && checked.code === code?.code ? checked.alerts : undefined;
   const needsOverride = !!alerts?.some((a) => a.severity === 'high');
-  const missing =
-    !code || (isMedication && !dosage.trim()) || (needsOverride && override.trim().length < 10) || submitting;
+  const dose = typeof doseValue === 'number' && doseValue > 0 ? doseValue : undefined;
+  const days = typeof duration === 'number' && duration > 0 ? duration : undefined;
+  const isStat = !!getKenyaFrequency(frequency)?.once;
+  const quantity = typedQuantity ?? suggestKenyaDispenseQuantity(dose, doseUnit, frequency, days) ?? '';
+  // A complete structured dose makes the prescription conform to the DHA eRx profile (ADR-016)
+  const doseIncomplete =
+    isMedication &&
+    (!dose || !doseUnit || !frequency || !route || !(typeof quantity === 'number' && quantity > 0) || (!isStat && !days));
+  const missing = !code || doseIncomplete || (needsOverride && override.trim().length < 10) || submitting;
+
 
   function reset(): void {
     setCode(undefined);
     setNote('');
     setDosage('');
-    setQuantity('');
+    setDoseValue('');
+    setDoseUnit('');
+    setFrequency('');
+    setRoute('');
+    setTypedQuantity(undefined);
     setDuration('');
     setOverride('');
   }
@@ -100,11 +128,19 @@ export function KenyaOrderEntry(props: KenyaOrderEntryProps): JSX.Element {
       parameter.push({ name: 'note', valueString: note.trim() });
     }
     if (isMedication) {
-      parameter.push({ name: 'dosageText', valueString: dosage.trim() });
+      if (dosage.trim()) {
+        parameter.push({ name: 'dosageText', valueString: dosage.trim() });
+      }
+      parameter.push(
+        { name: 'doseValue', valueDecimal: dose as number },
+        { name: 'doseUnit', valueCode: doseUnit },
+        { name: 'frequency', valueCode: frequency },
+        { name: 'route', valueCode: route }
+      );
       if (typeof quantity === 'number') {
         parameter.push({ name: 'quantity', valueDecimal: quantity });
       }
-      if (typeof duration === 'number') {
+      if (typeof duration === 'number' && !isStat) {
         parameter.push({ name: 'durationDays', valueInteger: duration });
       }
       if (needsOverride) {
@@ -113,14 +149,25 @@ export function KenyaOrderEntry(props: KenyaOrderEntryProps): JSX.Element {
     }
     setSubmitting(true);
     medplum
-      .post(medplum.fhirUrl('Encounter', encounter.id as string, '$kenya-order'), {
+      .post<Parameters>(medplum.fhirUrl('Encounter', encounter.id as string, '$kenya-order'), {
         resourceType: 'Parameters',
         parameter,
       })
-      .then(() => {
+      .then(async (result) => {
+        // Show the prescription code, which the patient can take to any pharmacy
+        const reference = result?.parameter?.find((p) => p.name === 'order')?.valueReference as
+          | Reference<MedicationRequest>
+          | undefined;
+        const prescription =
+          isMedication && reference?.reference?.startsWith('MedicationRequest/')
+            ? await medplum.readReference(reference).catch(() => undefined)
+            : undefined;
+        const prescriptionCode = prescription ? getKenyaPrescriptionCode(prescription) : undefined;
         showNotification({
           color: 'green',
-          message: `${category.display} order sent to ${KenyaDepartments[category.department]}`,
+          message: `${category.display} order sent to ${KenyaDepartments[category.department]}${
+            prescriptionCode ? `. Prescription code ${prescriptionCode}` : ''
+          }`,
         });
         reset();
         onPlaced?.();
@@ -163,21 +210,72 @@ export function KenyaOrderEntry(props: KenyaOrderEntryProps): JSX.Element {
         onChange={(value) => {
           setCode(value);
           setOverride('');
+          if (isMedication) {
+            // Route and unit from the product name ("... Oral Capsule"); the prescriber can change them
+            const defaults = suggestKenyaDoseDefaults(value?.display);
+            setRoute(defaults.route ?? '');
+            setDoseUnit(defaults.unit ?? '');
+          }
         }}
       />
       {isMedication && (
         <>
+          <SimpleGrid cols={{ base: 2, sm: 4 }}>
+            <NumberInput label="Dose" required min={0} decimalScale={3} value={doseValue} onChange={setDoseValue} />
+            <NativeSelect
+              label="Unit"
+              required
+              data={[{ value: '', label: 'Choose…' }, ...KenyaDoseUnits.map((u) => ({ value: u.code, label: u.display }))]}
+              value={doseUnit}
+              onChange={(e) => setDoseUnit(e.currentTarget.value)}
+            />
+            <NativeSelect
+              label="Frequency"
+              required
+              data={[{ value: '', label: 'Choose…' }, ...KenyaFrequencies.map((f) => ({ value: f.code, label: f.display }))]}
+              value={frequency}
+              onChange={(e) => setFrequency(e.currentTarget.value)}
+            />
+            <NativeSelect
+              label="Route"
+              required
+              data={[{ value: '', label: 'Choose…' }, ...KenyaRoutes.map((r) => ({ value: r.code, label: r.display }))]}
+              value={route}
+              onChange={(e) => setRoute(e.currentTarget.value)}
+            />
+          </SimpleGrid>
+          <SimpleGrid cols={2}>
+            <NumberInput
+              label="Duration (days)"
+              required={!isStat}
+              disabled={isStat}
+              min={1}
+              allowDecimal={false}
+              value={isStat ? '' : duration}
+              onChange={setDuration}
+            />
+            <NumberInput
+              label="Quantity to dispense"
+              required
+              min={1}
+              value={quantity}
+              onChange={setTypedQuantity}
+            />
+          </SimpleGrid>
           <TextInput
-            label="Dosage instructions"
-            placeholder="e.g. 500 mg three times daily for 5 days"
-            required
+            label="Instructions for the patient"
+            description="Optional. Written from the dose above if left empty."
+            placeholder="e.g. Take with food"
             value={dosage}
             onChange={(e) => setDosage(e.currentTarget.value)}
           />
-          <SimpleGrid cols={2}>
-            <NumberInput label="Quantity to dispense" min={1} value={quantity} onChange={setQuantity} />
-            <NumberInput label="Duration (days)" min={1} value={duration} onChange={setDuration} />
-          </SimpleGrid>
+          {dose && doseUnit && frequency && route && (
+            <Text size="sm" c="dimmed">
+              {dose} {doseUnit} · {getKenyaFrequency(frequency)?.display} ·{' '}
+              {KenyaRoutes.find((r) => r.code === route)?.display}
+              {!isStat && days ? ` · ${days} days` : ''}
+            </Text>
+          )}
         </>
       )}
       <Textarea

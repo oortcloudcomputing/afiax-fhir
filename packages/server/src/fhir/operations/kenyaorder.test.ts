@@ -3,11 +3,16 @@
 import {
   ContentType,
   createReference,
+  DhaGenericProductSystem,
+  getKenyaErxConformanceGaps,
+  getKenyaPrescriptionCode,
   KenyaAllergyCodeSystem,
   KenyaDepartmentSystem,
   KenyaHealthProductSystem,
   KenyaIchiSystem,
+  KenyaErxMedicationRequestProfile,
   KenyaInvestigationSystem,
+  KenyaPrescriptionCodeSystem,
 } from '@medplum/core';
 import type {
   Bundle,
@@ -154,6 +159,76 @@ describe('Kenya CPOE (DHA FUNC-CPOE-001)', () => {
     expect(task.performerType?.[0]?.coding?.[0]?.code).toBe('pharmacy');
     const charge: ChargeItem = (await fhir('get', output(res.body, 'chargeItem') as string)).body;
     expect(charge.priceOverride).toEqual({ value: 225, currency: 'KES' });
+  });
+
+  test('a structured prescription conforms to the DHA eRx profile', async () => {
+    const res = await fhir('post', `Encounter/${encounter.id}/$kenya-order`).send(
+      orderParams('medication', KenyaHealthProductSystem, 'GE10002', 'Metformin 500 mg Oral Tablet', [
+        { name: 'doseValue', valueDecimal: 1 },
+        { name: 'doseUnit', valueCode: 'tablet' },
+        { name: 'frequency', valueCode: 'BD' },
+        { name: 'route', valueCode: 'RT10025' },
+        { name: 'quantity', valueDecimal: 60 },
+        { name: 'durationDays', valueInteger: 30 },
+      ])
+    );
+    expect(res.status).toBe(200);
+    const order: MedicationRequest = (await fhir('get', output(res.body, 'order') as string)).body;
+    expect(order.meta?.profile).toEqual([KenyaErxMedicationRequestProfile]);
+    expect(getKenyaErxConformanceGaps(order)).toEqual([]);
+    expect(order.identifier?.[0]?.value).toMatch(/^urn:uuid:[0-9a-f-]{36}$/);
+    expect(getKenyaPrescriptionCode(order)).toMatch(/^RX-/);
+    expect(order.category?.map((c) => c.coding?.[0]?.code)).toEqual(['medication', 'outpatient']);
+    expect(order.medicationCodeableConcept?.coding?.map((c) => c.system)).toEqual([
+      KenyaHealthProductSystem,
+      DhaGenericProductSystem,
+    ]);
+    expect(order.dosageInstruction?.[0]?.text).toBe('1 tablet oral twice daily for 30 days');
+    expect(order.dosageInstruction?.[0]?.route?.coding?.[0]?.code).toBe('RT10025');
+    expect(order.dispenseRequest?.quantity).toMatchObject({ value: 60, unit: 'tablet', code: '1' });
+    expect(order.dispenseRequest?.validityPeriod?.start).toBe(order.authoredOn?.slice(0, 10));
+
+    // Findable by its prescription code, as a pharmacy will look it up
+    const found = await fhir(
+      'get',
+      `MedicationRequest?identifier=${encodeURIComponent(`${KenyaPrescriptionCodeSystem}|${getKenyaPrescriptionCode(order)}`)}`
+    );
+    expect((found.body as Bundle).entry?.map((e) => e.resource?.id)).toEqual([order.id]);
+  });
+
+  test('a free-text-only prescription is accepted but does not claim the profile', async () => {
+    const res = await fhir('post', `Encounter/${encounter.id}/$kenya-order`).send(
+      orderParams('medication', KenyaHealthProductSystem, 'GE10002', 'Metformin 500 mg Oral Tablet', [
+        { name: 'dosageText', valueString: '500 mg twice daily' },
+      ])
+    );
+    expect(res.status).toBe(200);
+    const order: MedicationRequest = (await fhir('get', output(res.body, 'order') as string)).body;
+    expect(order.meta?.profile).toBeUndefined();
+    expect(getKenyaPrescriptionCode(order)).toMatch(/^RX-/);
+  });
+
+  test('a structured dose must be complete and use DHA codes', async () => {
+    const url = `Encounter/${encounter.id}/$kenya-order`;
+    const snomedRoute = await fhir('post', url).send(
+      orderParams('medication', KenyaHealthProductSystem, 'GE10002', 'Metformin', [
+        { name: 'doseValue', valueDecimal: 500 },
+        { name: 'doseUnit', valueCode: 'mg' },
+        { name: 'frequency', valueCode: 'BD' },
+        { name: 'route', valueCode: '26643006' },
+      ])
+    );
+    expect(snomedRoute.status).toBe(400);
+    expect((snomedRoute.body as OperationOutcome).issue?.[0]?.details?.text).toContain('route');
+
+    const noFrequency = await fhir('post', url).send(
+      orderParams('medication', KenyaHealthProductSystem, 'GE10002', 'Metformin', [
+        { name: 'doseValue', valueDecimal: 500 },
+        { name: 'doseUnit', valueCode: 'mg' },
+        { name: 'route', valueCode: 'RT10025' },
+      ])
+    );
+    expect(noFrequency.status).toBe(400);
   });
 
   test('orders are validated', async () => {

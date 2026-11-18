@@ -24,15 +24,22 @@ You need:
 3. Choose the **Priority**: **Routine**, **Urgent** or **STAT (immediately)**.
 4. Click **Medicine (KNHTS HPT registry)** and type at least 2 letters of the medicine's name, for example `amoxi`. Choose the right medicine, strength and form from the list.
 5. **Read the safety check.** It appears straight away, under the form. See [Understanding the safety check](#understanding-the-safety-check).
-6. In **Dosage instructions**, type the dose the way you'd write it for the patient, for example `500 mg three times daily for 5 days`. This field is required.
-7. In **Quantity to dispense**, type how many units the pharmacy should give, for example `15`.
-8. In **Duration (days)**, type how many days the course lasts, for example `5`.
-9. If the pharmacist needs to know something, type it in **Clinical note**.
-10. Click **Place order**.
+6. Fill in the dose. All four boxes are required:
+   - **Dose**: the amount per dose, for example `500`.
+   - **Unit**: for example **mg**, **tablet** or **mL**.
+   - **Frequency**: for example **TDS (three times daily)**. Choose **STAT (single dose now)** for a single dose.
+   - **Route**: for example **Oral**.
+
+   Afiax fills in **Unit** and **Route** from the medicine's name. For example, *Amoxicillin 500 mg Oral Capsule* gives **capsule** and **Oral**. Check them and change them if needed.
+7. In **Duration (days)**, type how many days the course lasts, for example `5`. You can skip this for a STAT dose.
+8. Check **Quantity to dispense**. For tablets, capsules and other countable units, Afiax works it out from the dose, frequency and duration. For example, 1 capsule three times daily for 5 days gives `15`. For mg or mL doses, type the quantity yourself.
+9. Optional: in **Instructions for the patient**, add anything else the patient should know, for example `Take with food`. If you leave it empty, Afiax writes the instructions from the dose, for example *500 mg oral three times daily for 5 days*.
+10. If the pharmacist needs to know something, type it in **Clinical note**.
+11. Click **Place order**.
 
 {/* SCREENSHOT: Place order tab with a medication filled in and a green "No alerts" result */}
 
-**What you should see:** a green message saying **Medication order sent to Pharmacy**. The prescription is now in the pharmacy queue, and in the patient's **Active medicines**.
+**What you should see:** a green message saying **Medication order sent to Pharmacy**, followed by the prescription code, for example **Prescription code RX-7KQ2-M9XD-3T**. The prescription code identifies this prescription. It follows the Digital Health Agency's ePrescription standard. The prescription is now in the pharmacy queue, and in the patient's **Active medicines**.
 
 ## Understanding the safety check
 
@@ -74,7 +81,8 @@ Never override an alert to save time. An override is a clinical decision that is
 Check that:
 
 - you've clicked a medicine from the list, not just typed its name;
-- **Dosage instructions** is filled in;
+- **Dose**, **Unit**, **Frequency**, **Route** and **Quantity to dispense** are filled in;
+- **Duration (days)** is filled in, unless the frequency is STAT;
 - for a red alert, your reason is at least 10 characters long.
 
 ### "No KNHTS match"

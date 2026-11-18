@@ -69,10 +69,14 @@ describe('KenyaEncounterOrders', () => {
     expect(await screen.findByText(/conflicts with recorded allergy to penicillin/)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByRole('textbox', { name: /Dosage instructions/ }), {
-        target: { value: '500 mg three times daily' },
-      });
+      fireEvent.change(screen.getByRole('textbox', { name: /^Dose/ }), { target: { value: '500' } });
+      fireEvent.change(screen.getByRole('combobox', { name: /Unit/ }), { target: { value: 'mg' } });
+      fireEvent.change(screen.getByRole('combobox', { name: /Frequency/ }), { target: { value: 'TDS' } });
+      fireEvent.change(screen.getByRole('textbox', { name: /Duration/ }), { target: { value: '5' } });
+      fireEvent.change(screen.getByRole('textbox', { name: /Quantity to dispense/ }), { target: { value: '15' } });
     });
+    // Route came from the product name ("... Oral Capsule")
+    expect(screen.getByRole('combobox', { name: /Route/ })).toHaveValue('RT10025');
     const button = screen.getByRole('button', { name: 'Override and place order' });
     expect(button).toBeDisabled();
     await act(async () => {
@@ -90,6 +94,11 @@ describe('KenyaEncounterOrders', () => {
           { name: 'category', valueCode: 'medication' },
           { name: 'code', valueCoding: amoxicillin },
           { name: 'overrideReason', valueString: 'Penicillin allergy disproved by oral challenge' },
+          { name: 'doseValue', valueDecimal: 500 },
+          { name: 'doseUnit', valueCode: 'mg' },
+          { name: 'frequency', valueCode: 'TDS' },
+          { name: 'route', valueCode: 'RT10025' },
+          { name: 'quantity', valueDecimal: 15 },
         ]),
       })
     );

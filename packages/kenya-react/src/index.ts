@@ -30,6 +30,7 @@ export * from './nursing/KenyaNursingNotes';
 export * from './orders/KenyaEncounterOrders';
 export * from './orders/KenyaOrderEntry';
 export * from './orders/KenyaOrderHistory';
+export * from './orders/kenya-prescribing';
 export * from './patient/ConditionIhrPanel';
 export * from './patient/NationalRecordPublicationPanel';
 export * from './patient/PatientIdentityPanel';

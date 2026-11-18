@@ -6,11 +6,28 @@
 // for the department) and raises the billing entry (a ChargeItem). The order is written with the
 // caller's repository, so access policies and the clinical decision support checks on
 // MedicationRequest apply exactly as for any other write.
+//
+// Prescriptions follow the DHA Kenya ePrescription IG (ADR-016): each gets a urn:uuid and a short
+// prescription code, the eRx category and a DHA generic-product coding. A structured dose (amount,
+// unit, frequency, DHA route) makes it conform to ke-medication-request, and only then is the
+// profile claimed. A free-text-only dose is still accepted, for older callers.
 
-import type { WithId } from '@medplum/core';
+import type { KenyaErxCategoryCode, WithId } from '@medplum/core';
 import {
   badRequest,
+  buildKenyaDosage,
+  buildKenyaPrescriptionIdentifiers,
   createReference,
+  generateKenyaPrescriptionCode,
+  getDhaGenericProductCoding,
+  getKenyaDoseUnit,
+  getKenyaErxCategoryConcept,
+  getKenyaErxCategoryForEncounter,
+  getKenyaErxConformanceGaps,
+  getKenyaStructuredDoseError,
+  KenyaDefaultPrescriptionValidityDays,
+  KenyaErxCategories,
+  KenyaErxMedicationRequestProfile,
   FhirTaskCodeSystem,
   getKenyaDepartmentConcept,
   getKenyaOrderCategory,
@@ -25,7 +42,9 @@ import {
 } from '@medplum/core';
 import type {
   ChargeItem,
+  CodeableConcept,
   Coding,
+  Dosage,
   Encounter,
   MedicationRequest,
   Patient,
@@ -33,6 +52,7 @@ import type {
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequestContext } from '../../context';
 import type { KnhtsLookupResult, KnhtsSource } from './knhts';
 import { isKnhtsValidationEnabled, KnhtsSources, lookupKnhtsConcept } from './knhts';
@@ -42,8 +62,21 @@ export interface KenyaOrderInput {
   readonly code: Coding;
   readonly priority?: 'routine' | 'urgent' | 'asap' | 'stat';
   readonly note?: string;
-  /** Medication: free-text dosage, e.g. "500 mg three times daily for 5 days". */
+  /**
+   * Medication: dosage in words, e.g. "500 mg three times daily for 5 days". Optional with a
+   * structured dose (then generated if absent); required without one.
+   */
   readonly dosageText?: string;
+  /** Medication, structured dose: amount per dose, e.g. 500. */
+  readonly doseValue?: number;
+  /** Medication, structured dose: a KenyaDoseUnits code, e.g. "mg" or "tablet". */
+  readonly doseUnit?: string;
+  /** Medication, structured dose: a KenyaFrequencies code, e.g. "TDS". */
+  readonly frequency?: string;
+  /** Medication, structured dose: a DHA route-of-administration code, e.g. "RT10025" (oral). */
+  readonly route?: string;
+  /** Medication: eRx category (outpatient, inpatient, discharge, community); from the encounter when absent. */
+  readonly erxCategory?: string;
   /** Medication: quantity to dispense. */
   readonly quantity?: number;
   /** Medication: number of days supply. */
@@ -98,8 +131,25 @@ export async function placeKenyaOrder(
   if (codeError) {
     throw new OperationOutcomeError(badRequest(codeError));
   }
-  if (category.resourceType === 'MedicationRequest' && !input.dosageText?.trim()) {
+  const isMedication = category.resourceType === 'MedicationRequest';
+  const structured =
+    input.doseValue !== undefined || !!input.doseUnit || !!input.frequency || !!input.route;
+  if (isMedication && structured) {
+    const doseError = getKenyaStructuredDoseError({ ...input });
+    if (doseError) {
+      throw new OperationOutcomeError(badRequest(doseError));
+    }
+  }
+  if (isMedication && !structured && !input.dosageText?.trim()) {
     throw new OperationOutcomeError(badRequest('A medication order needs dosage instructions'));
+  }
+  if (input.durationDays !== undefined && !(Number.isInteger(input.durationDays) && input.durationDays > 0)) {
+    throw new OperationOutcomeError(badRequest('The duration must be a whole number of days'));
+  }
+  if (input.erxCategory && !KenyaErxCategories.some((c) => c.code === input.erxCategory)) {
+    throw new OperationOutcomeError(
+      badRequest(`Unknown prescription category "${input.erxCategory}"; use ${KenyaErxCategories.map((c) => c.code).join(', ')}`)
+    );
   }
   if (input.quantity !== undefined && !(input.quantity > 0)) {
     throw new OperationOutcomeError(badRequest('Quantity must be greater than zero'));
@@ -126,32 +176,18 @@ export async function placeKenyaOrder(
   return ctx.repo.withTransaction(async () => {
     let order: WithId<MedicationRequest | ServiceRequest>;
     if (category.resourceType === 'MedicationRequest') {
-      order = await ctx.repo.createResource<MedicationRequest>({
-        resourceType: 'MedicationRequest',
-        status: 'active',
-        intent: 'order',
-        priority,
-        category: [getKenyaOrderCategoryConcept(category)],
-        medicationCodeableConcept: { coding: [code], text: display },
-        subject,
-        encounter: createReference(encounter),
-        authoredOn: now,
-        requester,
-        dosageInstruction: [{ text: input.dosageText?.trim() }],
-        dispenseRequest:
-          input.quantity || input.durationDays
-            ? {
-                quantity: input.quantity ? { value: input.quantity } : undefined,
-                expectedSupplyDuration: input.durationDays
-                  ? { value: input.durationDays, unit: 'days', system: 'http://unitsofmeasure.org', code: 'd' }
-                  : undefined,
-              }
-            : undefined,
-        note,
-        extension: input.overrideReason?.trim()
-          ? [{ url: KenyaCdsOverrideExtensionUrl, valueString: input.overrideReason.trim() }]
-          : undefined,
-      });
+      order = await ctx.repo.createResource<MedicationRequest>(
+        buildKenyaMedicationRequest(input, encounter, {
+          orderCategory: getKenyaOrderCategoryConcept(category),
+          code,
+          display,
+          subject,
+          requester,
+          priority,
+          note,
+          now,
+        })
+      );
     } else {
       order = await ctx.repo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
@@ -209,4 +245,83 @@ export async function placeKenyaOrder(
 
     return { order, task, chargeItem };
   });
+}
+
+interface MedicationRequestContext {
+  readonly orderCategory: CodeableConcept;
+  readonly code: Coding;
+  readonly display: string | undefined;
+  readonly subject: Reference<Patient>;
+  readonly requester: MedicationRequest['requester'];
+  readonly priority: MedicationRequest['priority'];
+  readonly note: MedicationRequest['note'];
+  readonly now: string;
+}
+
+/**
+ * Builds the prescription: DHA eRx identifiers, category and codings, the structured dose when
+ * given, and the dispense request. Claims the ke-medication-request profile only when it conforms.
+ * @param input - The order input (already validated).
+ * @param encounter - The encounter.
+ * @param c - The resolved code, patient, prescriber and times.
+ * @returns The MedicationRequest to create.
+ */
+export function buildKenyaMedicationRequest(
+  input: KenyaOrderInput,
+  encounter: WithId<Encounter>,
+  c: MedicationRequestContext
+): MedicationRequest {
+  const structured = input.doseValue !== undefined || !!input.doseUnit || !!input.frequency || !!input.route;
+  const dosage: Dosage = structured
+    ? buildKenyaDosage({
+        doseValue: input.doseValue as number,
+        doseUnit: input.doseUnit as string,
+        frequency: input.frequency as string,
+        route: input.route as string,
+        durationDays: input.durationDays,
+        text: input.dosageText,
+      })
+    : { text: input.dosageText?.trim() };
+  const unit = structured ? getKenyaDoseUnit(input.doseUnit) : undefined;
+  const erxCategory = (input.erxCategory as KenyaErxCategoryCode | undefined) ?? getKenyaErxCategoryForEncounter(encounter.class);
+  const start = c.now.slice(0, 10);
+  const end = new Date(Date.parse(c.now) + KenyaDefaultPrescriptionValidityDays * 86_400_000).toISOString().slice(0, 10);
+  const dhaCoding = getDhaGenericProductCoding(c.code);
+
+  const request: MedicationRequest = {
+    resourceType: 'MedicationRequest',
+    identifier: buildKenyaPrescriptionIdentifiers(randomUUID(), generateKenyaPrescriptionCode()),
+    status: 'active',
+    intent: 'order',
+    priority: c.priority,
+    category: [c.orderCategory, getKenyaErxCategoryConcept(erxCategory)],
+    medicationCodeableConcept: { coding: dhaCoding ? [c.code, dhaCoding] : [c.code], text: c.display },
+    subject: c.subject,
+    encounter: createReference(encounter),
+    authoredOn: c.now,
+    requester: c.requester,
+    dosageInstruction: [dosage],
+    dispenseRequest: {
+      validityPeriod: { start, end },
+      numberOfRepeatsAllowed: 0,
+      quantity: input.quantity
+        ? {
+            value: input.quantity,
+            // A countable dose unit (tablets, capsules...) is also the dispensing unit
+            ...(unit?.countable ? { unit: unit.code, system: 'http://unitsofmeasure.org', code: '1' } : {}),
+          }
+        : undefined,
+      expectedSupplyDuration: input.durationDays
+        ? { value: input.durationDays, unit: 'days', system: 'http://unitsofmeasure.org', code: 'd' }
+        : undefined,
+    },
+    note: c.note,
+    extension: input.overrideReason?.trim()
+      ? [{ url: KenyaCdsOverrideExtensionUrl, valueString: input.overrideReason.trim() }]
+      : undefined,
+  };
+  if (getKenyaErxConformanceGaps(request).length === 0) {
+    request.meta = { profile: [KenyaErxMedicationRequestProfile] };
+  }
+  return request;
 }

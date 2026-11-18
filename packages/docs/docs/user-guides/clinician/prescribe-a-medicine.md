@@ -41,6 +41,16 @@ You need:
 
 **What you should see:** a green message saying **Medication order sent to Pharmacy**, followed by the prescription code, for example **Prescription code RX-7KQ2-M9XD-3T**. The prescription code identifies this prescription. It follows the Digital Health Agency's ePrescription standard. The prescription is now in the pharmacy queue, and in the patient's **Active medicines**.
 
+## Print the prescription
+
+1. In the visit's **Clinical orders** panel, click **Print prescription**. The button appears once the visit has at least one prescription with a prescription code.
+2. The prescription opens as a PDF in a new tab. Print it, or save it to send to the patient.
+3. Sign it and give it to the patient.
+
+The printout lists every active prescription from the visit. Each medicine has a QR code and its prescription code, for example **RX-7KQ2-M9XD-3T**. A pharmacy scans the QR code or types the code to find the prescription. The QR code holds only the prescription code, never the patient's name or the medicine.
+
+If nothing opens, your browser may have blocked the new tab. Allow pop-ups for Afiax and try again.
+
 ## Understanding the safety check
 
 ### Green: no alerts

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { KenyaHealthProductSystem, KenyaOrderCategorySystem } from '@medplum/core';
+import { KenyaHealthProductSystem, KenyaOrderCategorySystem, KenyaPrescriptionCodeSystem } from '@medplum/core';
 import type { Encounter, MedicationRequest, Parameters, Patient, Task, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
@@ -133,5 +133,45 @@ describe('KenyaEncounterOrders', () => {
     expect(screen.getByText(/This encounter is finished/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Place order' })).not.toBeInTheDocument();
     expect(await screen.findByTestId('order-history')).toHaveTextContent('Pharmacy: Dispensed');
+  });
+
+  test('a visit with a coded prescription can print it', async () => {
+    const { medplum, encounter } = await setup('in-progress');
+    // Without a prescription code there is nothing to print
+    await act(async () => {
+      renderWithMedplum(medplum, <KenyaEncounterOrders encounter={encounter} />);
+    });
+    expect(screen.queryByRole('button', { name: 'Print prescription' })).not.toBeInTheDocument();
+  });
+
+  test('the print button opens the prescription PDF', async () => {
+    const { medplum, encounter } = await setup('finished');
+    await medplum.createResource<MedicationRequest>({
+      resourceType: 'MedicationRequest',
+      identifier: [{ system: KenyaPrescriptionCodeSystem, value: 'RX-0123-4567-8Z' }],
+      status: 'active',
+      intent: 'order',
+      subject: encounter.subject as MedicationRequest['subject'],
+      encounter: { reference: `Encounter/${encounter.id}` },
+      medicationCodeableConcept: { coding: [amoxicillin], text: amoxicillin.display },
+    });
+    const win = { location: { href: '' }, close: jest.fn() };
+    jest.spyOn(window, 'open').mockReturnValue(win as unknown as Window);
+    URL.createObjectURL = jest.fn(() => 'blob:prescription');
+    const download = jest
+      .spyOn(medplum, 'download')
+      .mockResolvedValue(new Blob(['%PDF-1.3'], { type: 'application/pdf' }));
+
+    await act(async () => {
+      renderWithMedplum(medplum, <KenyaEncounterOrders encounter={encounter} />);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Print prescription' }));
+    });
+    expect(download).toHaveBeenCalledWith(
+      medplum.fhirUrl('Encounter', encounter.id as string, '$kenya-prescription'),
+      expect.objectContaining({ headers: { Accept: 'application/pdf' } })
+    );
+    expect(win.location.href).toBe('blob:prescription');
   });
 });

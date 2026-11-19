@@ -73,6 +73,7 @@ import { kenyaHieCallbacksHandler } from './operations/kenyahiecallbacks';
 import { kenyaInvoiceHandler } from './operations/kenyainvoice';
 import { kenyaInvoicePaymentHandler } from './operations/kenyainvoicepayment';
 import { kenyaOrderHandler, knhtsSearchHandler } from './operations/kenyaorder';
+import { kenyaDispenseHandler, kenyaPrescriptionLookupHandler } from './operations/kenyadispense';
 import { kenyaPrescriptionHandler } from './operations/kenyaprescription';
 import { kenyaEvaluateMeasureHandler } from './operations/kenyaqualitymeasure';
 import { kenyaRegistryLookupHandler } from './operations/kenyaregistrylookup';
@@ -433,6 +434,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Condition/:id/$ihr-assessment', ihrAssessmentHandler);
   router.add('POST', '/Task/:id/$ihr-escalate', ihrEscalateHandler);
   router.add('POST', '/MedicationRequest/$cds-check', kenyaCdsCheckHandler);
+  router.add('GET', '/MedicationRequest/$kenya-prescription-lookup', kenyaPrescriptionLookupHandler);
+  router.add('POST', '/MedicationRequest/:id/$kenya-dispense', kenyaDispenseHandler);
   // Kenya CPOE: place an order, route it to the department queue and bill it (DHA FUNC-CPOE-001)
   router.add('POST', '/Encounter/:id/$kenya-order', kenyaOrderHandler);
   router.add('GET', '/Encounter/:id/$kenya-prescription', kenyaPrescriptionHandler);

@@ -10,7 +10,6 @@ import type {
   AllergyIntolerance,
   DetectedIssue,
   Encounter,
-  MedicationDispense,
   MedicationRequest,
   Observation,
   Parameters,
@@ -163,8 +162,14 @@ describe('Kenya clinical workspace', () => {
     });
   });
 
-  test('the pharmacy queue dispenses a medication order', async () => {
+  test('the pharmacy queue dispenses a medication order through the server', async () => {
     const { medplum, patient, encounter } = await kenyaClient();
+    const realPost = medplum.post.bind(medplum);
+    const post = jest
+      .spyOn(medplum, 'post')
+      .mockImplementation(async (url, body, ...rest) =>
+        String(url).includes('$kenya-dispense') ? { resourceType: 'Parameters' } : realPost(url, body, ...rest)
+      );
     const order = await medplum.createResource<MedicationRequest>({
       resourceType: 'MedicationRequest',
       status: 'active',
@@ -203,15 +208,12 @@ describe('Kenya clinical workspace', () => {
       fireEvent.click(within(dialog).getByRole('button', { name: 'Dispense' }));
     });
 
-    await waitFor(async () => {
-      expect((await medplum.readResource('Task', task.id)).status).toBe('completed');
-    });
-    const dispenses = await medplum.searchResources('MedicationDispense', {});
-    expect(
-      dispenses.find(
-        (d: MedicationDispense) => d.authorizingPrescription?.[0]?.reference === `MedicationRequest/${order.id}`
-      )
-    ).toBeDefined();
+    // The server records the dispense and closes the task ($kenya-dispense, ADR-016 step 2;
+    // kenyadispense.test.ts): the queue only asks it to
+    await waitFor(() =>
+      expect(post.mock.calls.some(([url]) => String(url).includes(`MedicationRequest/${order.id}/$kenya-dispense`))).toBe(true)
+    );
+    expect(await medplum.searchResources('MedicationDispense', {})).toHaveLength(0);
   });
 
   test('patient summary shows allergies and clinical alerts', async () => {

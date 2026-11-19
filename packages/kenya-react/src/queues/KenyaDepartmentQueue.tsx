@@ -3,8 +3,9 @@
 //
 // Kenya department queues (DHA FUNC-CPOE-001 "orders route to appropriate departments"): each
 // department sees the orders routed to it, accepts them and completes them. The pharmacy dispenses
-// medication orders, which records a MedicationDispense. The queue reloads itself, and completing or
-// dispensing asks for confirmation first.
+// medication orders through $kenya-dispense (ADR-016 step 2: checked on the server, DHA
+// ke-medication-dispense, the queue task closed there), or finds a prescription by its code. The
+// queue reloads itself, and completing or dispensing asks for confirmation first.
 
 import { Badge, Button, Group, Paper, SegmentedControl, Stack, Table, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
@@ -16,18 +17,12 @@ import {
   KenyaDepartmentSystem,
   normalizeErrorString,
 } from '@medplum/core';
-import type {
-  MedicationDispense,
-  MedicationRequest,
-  Patient,
-  Resource,
-  ServiceRequest,
-  Task,
-} from '@medplum/fhirtypes';
+import type { MedicationRequest, Parameters, Patient, Resource, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ConfirmButton } from '../common/ConfirmButton';
+import { KenyaPrescriptionLookup } from './KenyaPrescriptionLookup';
 
 interface QueueItem {
   readonly task: Task;
@@ -117,22 +112,15 @@ export function KenyaDepartmentQueue(props: KenyaDepartmentQueueProps): JSX.Elem
 
   async function advance(item: QueueItem, action: 'accept' | 'complete'): Promise<void> {
     try {
-      if (action === 'complete' && item.order?.resourceType === 'MedicationRequest') {
-        await medplum.createResource<MedicationDispense>({
-          resourceType: 'MedicationDispense',
-          status: 'completed',
-          medicationCodeableConcept: item.order.medicationCodeableConcept,
-          subject: item.order.subject,
-          context: item.order.encounter,
-          authorizingPrescription: [{ reference: getReferenceString(item.order) }],
-          quantity: item.order.dispenseRequest?.quantity,
-          daysSupply: item.order.dispenseRequest?.expectedSupplyDuration,
-          dosageInstruction: item.order.dosageInstruction,
-          whenHandedOver: new Date().toISOString(),
-          performer: medplum.getProfile()
-            ? [{ actor: { reference: getReferenceString(medplum.getProfile() as Resource) } }]
-            : undefined,
+      if (action === 'complete' && item.order?.resourceType === 'MedicationRequest' && item.order.id) {
+        // Everything left on the prescription; the server records the dispense and closes this task
+        await medplum.post<Parameters>(medplum.fhirUrl('MedicationRequest', item.order.id, '$kenya-dispense'), {
+          resourceType: 'Parameters',
+          parameter: [],
         });
+        showNotification({ color: 'green', message: completedText(department) });
+        load();
+        return;
       }
       await medplum.updateResource<Task>({
         ...item.task,
@@ -170,6 +158,7 @@ export function KenyaDepartmentQueue(props: KenyaDepartmentQueueProps): JSX.Elem
         value={department}
         onChange={(value) => onDepartmentChange(value as KenyaDepartmentCode)}
       />
+      {department === 'pharmacy' && <KenyaPrescriptionLookup onDispensed={load} />}
       {!items && <Text c="dimmed">Loading…</Text>}
       {items?.length === 0 && <Text c="dimmed">No open orders for {KenyaDepartments[department]}.</Text>}
       {items && items.length > 0 && (

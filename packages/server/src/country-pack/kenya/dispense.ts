@@ -187,7 +187,11 @@ export async function dispenseKenyaPrescription(
   const dispensedTotal = status.dispensed + quantity;
   const complete = status.remaining === undefined || dispensedTotal >= (status.prescribed ?? 0);
   const firstFill = status.dispensed === 0;
-  const type = firstFill ? (complete ? SupplyTypes.FF : SupplyTypes.FFP) : complete ? SupplyTypes.FFC : SupplyTypes.FFP;
+  // First fill of everything (FF), a part (FFP), or the last part of a part-filled prescription (FFC)
+  let type = SupplyTypes.FFP;
+  if (complete) {
+    type = firstFill ? SupplyTypes.FF : SupplyTypes.FFC;
+  }
 
   const encounter = prescription.encounter
     ? await ctx.repo.readReference<Encounter>(prescription.encounter).catch(() => undefined)

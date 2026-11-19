@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { KenyaDepartmentSystem } from '@medplum/core';
-import type { Patient, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type { MedicationRequest, Patient, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { within } from '@testing-library/react';
 import { act, fireEvent, renderWithMedplum, screen, waitFor } from '../test-utils/render';
@@ -53,6 +53,47 @@ describe('KenyaDepartmentQueue', () => {
     await waitFor(async () => {
       expect((await medplum.readResource('Task', task.id as string)).status).toBe('completed');
     });
+  });
+
+  test('the pharmacy dispenses through $kenya-dispense, which closes the task on the server', async () => {
+    const medplum = new MockClient();
+    const patient = await medplum.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Amina'], family: 'Otieno' }] });
+    const order = await medplum.createResource<MedicationRequest>({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${patient.id}` },
+      medicationCodeableConcept: { text: 'Amoxicillin 500 mg capsule' },
+    });
+    await medplum.createResource<Task>({
+      resourceType: 'Task',
+      status: 'accepted',
+      intent: 'order',
+      priority: 'routine',
+      description: 'Pharmacy: Amoxicillin 500 mg capsule',
+      focus: { reference: `MedicationRequest/${order.id}` },
+      for: { reference: `Patient/${patient.id}` },
+      performerType: [{ coding: [{ system: KenyaDepartmentSystem, code: 'pharmacy' }], text: 'Pharmacy' }],
+      authoredOn: new Date().toISOString(),
+    });
+    const post = jest.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters' });
+    const create = jest.spyOn(medplum, 'createResource');
+    await act(async () => {
+      renderWithMedplum(medplum, <KenyaDepartmentQueue department="pharmacy" onDepartmentChange={jest.fn()} />);
+    });
+    expect(screen.getByLabelText(/Prescription code/)).toBeInTheDocument();
+    expect(await screen.findByText('Pharmacy: Amoxicillin 500 mg capsule')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('department-queue')).getByRole('button', { name: 'Dispense' }));
+    });
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Dispense' }));
+    });
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(String(post.mock.calls[0][0])).toContain(`MedicationRequest/${order.id}/$kenya-dispense`);
+    // No MedicationDispense made in the browser
+    expect(create).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'MedicationDispense' }));
   });
 
   test('Go back leaves the order in the queue', async () => {

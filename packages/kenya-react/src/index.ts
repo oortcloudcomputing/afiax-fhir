@@ -35,5 +35,6 @@ export * from './patient/ConditionIhrPanel';
 export * from './patient/NationalRecordPublicationPanel';
 export * from './patient/PatientIdentityPanel';
 export * from './queues/KenyaDepartmentQueue';
+export * from './queues/KenyaPrescriptionLookup';
 export * from './registration/KenyaPatientRegistration';
 export * from './registration/KenyaPatientWizard';

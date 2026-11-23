@@ -61,6 +61,38 @@ describe('OAuthPage', () => {
     expect(locationUtils.assign).toHaveBeenCalled();
   });
 
+  test('App redirect shows a return button', async () => {
+    locationUtils.assign = jest.fn();
+
+    const user = await setup('/oauth?client_id=123&redirect_uri=afiaxpatient://auth&scope=openid&state=abc');
+
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Password *'), 'password');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    const link = await screen.findByRole('link', { name: 'Return to the app' });
+    const href = new URL(link.getAttribute('href') as string);
+    expect(href.protocol).toBe('afiaxpatient:');
+    expect(href.searchParams.get('state')).toBe('abc');
+    expect(href.searchParams.get('code')).toBeTruthy();
+    expect(locationUtils.assign).toHaveBeenCalledWith(link.getAttribute('href'));
+  });
+
+  test('Web redirect shows no return button', async () => {
+    locationUtils.assign = jest.fn();
+
+    const user = await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid');
+
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Password *'), 'password');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() => expect(locationUtils.assign).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'Return to the app' })).toBeNull();
+  });
+
   test('Forgot password', async () => {
     const user = await setup('/oauth?client_id=123');
 

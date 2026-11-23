@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
+import { Button, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { CodeChallengeMethod } from '@medplum/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
@@ -18,6 +18,7 @@ export function OAuthPage(): JSX.Element | null {
   const scope = params.get('scope') || 'openid';
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
   const [loading, setLoading] = useState(true);
+  const [appReturnUrl, setAppReturnUrl] = useState<string>();
   const clientId = params.get('client_id');
   const login = params.get('login');
 
@@ -57,7 +58,28 @@ export function OAuthPage(): JSX.Element | null {
       }
     }
     redirectUrl.searchParams.set('code', code);
+    if (!isWebUrl(redirectUrl)) {
+      // Mobile apps (custom schemes such as afiaxpatient://). Android Chrome only opens another app
+      // from a navigation the user started with a tap, so the automatic redirect below can be
+      // ignored there. Show a button the patient can tap as well.
+      setAppReturnUrl(redirectUrl.toString());
+    }
     locationUtils.assign(redirectUrl.toString());
+  }
+
+  if (appReturnUrl) {
+    return (
+      <Stack align="center" justify="center" gap="md" p="xl" mih="100vh">
+        <Logo size={32} />
+        <Title order={3}>You are signed in</Title>
+        <Text c="dimmed" ta="center">
+          Tap the button to go back to the app.
+        </Text>
+        <Button component="a" href={appReturnUrl} size="lg">
+          Return to the app
+        </Button>
+      </Stack>
+    );
   }
 
   return (
@@ -88,4 +110,8 @@ export function OAuthPage(): JSX.Element | null {
       )}
     </SignInForm>
   );
+}
+
+function isWebUrl(url: URL): boolean {
+  return url.protocol === 'https:' || url.protocol === 'http:';
 }

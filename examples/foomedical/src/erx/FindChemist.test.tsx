@@ -39,6 +39,7 @@ function fakeApi(over: Partial<OfferApi> = {}): jest.Mocked<OfferApi> {
     status: jest.fn().mockResolvedValue(waiting([])),
     choose: jest.fn(),
     cancel: jest.fn(),
+    rate: jest.fn(),
     ...over,
   } as jest.Mocked<OfferApi>;
 }
@@ -263,6 +264,57 @@ describe('Find a chemist: cancelling and time limits', () => {
     expect(screen.getByText('Your order was released')).toBeInTheDocument();
     expect(screen.getByText(reason)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Find a chemist again' })).toBeInTheDocument();
+  });
+});
+
+describe('Find a chemist: rating', () => {
+  beforeEach(() => localStorage.clear());
+
+  const collectedStatus = (rated?: number): OfferRequestStatus => ({
+    ...waiting([]),
+    state: 'collected',
+    rated,
+    chosen: { offer: 'o', chemistName: 'Galleria Chemist', priceKes: 590, status: 'Collected' },
+  });
+
+  test('rates the chemist after collecting', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const api = fakeApi({
+      status: jest.fn().mockResolvedValue(collectedStatus()),
+      rate: jest.fn().mockResolvedValue(collectedStatus(4)),
+    });
+    await show(api);
+    expect(screen.getByText('How was Galleria Chemist?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send rating' })).not.toBeInTheDocument();
+    await act(async () => {
+      // Mantine's Rating sets the value from a click on the star (the label of each radio)
+      const fourth = screen.getByRole('radio', { name: '4', hidden: true });
+      fireEvent.click(document.querySelector(`label[for="${fourth.id}"]`) as HTMLElement);
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Anything to add/), { target: { value: 'Quick' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Send rating' }));
+    });
+    expect(api.rate).toHaveBeenCalledWith('req-1', 4, 'Quick');
+    expect(screen.getByText('Thank you for rating Galleria Chemist.')).toBeInTheDocument();
+  });
+
+  test('shows a rating already given', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    await show(fakeApi({ status: jest.fn().mockResolvedValue(collectedStatus(5)) }));
+    expect(screen.getByText('Thank you for rating Galleria Chemist.')).toBeInTheDocument();
+    expect(screen.queryByText('How was Galleria Chemist?')).not.toBeInTheDocument();
+  });
+
+  test('on a prescription that can no longer be filled, offers no new search', async () => {
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <FindChemist prescriptions={['rx-1']} api={fakeApi()} storageKey="test-request" canAsk={false} />
+        </MantineProvider>
+      );
+    });
+    expect(screen.queryByTestId('find-chemist')).not.toBeInTheDocument();
   });
 });
 

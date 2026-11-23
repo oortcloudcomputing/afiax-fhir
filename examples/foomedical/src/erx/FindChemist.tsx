@@ -16,9 +16,11 @@ import {
   Loader,
   Modal,
   Progress,
+  Rating,
   Stack,
   Stepper,
   Text,
+  Textarea,
   Title,
 } from '@mantine/core';
 import { IconMapPin, IconPhone, IconStarFilled } from '@tabler/icons-react';
@@ -42,6 +44,8 @@ export interface FindChemistProps {
   readonly pollMs?: number;
   /** How often to ask for news once a chemist is chosen (ms). */
   readonly followMs?: number;
+  /** False when the prescription can no longer be filled: only a request made earlier is shown. */
+  readonly canAsk?: boolean;
 }
 
 function browserLocation(): Promise<Position> {
@@ -110,7 +114,15 @@ function when(iso: string): string {
  * @returns The card.
  */
 export function FindChemist(props: FindChemistProps): JSX.Element {
-  const { prescriptions, api, storageKey, locate = browserLocation, pollMs = 3000, followMs = 15_000 } = props;
+  const {
+    prescriptions,
+    api,
+    storageKey,
+    locate = browserLocation,
+    pollMs = 3000,
+    followMs = 15_000,
+    canAsk = true,
+  } = props;
   const [status, setStatus] = useState<OfferRequestStatus>();
   const [busy, setBusy] = useState<'locating' | 'asking' | 'choosing' | 'cancelling'>();
   const [cancelling, setCancelling] = useState(false);
@@ -223,10 +235,26 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
     }
   }
 
+  async function rate(stars: number, comment: string): Promise<void> {
+    if (!requestId) {
+      return;
+    }
+    setError(undefined);
+    try {
+      setStatus(await api.rate(requestId, stars, comment.trim() || undefined));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   function again(): void {
     remember(storageKey, undefined);
     setStatus(undefined);
     setError(undefined);
+  }
+
+  if (!status && !canAsk) {
+    return <></>;
   }
 
   return (
@@ -286,7 +314,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
         )}
 
         {status && (status.state === 'chosen' || status.state === 'ready' || status.state === 'collected') && (
-          <Chosen status={status} onDone={again} onCancel={() => setCancelling(true)} />
+          <Chosen status={status} onDone={again} onCancel={() => setCancelling(true)} onRate={rate} />
         )}
 
         {error && (
@@ -462,8 +490,9 @@ function Chosen(props: {
   readonly status: OfferRequestStatus;
   readonly onDone: () => void;
   readonly onCancel: () => void;
+  readonly onRate: (stars: number, comment: string) => Promise<void>;
 }): JSX.Element {
-  const { status, onDone, onCancel } = props;
+  const { status, onDone, onCancel, onRate } = props;
   const chosen = status.chosen;
   const step = { chosen: 1, ready: 2, collected: 3 }[status.state as 'chosen' | 'ready' | 'collected'];
   const headline = {
@@ -512,11 +541,69 @@ function Chosen(props: {
       {status.state === 'collected' && (
         <>
           <Text size="sm">Your record shows this prescription as dispensed.</Text>
+          <RateChemist name={chosen?.chemistName ?? 'the chemist'} rated={status.rated} onRate={onRate} />
           <Button variant="default" onClick={onDone} fullWidth>
             Done
           </Button>
         </>
       )}
     </>
+  );
+}
+
+function RateChemist(props: {
+  readonly name: string;
+  readonly rated?: number;
+  readonly onRate: (stars: number, comment: string) => Promise<void>;
+}): JSX.Element {
+  const { name, rated, onRate } = props;
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
+  const [sending, setSending] = useState(false);
+  if (rated) {
+    return (
+      <Group gap="xs">
+        <Rating value={rated} readOnly size="sm" />
+        <Text size="sm" c="dimmed">
+          Thank you for rating {name}.
+        </Text>
+      </Group>
+    );
+  }
+  return (
+    <Card withBorder radius="md" p="sm">
+      <Stack gap="xs">
+        <Text size="sm" fw={600}>
+          How was {name}?
+        </Text>
+        <Rating value={stars} onChange={setStars} size="xl" aria-label={`Rate ${name}`} />
+        {stars > 0 && (
+          <>
+            <Textarea
+              placeholder="Anything to add? (optional, only Afiax sees it)"
+              value={comment}
+              onChange={(e) => setComment(e.currentTarget.value)}
+              maxLength={500}
+              autosize
+              minRows={2}
+            />
+            <Button
+              loading={sending}
+              onClick={() => {
+                setSending(true);
+                onRate(stars, comment)
+                  .catch(console.error)
+                  .finally(() => setSending(false));
+              }}
+            >
+              Send rating
+            </Button>
+          </>
+        )}
+        <Text size="xs" c="dimmed">
+          Your stars help other patients choose. The chemist does not see who rated them.
+        </Text>
+      </Stack>
+    </Card>
   );
 }

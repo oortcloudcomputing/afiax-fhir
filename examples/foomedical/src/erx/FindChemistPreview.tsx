@@ -96,6 +96,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
   let chosen: Simulated | undefined;
   let closed: string | undefined;
   let collected = false;
+  let rated: number | undefined;
   const secs = (since: number): number => ((Date.now() - since) / 1000) * speed;
 
   function status(): OfferRequestStatus {
@@ -125,6 +126,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
       return {
         request: 'preview',
         state,
+        rated,
         expiresAt,
         asked: chemists.length,
         waiting: 0,
@@ -181,6 +183,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
         chosen = undefined;
         closed = undefined;
         collected = false;
+        rated = undefined;
         return status();
       }, 600),
     status: () => (started ? later(status, 150) : Promise.reject(new Error('No request yet'))),
@@ -193,6 +196,11 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
     cancel: () =>
       later(() => {
         closed = 'You cancelled this request';
+        return status();
+      }),
+    rate: (_request, stars) =>
+      later(() => {
+        rated = stars;
         return status();
       }),
   };

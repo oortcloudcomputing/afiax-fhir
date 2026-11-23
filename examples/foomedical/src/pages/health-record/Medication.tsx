@@ -27,19 +27,18 @@ export function Medication(): JSX.Element {
         : undefined,
     [medplum]
   );
-  // Find a chemist: an active prescription, not yet with a chemist (or followed from this browser)
+  // Find a chemist: an active prescription not yet with a chemist; or a request followed from this
+  // browser (still shown once collected, to rate the chemist)
   const storageKey = `afiax-offer-request:${medicationId}`;
-  const canFind =
-    !!offers &&
-    med.status === 'active' &&
-    (!med.extension?.some((e) => e.url === ClaimExtensionUrl) || hasRemembered(storageKey));
+  const canAsk = med.status === 'active' && !med.extension?.some((e) => e.url === ClaimExtensionUrl);
+  const canFind = !!offers && (canAsk || hasRemembered(storageKey));
 
   return (
     <Box p="xl">
       <Title order={2}>{med.medicationCodeableConcept?.text}</Title>
       {canFind && offers ? (
         <Box my="md" maw={480}>
-          <FindChemist prescriptions={[medicationId]} api={offers} storageKey={storageKey} />
+          <FindChemist prescriptions={[medicationId]} api={offers} storageKey={storageKey} canAsk={canAsk} />
         </Box>
       ) : (
         <p className="mb-6 text-lg text-gray-600">To refill this medication, please contact your pharmacy.</p>

@@ -256,6 +256,14 @@ describe('Find a chemist: cancelling and time limits', () => {
     expect(screen.getByText(/^Collect by /)).toBeInTheDocument();
   });
 
+  test('says when the offers expired before choosing', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const reason = 'These offers have expired. Ask the chemists again for current prices.';
+    await show(fakeApi({ status: jest.fn().mockResolvedValue({ ...waiting([]), state: 'cancelled', reason }) }));
+    expect(screen.getByRole('heading', { name: 'These offers have expired' })).toBeInTheDocument();
+    expect(screen.getByText(reason)).toBeInTheDocument();
+  });
+
   test('explains a released order', async () => {
     localStorage.setItem('test-request', 'req-1');
     const reason = 'Galleria Chemist did not get it ready in time. Find another chemist.';

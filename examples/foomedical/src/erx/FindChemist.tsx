@@ -92,6 +92,24 @@ function clock(ms: number): string {
 
 const kes = (n: number | undefined): string => `KES ${(n ?? 0).toLocaleString('en-KE')}`;
 
+/**
+ * The heading for a closed request, from afiax-services' reason.
+ * @param reason - Why it closed.
+ * @returns The heading.
+ */
+function closedTitle(reason: string): string {
+  if (reason === 'You cancelled this request') {
+    return 'Request cancelled';
+  }
+  if (reason.startsWith('These offers have expired')) {
+    return 'These offers have expired';
+  }
+  if (reason.startsWith('No chemist sent an offer')) {
+    return 'No offers this time';
+  }
+  return 'Your order was released';
+}
+
 /** No chemist was open nearby (afiax-services' reason when nobody could be asked). */
 const NobodyOpen = 'No chemist open nearby';
 
@@ -280,9 +298,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
 
         {status?.state === 'cancelled' && status.reason && status.reason !== NobodyOpen && (
           <>
-            <Title order={4}>
-              {status.reason === 'You cancelled this request' ? 'Request cancelled' : 'Your order was released'}
-            </Title>
+            <Title order={4}>{closedTitle(status.reason)}</Title>
             <Text size="sm">{status.reason}</Text>
             <Button variant="light" onClick={again} fullWidth>
               Find a chemist again

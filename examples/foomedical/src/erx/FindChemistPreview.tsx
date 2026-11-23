@@ -56,6 +56,19 @@ const chemists: Simulated[] = [
   { at: 9999, name: 'Hardy Chemist', distanceKm: 5.5, phone: '+254700000005' },
 ];
 
+const karen = { lat: -1.3197, lng: 36.7076 };
+
+/**
+ * A made-up spot at the chemist's distance from Karen, each in its own direction.
+ * @param c - The simulated chemist.
+ * @returns Its position.
+ */
+function placeOf(c: Simulated): { lat: number; lng: number } {
+  const angle = (chemists.indexOf(c) * 72 * Math.PI) / 180;
+  const deg = c.distanceKm / 111;
+  return { lat: karen.lat + deg * Math.sin(angle), lng: karen.lng + deg * Math.cos(angle) };
+}
+
 /**
  * The same ranking as afiax-services (src/erx/network.ts rankOffers), for the preview.
  * @param offers - The offers received.
@@ -127,6 +140,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
         request: 'preview',
         state,
         rated,
+        position: karen,
         expiresAt,
         asked: chemists.length,
         waiting: 0,
@@ -139,6 +153,8 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
           readyMinutes: chosen.readyMinutes,
           phone: chosen.phone,
           status: { chosen: 'Chosen by the patient', ready: 'Ready to collect', collected: 'Collected' }[state],
+          position: placeOf(chosen),
+          address: `${chosen.name}, near Karen, Nairobi`,
           holdUntil:
             state === 'collected'
               ? undefined
@@ -150,6 +166,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
     return {
       request: 'preview',
       state: 'waiting',
+      position: karen,
       expiresAt,
       asked: chemists.length,
       waiting: expired ? 0 : chemists.length - answered.length,
@@ -167,6 +184,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
             rating: a.rating,
             ratings: a.ratings,
             offeredAt: new Date(started + a.at * 1000).toISOString(),
+            position: placeOf(a),
           }))
       ),
     };
@@ -280,7 +298,7 @@ export default function FindChemistPreview(): JSX.Element {
           storageKey={`afiax-preview-${run}`}
           locate={() =>
             new Promise((resolve) => {
-              setTimeout(() => resolve({ lat: -1.3197, lng: 36.7076 }), 800);
+              setTimeout(() => resolve(karen), 800);
             })
           }
           pollMs={1000}

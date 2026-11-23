@@ -23,12 +23,16 @@ export interface RankedOffer {
   readonly offeredAt: string;
   readonly score: number;
   readonly best: boolean;
+  /** Where the chemist is. */
+  readonly position?: Position;
 }
 
 export interface OfferRequestStatus {
   readonly request: string;
   readonly state: 'waiting' | 'chosen' | 'ready' | 'collected' | 'cancelled';
   readonly expiresAt?: string;
+  /** Where the patient searched from. */
+  readonly position?: Position;
   readonly asked: number;
   readonly waiting: number;
   readonly declined: number;
@@ -46,6 +50,8 @@ export interface OfferRequestStatus {
     readonly status: string;
     /** Until when the chemist holds it: to be ready by, or to be collected by. */
     readonly holdUntil?: string;
+    readonly position?: Position;
+    readonly address?: string;
   };
 }
 

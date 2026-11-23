@@ -17,6 +17,7 @@ import {
   Modal,
   Progress,
   Rating,
+  SegmentedControl,
   Stack,
   Stepper,
   Text,
@@ -25,8 +26,10 @@ import {
 } from '@mantine/core';
 import { IconMapPin, IconPhone, IconStarFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MAP_AVAILABLE } from '../config';
 import { ChemistReviews } from './ChemistReviews';
+import { OffersMap } from './OffersMap';
 import type { OfferApi, OfferRequestStatus, Position, RankedOffer } from './offers-api';
 import { OfferApiError } from './offers-api';
 
@@ -400,6 +403,15 @@ function Waiting(props: {
   readonly onReviews: (offer: RankedOffer) => void;
 }): JSX.Element {
   const { status, left, windowMs, onChoose, onAgain, onCancel, onReviews } = props;
+  const [view, setView] = useState<'list' | 'map'>('list');
+  const canMap = MAP_AVAILABLE && !!status.position;
+  const pins = useMemo(
+    () =>
+      status.offers.flatMap((o) =>
+        o.position ? [{ id: o.offer, position: o.position, label: kes(o.priceKes), best: o.best }] : []
+      ),
+    [status.offers]
+  );
   const open = left > 0 && status.waiting > 0;
   const parts = [
     `${status.asked} chemist${status.asked === 1 ? '' : 's'} asked`,
@@ -423,6 +435,29 @@ function Waiting(props: {
           value={Math.min(100, (left / windowMs) * 100)}
           size="sm"
           aria-label="Time left for chemists to answer"
+        />
+      )}
+      {canMap && (
+        <SegmentedControl
+          size="xs"
+          value={view}
+          onChange={(v) => setView(v as 'list' | 'map')}
+          data={[
+            { value: 'list', label: 'List' },
+            { value: 'map', label: 'Map' },
+          ]}
+        />
+      )}
+      {canMap && view === 'map' && status.position && (
+        <OffersMap
+          center={status.position}
+          pins={pins}
+          onPick={(id) => {
+            const picked = status.offers.find((o) => o.offer === id);
+            if (picked) {
+              onChoose(picked);
+            }
+          }}
         />
       )}
       <Text size="xs" c="dimmed">
@@ -547,12 +582,32 @@ function Chosen(props: {
             ? ` · ready in about ${chosen.readyMinutes} min`
             : ''}
         </Text>
-        {chosen?.phone && (
-          <Anchor href={`tel:${chosen.phone}`} size="sm">
-            <IconPhone size={14} style={{ verticalAlign: 'middle' }} /> {chosen.phone}
-          </Anchor>
-        )}
+        {chosen?.address && <Text size="sm">{chosen.address}</Text>}
+        <Group gap="md">
+          {chosen?.phone && (
+            <Anchor href={`tel:${chosen.phone}`} size="sm">
+              <IconPhone size={14} style={{ verticalAlign: 'middle' }} /> {chosen.phone}
+            </Anchor>
+          )}
+          {chosen?.position && status.state !== 'collected' && (
+            <Anchor
+              href={`https://www.google.com/maps/dir/?api=1&destination=${chosen.position.lat},${chosen.position.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="sm"
+            >
+              <IconMapPin size={14} style={{ verticalAlign: 'middle' }} /> Directions
+            </Anchor>
+          )}
+        </Group>
       </Card>
+      {MAP_AVAILABLE && chosen?.position && status.state !== 'collected' && (
+        <OffersMap
+          center={status.position ?? chosen.position}
+          pins={[{ id: chosen.offer, position: chosen.position, label: chosen.chemistName }]}
+          height={180}
+        />
+      )}
       {status.state === 'chosen' && chosen?.holdUntil && (
         <Text size="sm">
           If it is not ready by {when(chosen.holdUntil)}, your order is released and you can choose another chemist.

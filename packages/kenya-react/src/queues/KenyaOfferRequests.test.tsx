@@ -257,6 +257,91 @@ describe('KenyaOfferRequests', () => {
     unmount();
   });
 
+  test('offers delivery too', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(ok({ status: 'received' }));
+    const { unmount } = await show([offerTask('o1')], fetchFn);
+    fireEvent.change(screen.getByLabelText(/Total price/), { target: { value: '590' } });
+    fireEvent.click(screen.getByLabelText('We can also deliver it'));
+    fireEvent.change(screen.getByLabelText(/Delivery fee/), { target: { value: '150' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Send offer' }));
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://services.test/erx/offers/o1/reply',
+      expect.objectContaining({
+        body: JSON.stringify({ priceKes: 590, readyMinutes: 15, deliveryKes: 150, deliveryMinutes: 30 }),
+      })
+    );
+    unmount();
+  });
+
+  const delivery = {
+    type: { text: 'delivery' },
+    valueString: JSON.stringify({ position: { lat: -1.31, lng: 36.71 }, directions: 'Blue gate' }),
+  };
+
+  test('sends a chosen delivery out, with where to go', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(ok({ status: 'in-progress' }));
+    const task = chosenTask('accepted');
+    const { unmount } = await show([{ ...task, input: [...(task.input ?? []), delivery] }], fetchFn);
+    expect(screen.getByText('Chosen: prepare it for delivery')).toBeInTheDocument();
+    expect(screen.getByText(/Deliver to: Blue gate/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Directions' })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/dir/?api=1&destination=-1.31,36.71'
+    );
+    expect(screen.queryByRole('button', { name: "It's ready to collect" })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Handed over' })).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Out for delivery' }));
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://services.test/erx/offers/o-chosen/out-for-delivery',
+      expect.objectContaining({ method: 'POST' })
+    );
+    unmount();
+  });
+
+  test('on the way: shares the phone position, and completes with the patient’s code', async () => {
+    let report: ((p: { coords: { latitude: number; longitude: number } }) => void) | undefined;
+    const clearWatch = jest.fn();
+    Object.defineProperty(globalThis.navigator, 'geolocation', {
+      configurable: true,
+      value: { watchPosition: jest.fn((ok) => ((report = ok), 7)), clearWatch },
+    });
+    const fetchFn = jest.fn().mockResolvedValue(ok({ status: 'completed' }));
+    const task = chosenTask('in-progress');
+    const { unmount } = await show([{ ...task, input: [...(task.input ?? []), delivery] }], fetchFn);
+    expect(screen.getByText('Out for delivery')).toBeInTheDocument();
+    await act(async () => {
+      report?.({ coords: { latitude: -1.315, longitude: 36.705 } });
+    });
+    expect(screen.getByText(/Sharing your location with the patient/)).toBeInTheDocument();
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://services.test/erx/offers/o-chosen/location',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ lat: -1.315, lng: 36.705 }) })
+    );
+    // A second position right after is not sent
+    const sent = fetchFn.mock.calls.filter(([url]) => String(url).endsWith('/location')).length;
+    await act(async () => {
+      report?.({ coords: { latitude: -1.316, longitude: 36.706 } });
+    });
+    expect(fetchFn.mock.calls.filter(([url]) => String(url).endsWith('/location'))).toHaveLength(sent);
+
+    expect(screen.getByRole('button', { name: 'Delivered' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Patient's code"), { target: { value: '48a21' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delivered' }));
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://services.test/erx/offers/o-chosen/delivered',
+      expect.objectContaining({ body: JSON.stringify({ code: '4821' }) })
+    );
+    unmount();
+    expect(clearWatch).toHaveBeenCalledWith(7);
+    Reflect.deleteProperty(globalThis.navigator, 'geolocation');
+  });
+
   test('says when there is nothing to answer, and lists what closed', async () => {
     const { unmount } = await show(
       [offerTask('old', { status: 'cancelled', statusReason: { text: 'The patient chose another chemist' } })],

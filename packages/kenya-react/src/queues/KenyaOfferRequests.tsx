@@ -10,7 +10,20 @@
 // The chemist reads its own offer Tasks with its own token (the network access policy shows only
 // its own); every answer goes to afiax-services, which checks the window and the claim.
 
-import { Alert, Anchor, Badge, Button, Group, NumberInput, Paper, Stack, Text, TextInput, Title } from '@mantine/core';
+import {
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Checkbox,
+  Group,
+  NumberInput,
+  Paper,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
@@ -19,6 +32,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmButton } from '../common/ConfirmButton';
 import { ChemistOwnReviews } from './ChemistOwnReviews';
+import { RiderSharing } from './RiderSharing';
 import type { OfferCard, OfferRequestView, OfferStage } from './offer-requests';
 import { NetworkTaskCodeSystem, offerCard, sortOfferCards } from './offer-requests';
 
@@ -95,7 +109,7 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
 
   async function send(
     offerId: string,
-    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw' | 'out-for-delivery' | 'delivered',
     body: object = {}
   ): Promise<boolean> {
     try {
@@ -116,6 +130,18 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
       load();
     }
   }
+
+  // The rider's position during a delivery: no reload, no message (it repeats every 20 seconds)
+  const share = useCallback(
+    async (offerId: string, position: { lat: number; lng: number }): Promise<void> => {
+      await fetchFn(`${servicesUrl.replace(/\/$/, '')}/erx/offers/${offerId}/location`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${medplum.getAccessToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(position),
+      });
+    },
+    [fetchFn, servicesUrl, medplum]
+  );
 
   const cards = sortOfferCards((tasks ?? []).map((t) => offerCard(t, now)));
   const open = cards.filter((c) => c.stage !== 'closed');
@@ -142,7 +168,7 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
         </Paper>
       )}
       {open.map((card) => (
-        <OfferRequestCard key={card.id} card={card} now={now} send={send} />
+        <OfferRequestCard key={card.id} card={card} now={now} send={send} share={share} />
       ))}
       {closed.length > 0 && (
         <Stack gap="xs">
@@ -173,15 +199,21 @@ interface OfferRequestCardProps {
   readonly now: Date;
   readonly send: (
     offerId: string,
-    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw' | 'out-for-delivery' | 'delivered',
     body?: object
   ) => Promise<boolean>;
+  /** Sends the rider's position for a delivery, quietly. */
+  readonly share: (offerId: string, position: { lat: number; lng: number }) => Promise<void>;
 }
 
 function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
-  const { card, now, send } = props;
+  const { card, now, send, share } = props;
   const [price, setPrice] = useState<number | string>('');
   const [ready, setReady] = useState<number | string>(15);
+  const [delivers, setDelivers] = useState(false);
+  const [deliveryKes, setDeliveryKes] = useState<number | string>(0);
+  const [deliveryMinutes, setDeliveryMinutes] = useState<number | string>(30);
+  const [code, setCode] = useState('');
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
   const [givingUp, setGivingUp] = useState(false);
@@ -190,7 +222,7 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
   const view = card.view;
 
   async function act(
-    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw' | 'out-for-delivery' | 'delivered',
     body?: object,
     done?: string
   ): Promise<void> {
@@ -205,10 +237,12 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
   const badge: Record<Exclude<OfferStage, 'closed'>, { color: string; label: string }> = {
     answer: { color: 'orange', label: `${timeLeft(card.expiresAt, now)} left` },
     offered: { color: 'blue', label: 'Waiting for the patient' },
-    chosen: { color: 'green', label: 'Chosen: prepare it' },
+    chosen: { color: 'green', label: card.delivery ? 'Chosen: prepare it for delivery' : 'Chosen: prepare it' },
     ready: { color: 'teal', label: 'Ready to collect' },
+    delivering: { color: 'grape', label: 'Out for delivery' },
   };
   const b = badge[card.stage as Exclude<OfferStage, 'closed'>];
+  const held = card.stage === 'chosen' || card.stage === 'ready' || card.stage === 'delivering';
 
   return (
     <Paper withBorder p="md" data-testid="offer-request">
@@ -251,9 +285,11 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              act('reply', { priceKes: price, readyMinutes: ready }, 'Offer sent. The patient sees it now.').catch(
-                console.error
-              );
+              act(
+                'reply',
+                { priceKes: price, readyMinutes: ready, ...(delivers ? { deliveryKes, deliveryMinutes } : {}) },
+                'Offer sent. The patient sees it now.'
+              ).catch(console.error);
             }}
           >
             <Stack gap="xs">
@@ -276,6 +312,32 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
                   required
                 />
               </Group>
+              <Checkbox
+                label="We can also deliver it"
+                checked={delivers}
+                onChange={(e) => setDelivers(e.currentTarget.checked)}
+              />
+              {delivers && (
+                <Group grow align="flex-start" gap="xs">
+                  <NumberInput
+                    label="Delivery fee (KES)"
+                    description="0 for free delivery"
+                    min={0}
+                    max={5000}
+                    value={deliveryKes}
+                    onChange={setDeliveryKes}
+                  />
+                  <NumberInput
+                    label="Arrives in (minutes)"
+                    description="After it is ready"
+                    min={5}
+                    max={480}
+                    allowDecimal={false}
+                    value={deliveryMinutes}
+                    onChange={setDeliveryMinutes}
+                  />
+                </Group>
+              )}
               <Group grow gap="xs">
                 <Button variant="default" onClick={() => setDeclining(true)} disabled={busy}>
                   Can't fill it
@@ -317,17 +379,24 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
         {card.stage !== 'answer' && card.priceKes !== undefined && (
           <Text size="sm">
             You offered KES {card.priceKes.toLocaleString('en-KE')}, ready in {card.readyMinutes ?? 0} min
+            {card.deliveryMinutes !== undefined
+              ? `; delivery ${card.deliveryKes ? `KES ${card.deliveryKes.toLocaleString('en-KE')}` : 'free'} in ${card.deliveryMinutes} min`
+              : ''}
           </Text>
         )}
         {card.stage === 'chosen' && card.holdUntil && (
           <Text size="sm">
-            Have it ready by {shortTime(card.holdUntil)}. After that the patient can choose another chemist.
+            {card.delivery ? 'Send it out' : 'Have it ready'} by {shortTime(card.holdUntil)}. After that the patient can
+            choose another chemist.
           </Text>
+        )}
+        {card.stage === 'delivering' && card.holdUntil && (
+          <Text size="sm">Deliver it by {shortTime(card.holdUntil)}.</Text>
         )}
         {card.stage === 'ready' && card.holdUntil && (
           <Text size="sm">The patient has until {shortTime(card.holdUntil)} to collect it.</Text>
         )}
-        {(card.stage === 'chosen' || card.stage === 'ready') && (
+        {held && (
           <Paper bg="var(--mantine-color-green-light)" p="xs">
             <Text size="sm" fw={600}>
               {card.patient?.name ?? 'The patient'}
@@ -337,12 +406,68 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
                 {card.patient.phone}
               </Anchor>
             )}
+            {card.delivery && (
+              <>
+                <Text size="sm">
+                  Deliver to: {card.delivery.directions ?? 'the pin on the map'}{' '}
+                  <Anchor
+                    size="sm"
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${card.delivery.position.lat},${card.delivery.position.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Directions
+                  </Anchor>
+                </Text>
+              </>
+            )}
             <Text size="xs" c="dimmed">
-              Check the patient's ID when they collect.
+              {card.delivery
+                ? "At the door, ask for the patient's 4-digit code before you hand it over."
+                : "Check the patient's ID when they collect."}
             </Text>
           </Paper>
         )}
-        {card.stage === 'chosen' && (
+        {card.stage === 'chosen' && card.delivery && (
+          <Button
+            loading={busy}
+            onClick={() =>
+              act('out-for-delivery', {}, 'On the way. Keep this screen open: the patient follows you.').catch(
+                console.error
+              )
+            }
+          >
+            Out for delivery
+          </Button>
+        )}
+        {card.stage === 'delivering' && (
+          <>
+            <RiderSharing onPosition={(position) => share(card.id, position)} />
+            <Group align="flex-end" gap="xs" wrap="nowrap">
+              <TextInput
+                label="Patient's code"
+                placeholder="4 digits"
+                inputMode="numeric"
+                maxLength={4}
+                value={code}
+                onChange={(e) => setCode(e.currentTarget.value.replace(/\D/g, ''))}
+                style={{ flex: 1 }}
+              />
+              <Button
+                loading={busy}
+                disabled={code.length !== 4}
+                onClick={() =>
+                  act('delivered', { code }, "Delivered. It is marked dispensed on the patient's record.").catch(
+                    console.error
+                  )
+                }
+              >
+                Delivered
+              </Button>
+            </Group>
+          </>
+        )}
+        {card.stage === 'chosen' && !card.delivery && (
           <Button
             loading={busy}
             onClick={() => act('ready', {}, 'My Afiax now shows the patient it is ready.').catch(console.error)}
@@ -350,7 +475,7 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
             It's ready to collect
           </Button>
         )}
-        {(card.stage === 'chosen' || card.stage === 'ready') && (
+        {(card.stage === 'chosen' || card.stage === 'ready') && !card.delivery && (
           <ConfirmButton
             variant={card.stage === 'ready' ? 'filled' : 'default'}
             title="Handed over"
@@ -360,12 +485,12 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
             Handed over
           </ConfirmButton>
         )}
-        {(card.stage === 'chosen' || card.stage === 'ready') && !givingUp && (
+        {held && !givingUp && (
           <Button variant="subtle" color="red" size="xs" onClick={() => setGivingUp(true)}>
             Can't fill it after all
           </Button>
         )}
-        {(card.stage === 'chosen' || card.stage === 'ready') && givingUp && (
+        {held && givingUp && (
           <Stack gap="xs">
             <TextInput
               label="Why? (the patient sees it)"

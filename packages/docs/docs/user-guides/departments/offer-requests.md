@@ -42,6 +42,8 @@ You do **not** see the patient's name or phone yet. You only get them if the pat
 2. In **Ready in (minutes)**, type how soon it will be ready to collect (15 is filled in).
 3. Click **Send offer**.
 
+**Delivery (optional).** If you can deliver, tick **We can also deliver it** and fill in the **Delivery fee** (0 for free delivery) and how many minutes it takes to arrive after it is ready. The patient then chooses collection or delivery.
+
 If you can't fill it (out of stock, closing soon), click **Can't fill it**, add a reason if you want, then click **Decline**. Declining is better than not answering: the patient knows straight away.
 
 After the 5 minutes, you can no longer answer.
@@ -61,6 +63,17 @@ The request turns green: **Chosen: prepare it**. You now see the patient's name 
 
 **Handed over** marks the prescription as dispensed on the patient's record at the clinic that wrote it, so it cannot be filled again anywhere else.
 
+### If the patient chose delivery
+
+The request says **Chosen: prepare it for delivery** and shows where to deliver: the patient's directions and a **Directions** link that opens the map.
+
+1. Prepare the medicines.
+2. Give the phone with Afiax Provider to the rider (or the rider signs in on their own phone) and click **Out for delivery**. The patient gets an SMS.
+3. Keep the screen open on the way. When the phone asks, **allow location**: the patient follows the rider on their map every 20 seconds. It stops when the delivery is done or the screen is closed.
+4. At the door, ask the patient for their **4-digit code** (My Afiax shows it to them). Type it in **Patient's code** and click **Delivered**. Never hand over without the right code: after 5 wrong codes, call the patient or Afiax support.
+
+**Delivered** marks the prescription as dispensed, as at the counter. The patient pays the rider.
+
 ### Time limits
 
 While the patient has chosen you, nobody else can fill the prescription. So it is held for a limited time:
@@ -69,12 +82,17 @@ While the patient has chosen you, nobody else can fill the prescription. So it i
 |---|---|---|
 | **Chosen: prepare it** | your ready time, plus 2 hours | *Have it ready by …* |
 | **Ready to collect** | 3 days after you clicked **It's ready to collect** | *The patient has until … to collect it* |
+| **Out for delivery** | 4 hours after you clicked **Out for delivery** | *Deliver it by …* |
 
 After that the prescription is released: the patient can choose another chemist, and the request moves to **Recently closed** with the reason. If the patient did not collect, you get an SMS and can return the medicines to stock.
 
 ### If you can't fill it after all
 
 If something changes after the patient chose you (the last pack was sold, you are closing), click **Can't fill it after all**, say why, then click **Give it up**. The patient sees your reason and can choose another chemist straight away. Do this rather than letting the time run out.
+
+### Your reviews
+
+After collecting, patients can rate you and write a review. Other patients see your stars and reviews (as "Verified patient", never a name) when they compare offers. Your reviews are listed under **Your reviews**. If one is rude, untrue or has private details, click **Report** and say why: Afiax checks it, and a review reported by three different people is hidden until then.
 
 ### If the patient cancels
 

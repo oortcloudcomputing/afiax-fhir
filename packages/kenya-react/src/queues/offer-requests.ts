@@ -22,7 +22,7 @@ export interface OfferRequestView {
   readonly distanceKm: number;
 }
 
-export type OfferStage = 'answer' | 'offered' | 'chosen' | 'ready' | 'closed';
+export type OfferStage = 'answer' | 'offered' | 'chosen' | 'ready' | 'delivering' | 'closed';
 
 export interface OfferCard {
   readonly id: string;
@@ -38,6 +38,14 @@ export interface OfferCard {
   readonly at?: string;
   /** While chosen: until when the chemist holds it (ready by, or collected by); then it is released. */
   readonly holdUntil?: string;
+  /** When the chemist offered delivery: fee (0 = free) and minutes. */
+  readonly deliveryKes?: number;
+  readonly deliveryMinutes?: number;
+  /** When the patient chose delivery: where to, and their directions (only on the chosen offer). */
+  readonly delivery?: {
+    readonly position: { readonly lat: number; readonly lng: number };
+    readonly directions?: string;
+  };
 }
 
 function json<T>(value: string | undefined): T | undefined {
@@ -71,6 +79,9 @@ export function offerCard(task: Task, now: Date): OfferCard {
     readyMinutes: output('ready-minutes'),
     at: task.lastModified ?? task.authoredOn,
     holdUntil: task.executionPeriod?.end,
+    deliveryKes: output('delivery-kes'),
+    deliveryMinutes: output('delivery-minutes'),
+    delivery: json<OfferCard['delivery']>(input('delivery')),
   };
   switch (task.status) {
     case 'requested':
@@ -80,9 +91,9 @@ export function offerCard(task: Task, now: Date): OfferCard {
     case 'accepted':
       return { ...base, stage: 'chosen', patient: json(input('patient')) };
     case 'in-progress':
-      return { ...base, stage: 'ready', patient: json(input('patient')) };
+      return { ...base, stage: base.delivery ? 'delivering' : 'ready', patient: json(input('patient')) };
     case 'completed':
-      return { ...base, stage: 'closed', closed: 'Collected' };
+      return { ...base, stage: 'closed', closed: base.delivery ? 'Delivered' : 'Collected' };
     case 'rejected':
       return {
         ...base,
@@ -94,7 +105,7 @@ export function offerCard(task: Task, now: Date): OfferCard {
   }
 }
 
-const stageOrder: Record<OfferStage, number> = { answer: 0, chosen: 1, ready: 2, offered: 3, closed: 4 };
+const stageOrder: Record<OfferStage, number> = { answer: 0, chosen: 1, delivering: 2, ready: 3, offered: 4, closed: 5 };
 
 /**
  * Orders the cards: what needs an answer first (soonest to expire first), then chosen and ready

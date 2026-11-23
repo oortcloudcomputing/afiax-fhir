@@ -213,7 +213,7 @@ describe('KenyaOfferRequests', () => {
   test('says by when the patient must collect', async () => {
     const { unmount } = await show(
       [{ ...chosenTask('in-progress'), executionPeriod: { end: minutes(3 * 24 * 60) } }],
-      jest.fn()
+      jest.fn().mockResolvedValue(ok([]))
     );
     expect(screen.getByText(/^The patient has until .* to collect it\.$/)).toBeInTheDocument();
     unmount();
@@ -227,16 +227,40 @@ describe('KenyaOfferRequests', () => {
           statusReason: { text: 'Not collected in time: the prescription was released' },
         }),
       ],
-      jest.fn()
+      jest.fn().mockResolvedValue(ok([]))
     );
     expect(screen.getByText('Not collected in time: the prescription was released')).toBeInTheDocument();
+    unmount();
+  });
+
+  test("shows the chemist's own reviews, and reports one", async () => {
+    const fetchFn = jest.fn((url: string) =>
+      Promise.resolve(
+        url.endsWith('/reviews')
+          ? reply(200, [{ id: 'r1', stars: 1, text: 'They overcharged me', at: '2026-11-20T09:00:00Z' }])
+          : ok({ hidden: false })
+      )
+    );
+    const { unmount } = await show([chosenTask('completed')], fetchFn as unknown as jest.Mock);
+    expect(fetchFn).toHaveBeenCalledWith('https://services.test/erx/chemists/chem-1/reviews', expect.anything());
+    expect(await screen.findByText('They overcharged me')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Report' }));
+    fireEvent.change(screen.getByLabelText(/What is wrong with it/), { target: { value: 'Untrue' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Report review' }));
+    });
+    expect(fetchFn).toHaveBeenLastCalledWith(
+      'https://services.test/erx/reviews/r1/report',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ reason: 'Untrue' }) })
+    );
+    expect(screen.getByText('Reported. Afiax will check it.')).toBeInTheDocument();
     unmount();
   });
 
   test('says when there is nothing to answer, and lists what closed', async () => {
     const { unmount } = await show(
       [offerTask('old', { status: 'cancelled', statusReason: { text: 'The patient chose another chemist' } })],
-      jest.fn()
+      jest.fn().mockResolvedValue(ok([]))
     );
     expect(screen.getByText(/No open requests/)).toBeInTheDocument();
     expect(screen.getByText('The patient chose another chemist')).toBeInTheDocument();

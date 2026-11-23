@@ -16,8 +16,9 @@ import { normalizeErrorString } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmButton } from '../common/ConfirmButton';
+import { ChemistOwnReviews } from './ChemistOwnReviews';
 import type { OfferCard, OfferRequestView, OfferStage } from './offer-requests';
 import { NetworkTaskCodeSystem, offerCard, sortOfferCards } from './offer-requests';
 
@@ -58,7 +59,7 @@ export interface KenyaOfferRequestsProps {
  */
 export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element {
   const { servicesUrl } = props;
-  const fetchFn = props.fetchFn ?? globalThis.fetch.bind(globalThis);
+  const fetchFn = useMemo(() => props.fetchFn ?? globalThis.fetch.bind(globalThis), [props.fetchFn]);
   const medplum = useMedplum();
   const [tasks, setTasks] = useState<Task[]>();
   const [error, setError] = useState<string>();
@@ -119,6 +120,8 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
   const cards = sortOfferCards((tasks ?? []).map((t) => offerCard(t, now)));
   const open = cards.filter((c) => c.stage !== 'closed');
   const closed = cards.filter((c) => c.stage === 'closed').slice(0, 10);
+  // The chemist's own Organization: the owner of its offer Tasks
+  const organizationId = tasks?.[0]?.owner?.reference?.split('/')[1];
 
   return (
     <Stack gap="md">
@@ -157,6 +160,9 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
             </Paper>
           ))}
         </Stack>
+      )}
+      {organizationId && (
+        <ChemistOwnReviews servicesUrl={servicesUrl} organizationId={organizationId} fetchFn={fetchFn} />
       )}
     </Stack>
   );

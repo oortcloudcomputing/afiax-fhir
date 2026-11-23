@@ -36,6 +36,8 @@ export interface OfferCard {
   /** Why it closed: collected, declined, another chemist, no answer in time. */
   readonly closed?: string;
   readonly at?: string;
+  /** While chosen: until when the chemist holds it (ready by, or collected by); then it is released. */
+  readonly holdUntil?: string;
 }
 
 function json<T>(value: string | undefined): T | undefined {
@@ -68,6 +70,7 @@ export function offerCard(task: Task, now: Date): OfferCard {
     priceKes: output('price-kes'),
     readyMinutes: output('ready-minutes'),
     at: task.lastModified ?? task.authoredOn,
+    holdUntil: task.executionPeriod?.end,
   };
   switch (task.status) {
     case 'requested':

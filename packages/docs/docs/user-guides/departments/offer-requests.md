@@ -61,11 +61,31 @@ The request turns green: **Chosen: prepare it**. You now see the patient's name 
 
 **Handed over** marks the prescription as dispensed on the patient's record at the clinic that wrote it, so it cannot be filled again anywhere else.
 
+### Time limits
+
+While the patient has chosen you, nobody else can fill the prescription. So it is held for a limited time:
+
+| Stage | You have until | Shown on the request as |
+|---|---|---|
+| **Chosen: prepare it** | your ready time, plus 2 hours | *Have it ready by …* |
+| **Ready to collect** | 3 days after you clicked **It's ready to collect** | *The patient has until … to collect it* |
+
+After that the prescription is released: the patient can choose another chemist, and the request moves to **Recently closed** with the reason. If the patient did not collect, you get an SMS and can return the medicines to stock.
+
+### If you can't fill it after all
+
+If something changes after the patient chose you (the last pack was sold, you are closing), click **Can't fill it after all**, say why, then click **Give it up**. The patient sees your reason and can choose another chemist straight away. Do this rather than letting the time run out.
+
+### If the patient cancels
+
+The patient can cancel until they collect. You get an SMS, and the request moves to **Recently closed** with *The patient cancelled*.
+
 ## If something goes wrong
 
 | What you see | Why | What to do |
 |---|---|---|
 | *The patient is no longer waiting for offers on this prescription* | The 5 minutes were over | Nothing. Answer the next one sooner. |
 | *The patient chose another chemist* | Another chemist was picked | Nothing |
+| *It was not ready in time, so the prescription was released to the patient* | You clicked **It's ready to collect** after the time limit | Nothing. The patient can choose another chemist. |
 | *Offer requests are not set up here* | This Afiax Provider is not connected to the network | Contact your Afiax administrator |
 | No **Offer requests** in the menu | You are signed in to your facility, not the network | Sign out and sign in again, choosing **Afiax Prescription Network** |

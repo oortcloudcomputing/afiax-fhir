@@ -30,6 +30,10 @@ function timeLeft(expiresAt: string | undefined, now: Date): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+function shortTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-KE', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+}
+
 function medicineName(line: OfferRequestView['lines'][number]): string {
   return line.medication.text ?? line.medication.display ?? line.medication.code ?? 'Medicine';
 }
@@ -88,7 +92,11 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
     };
   }, [load]);
 
-  async function send(offerId: string, action: 'reply' | 'ready' | 'dispensed', body: object = {}): Promise<boolean> {
+  async function send(
+    offerId: string,
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    body: object = {}
+  ): Promise<boolean> {
     try {
       const response = await fetchFn(`${servicesUrl.replace(/\/$/, '')}/erx/offers/${offerId}/${action}`, {
         method: 'POST',
@@ -157,7 +165,11 @@ export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element 
 interface OfferRequestCardProps {
   readonly card: OfferCard;
   readonly now: Date;
-  readonly send: (offerId: string, action: 'reply' | 'ready' | 'dispensed', body?: object) => Promise<boolean>;
+  readonly send: (
+    offerId: string,
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    body?: object
+  ) => Promise<boolean>;
 }
 
 function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
@@ -166,10 +178,16 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
   const [ready, setReady] = useState<number | string>(15);
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
+  const [givingUp, setGivingUp] = useState(false);
+  const [giveUpReason, setGiveUpReason] = useState('');
   const [busy, setBusy] = useState(false);
   const view = card.view;
 
-  async function act(action: 'reply' | 'ready' | 'dispensed', body?: object, done?: string): Promise<void> {
+  async function act(
+    action: 'reply' | 'ready' | 'dispensed' | 'withdraw',
+    body?: object,
+    done?: string
+  ): Promise<void> {
     setBusy(true);
     const ok = await send(card.id, action, body);
     setBusy(false);
@@ -295,6 +313,14 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
             You offered KES {card.priceKes.toLocaleString('en-KE')}, ready in {card.readyMinutes ?? 0} min
           </Text>
         )}
+        {card.stage === 'chosen' && card.holdUntil && (
+          <Text size="sm">
+            Have it ready by {shortTime(card.holdUntil)}. After that the patient can choose another chemist.
+          </Text>
+        )}
+        {card.stage === 'ready' && card.holdUntil && (
+          <Text size="sm">The patient has until {shortTime(card.holdUntil)} to collect it.</Text>
+        )}
         {(card.stage === 'chosen' || card.stage === 'ready') && (
           <Paper bg="var(--mantine-color-green-light)" p="xs">
             <Text size="sm" fw={600}>
@@ -327,6 +353,37 @@ function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
           >
             Handed over
           </ConfirmButton>
+        )}
+        {(card.stage === 'chosen' || card.stage === 'ready') && !givingUp && (
+          <Button variant="subtle" color="red" size="xs" onClick={() => setGivingUp(true)}>
+            Can't fill it after all
+          </Button>
+        )}
+        {(card.stage === 'chosen' || card.stage === 'ready') && givingUp && (
+          <Stack gap="xs">
+            <TextInput
+              label="Why? (the patient sees it)"
+              placeholder="Out of stock"
+              value={giveUpReason}
+              onChange={(e) => setGiveUpReason(e.currentTarget.value)}
+            />
+            <Group grow gap="xs">
+              <Button variant="default" onClick={() => setGivingUp(false)} disabled={busy}>
+                Go back
+              </Button>
+              <Button
+                color="red"
+                loading={busy}
+                onClick={() =>
+                  act('withdraw', { reason: giveUpReason }, 'Released. The patient can choose another chemist.').catch(
+                    console.error
+                  )
+                }
+              >
+                Give it up
+              </Button>
+            </Group>
+          </Stack>
         )}
       </Stack>
     </Paper>

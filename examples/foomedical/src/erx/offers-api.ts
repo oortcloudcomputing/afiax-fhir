@@ -33,6 +33,8 @@ export interface OfferRequestStatus {
   readonly waiting: number;
   readonly declined: number;
   readonly offers: readonly RankedOffer[];
+  /** Why the request was closed: cancelled, the chemist gave it up, a time limit passed. */
+  readonly reason?: string;
   readonly chosen?: {
     readonly offer: string;
     readonly chemistName: string;
@@ -40,6 +42,8 @@ export interface OfferRequestStatus {
     readonly readyMinutes?: number;
     readonly phone?: string;
     readonly status: string;
+    /** Until when the chemist holds it: to be ready by, or to be collected by. */
+    readonly holdUntil?: string;
   };
 }
 
@@ -48,6 +52,7 @@ export interface OfferApi {
   request(prescriptions: readonly string[], position: Position): Promise<OfferRequestStatus>;
   status(request: string): Promise<OfferRequestStatus>;
   choose(request: string, offer: string): Promise<OfferRequestStatus>;
+  cancel(request: string): Promise<OfferRequestStatus>;
 }
 
 /** An answer afiax-services refused, with its own words for the patient. */
@@ -95,5 +100,6 @@ export function servicesOfferApi(
     request: (prescriptions, position) => call('', { prescriptions, position }),
     status: (request) => call(`/${encodeURIComponent(request)}`),
     choose: (request, offer) => call(`/${encodeURIComponent(request)}/choose`, { offer }),
+    cancel: (request) => call(`/${encodeURIComponent(request)}/cancel`, {}),
   };
 }

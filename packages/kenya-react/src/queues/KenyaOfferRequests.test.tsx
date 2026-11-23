@@ -190,6 +190,49 @@ describe('KenyaOfferRequests', () => {
     unmount();
   });
 
+  test('shows the time limit, and lets the chosen chemist give it up with a reason', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(ok({ status: 'cancelled' }));
+    const task = chosenTask('accepted');
+    const { unmount } = await show([{ ...task, executionPeriod: { end: minutes(135) } }], fetchFn);
+    expect(
+      screen.getByText(/^Have it ready by .*After that the patient can choose another chemist\.$/)
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: "Can't fill it after all" }));
+    fireEvent.change(screen.getByLabelText(/the patient sees it/), { target: { value: 'Out of stock' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Give it up' }));
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://services.test/erx/offers/o-chosen/withdraw',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ reason: 'Out of stock' }) })
+    );
+    expect(await screen.findByText('Released. The patient can choose another chemist.')).toBeInTheDocument();
+    unmount();
+  });
+
+  test('says by when the patient must collect', async () => {
+    const { unmount } = await show(
+      [{ ...chosenTask('in-progress'), executionPeriod: { end: minutes(3 * 24 * 60) } }],
+      jest.fn()
+    );
+    expect(screen.getByText(/^The patient has until .* to collect it\.$/)).toBeInTheDocument();
+    unmount();
+  });
+
+  test('shows why an order was released', async () => {
+    const { unmount } = await show(
+      [
+        offerTask('rel', {
+          status: 'cancelled',
+          statusReason: { text: 'Not collected in time: the prescription was released' },
+        }),
+      ],
+      jest.fn()
+    );
+    expect(screen.getByText('Not collected in time: the prescription was released')).toBeInTheDocument();
+    unmount();
+  });
+
   test('says when there is nothing to answer, and lists what closed', async () => {
     const { unmount } = await show(
       [offerTask('old', { status: 'cancelled', statusReason: { text: 'The patient chose another chemist' } })],

@@ -38,6 +38,7 @@ function fakeApi(over: Partial<OfferApi> = {}): jest.Mocked<OfferApi> {
     request: jest.fn().mockResolvedValue(waiting([])),
     status: jest.fn().mockResolvedValue(waiting([])),
     choose: jest.fn(),
+    cancel: jest.fn(),
     ...over,
   } as jest.Mocked<OfferApi>;
 }
@@ -193,6 +194,78 @@ describe('Find a chemist', () => {
   });
 });
 
+describe('Find a chemist: cancelling and time limits', () => {
+  beforeEach(() => localStorage.clear());
+
+  const chosenStatus = (state: 'chosen' | 'ready', holdUntil: string): OfferRequestStatus => ({
+    ...waiting([]),
+    state,
+    chosen: { offer: 'o', chemistName: 'Galleria Chemist', priceKes: 590, readyMinutes: 15, status: state, holdUntil },
+  });
+
+  async function confirmCancel(): Promise<void> {
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel request' }));
+    });
+  }
+
+  test('stops asking while chemists answer', async () => {
+    const api = fakeApi({
+      cancel: jest.fn().mockResolvedValue({ ...waiting([]), state: 'cancelled', reason: 'You cancelled this request' }),
+    });
+    await show(api);
+    await findChemist();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Stop asking' }));
+    });
+    expect(await screen.findByText(/The chemists are told you no longer need offers/)).toBeInTheDocument();
+    await confirmCancel();
+    expect(api.cancel).toHaveBeenCalledWith('req-1');
+    expect(screen.getByText('Request cancelled')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Find a chemist again' }));
+    });
+    expect(screen.getByRole('button', { name: /Find a chemist/ })).toBeInTheDocument();
+  });
+
+  test('shows until when the chemist holds it, and cancels the order', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const readyBy = new Date();
+    readyBy.setHours(23, 59, 0, 0);
+    const api = fakeApi({
+      status: jest.fn().mockResolvedValue(chosenStatus('chosen', readyBy.toISOString())),
+      cancel: jest.fn().mockResolvedValue({ ...waiting([]), state: 'cancelled', reason: 'You cancelled this request' }),
+    });
+    await show(api);
+    expect(screen.getByText(/If it is not ready by .*59, your order is released/)).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
+    });
+    expect(await screen.findByText(/Galleria Chemist is told and stops preparing it/)).toBeInTheDocument();
+    await confirmCancel();
+    expect(api.cancel).toHaveBeenCalledWith('req-1');
+    expect(screen.getByText('Request cancelled')).toBeInTheDocument();
+  });
+
+  test('says by when to collect once it is ready', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const api = fakeApi({ status: jest.fn().mockResolvedValue(chosenStatus('ready', '2026-11-26T10:00:00Z')) });
+    await show(api);
+    expect(screen.getByText(/^Collect by /)).toBeInTheDocument();
+  });
+
+  test('explains a released order', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const reason = 'Galleria Chemist did not get it ready in time. Find another chemist.';
+    const api = fakeApi({ status: jest.fn().mockResolvedValue({ ...waiting([]), state: 'cancelled', reason }) });
+    await show(api);
+    expect(screen.getByText('Your order was released')).toBeInTheDocument();
+    expect(screen.getByText(reason)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Find a chemist again' })).toBeInTheDocument();
+  });
+});
+
 describe('The offer API on afiax-services', () => {
   test('sends the patient token and passes on refusals in their own words', async () => {
     const fetchFn = jest
@@ -220,6 +293,12 @@ describe('The offer API on afiax-services', () => {
     expect(fetchFn).toHaveBeenLastCalledWith(
       'https://services.test/erx/offer-requests/req-1',
       expect.objectContaining({ method: 'GET' })
+    );
+    fetchFn.mockResolvedValueOnce({ ok: true, status: 200, json: async () => waiting([]) });
+    await expect(api.cancel('req-1')).resolves.toMatchObject({ request: 'req-1' });
+    expect(fetchFn).toHaveBeenLastCalledWith(
+      'https://services.test/erx/offer-requests/req-1/cancel',
+      expect.objectContaining({ method: 'POST' })
     );
   });
 });

@@ -88,6 +88,22 @@ function clock(ms: number): string {
 
 const kes = (n: number | undefined): string => `KES ${(n ?? 0).toLocaleString('en-KE')}`;
 
+/** No chemist was open nearby (afiax-services' reason when nobody could be asked). */
+const NobodyOpen = 'No chemist open nearby';
+
+/**
+ * A moment, short: "4:30 pm" today, "Wed 4:30 pm" otherwise.
+ * @param iso - The moment.
+ * @returns The text.
+ */
+function when(iso: string): string {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' });
+  return d.toDateString() === new Date().toDateString()
+    ? time
+    : `${d.toLocaleDateString('en-KE', { weekday: 'short' })} ${time}`;
+}
+
 /**
  * Find a chemist for a prescription, and follow it until it is collected.
  * @param props - The component props.
@@ -96,7 +112,8 @@ const kes = (n: number | undefined): string => `KES ${(n ?? 0).toLocaleString('e
 export function FindChemist(props: FindChemistProps): JSX.Element {
   const { prescriptions, api, storageKey, locate = browserLocation, pollMs = 3000, followMs = 15_000 } = props;
   const [status, setStatus] = useState<OfferRequestStatus>();
-  const [busy, setBusy] = useState<'locating' | 'asking' | 'choosing'>();
+  const [busy, setBusy] = useState<'locating' | 'asking' | 'choosing' | 'cancelling'>();
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string>();
   const [choosing, setChoosing] = useState<RankedOffer>();
   const [now, setNow] = useState(() => Date.now());
@@ -189,6 +206,23 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
     }
   }
 
+  async function cancel(): Promise<void> {
+    if (!requestId) {
+      return;
+    }
+    setError(undefined);
+    setBusy('cancelling');
+    try {
+      setStatus(await api.cancel(requestId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      refresh();
+    } finally {
+      setBusy(undefined);
+      setCancelling(false);
+    }
+  }
+
   function again(): void {
     remember(storageKey, undefined);
     setStatus(undefined);
@@ -216,7 +250,19 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
           </>
         )}
 
-        {status?.state === 'cancelled' && (
+        {status?.state === 'cancelled' && status.reason && status.reason !== NobodyOpen && (
+          <>
+            <Title order={4}>
+              {status.reason === 'You cancelled this request' ? 'Request cancelled' : 'Your order was released'}
+            </Title>
+            <Text size="sm">{status.reason}</Text>
+            <Button variant="light" onClick={again} fullWidth>
+              Find a chemist again
+            </Button>
+          </>
+        )}
+
+        {status?.state === 'cancelled' && (!status.reason || status.reason === NobodyOpen) && (
           <>
             <Title order={4}>No chemist open near you right now</Title>
             <Text size="sm">
@@ -229,11 +275,18 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
         )}
 
         {status?.state === 'waiting' && (
-          <Waiting status={status} left={left} windowMs={windowMs} onChoose={setChoosing} onAgain={again} />
+          <Waiting
+            status={status}
+            left={left}
+            windowMs={windowMs}
+            onChoose={setChoosing}
+            onAgain={again}
+            onCancel={() => setCancelling(true)}
+          />
         )}
 
         {status && (status.state === 'chosen' || status.state === 'ready' || status.state === 'collected') && (
-          <Chosen status={status} onDone={again} />
+          <Chosen status={status} onDone={again} onCancel={() => setCancelling(true)} />
         )}
 
         {error && (
@@ -266,6 +319,24 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
           </Stack>
         )}
       </Modal>
+
+      <Modal opened={cancelling} onClose={() => setCancelling(false)} title="Cancel this request?" centered>
+        <Stack gap="sm">
+          <Text size="sm">
+            {status?.chosen
+              ? `${status.chosen.chemistName} is told and stops preparing it. You can find another chemist afterwards.`
+              : 'The chemists are told you no longer need offers. You can ask again afterwards.'}
+          </Text>
+          <Group grow>
+            <Button variant="default" onClick={() => setCancelling(false)} disabled={busy === 'cancelling'}>
+              Keep it
+            </Button>
+            <Button color="red" onClick={() => cancel()} loading={busy === 'cancelling'}>
+              Cancel request
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Card>
   );
 }
@@ -276,8 +347,9 @@ function Waiting(props: {
   readonly windowMs: number;
   readonly onChoose: (offer: RankedOffer) => void;
   readonly onAgain: () => void;
+  readonly onCancel: () => void;
 }): JSX.Element {
-  const { status, left, windowMs, onChoose, onAgain } = props;
+  const { status, left, windowMs, onChoose, onAgain, onCancel } = props;
   const open = left > 0 && status.waiting > 0;
   const parts = [
     `${status.asked} chemist${status.asked === 1 ? '' : 's'} asked`,
@@ -332,6 +404,11 @@ function Waiting(props: {
           More offers may come in. You can choose now or wait.
         </Text>
       )}
+      {(open || status.offers.length > 0) && (
+        <Button variant="subtle" color="gray" size="xs" onClick={onCancel}>
+          Stop asking
+        </Button>
+      )}
     </>
   );
 }
@@ -381,8 +458,12 @@ function OfferCard(props: { readonly offer: RankedOffer; readonly onChoose: () =
   );
 }
 
-function Chosen(props: { readonly status: OfferRequestStatus; readonly onDone: () => void }): JSX.Element {
-  const { status, onDone } = props;
+function Chosen(props: {
+  readonly status: OfferRequestStatus;
+  readonly onDone: () => void;
+  readonly onCancel: () => void;
+}): JSX.Element {
+  const { status, onDone, onCancel } = props;
   const chosen = status.chosen;
   const step = { chosen: 1, ready: 2, collected: 3 }[status.state as 'chosen' | 'ready' | 'collected'];
   const headline = {
@@ -412,10 +493,21 @@ function Chosen(props: { readonly status: OfferRequestStatus; readonly onDone: (
           </Anchor>
         )}
       </Card>
-      {status.state !== 'collected' && (
-        <Text size="sm" c="dimmed">
-          Take your ID. Pay at the chemist when you collect.
+      {status.state === 'chosen' && chosen?.holdUntil && (
+        <Text size="sm">
+          If it is not ready by {when(chosen.holdUntil)}, your order is released and you can choose another chemist.
         </Text>
+      )}
+      {status.state === 'ready' && chosen?.holdUntil && <Text size="sm">Collect by {when(chosen.holdUntil)}.</Text>}
+      {status.state !== 'collected' && (
+        <>
+          <Text size="sm" c="dimmed">
+            Take your ID. Pay at the chemist when you collect.
+          </Text>
+          <Button variant="subtle" color="red" size="xs" onClick={onCancel}>
+            Cancel order
+          </Button>
+        </>
       )}
       {status.state === 'collected' && (
         <>

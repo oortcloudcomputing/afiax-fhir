@@ -83,24 +83,45 @@ function rank(offers: Omit<RankedOffer, 'score' | 'best'>[]): RankedOffer[] {
     .map((o, i) => ({ ...o, best: i === 0 }));
 }
 
-function simulatedApi(speed: number): OfferApi {
+/** What the chemist side does in the preview (buttons under the screen). */
+interface ChemistActions {
+  giveUp(): void;
+  timeRunsOut(): void;
+  handOver(): void;
+}
+
+function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions } {
   let started = 0;
   let chosenAt = 0;
   let chosen: Simulated | undefined;
+  let closed: string | undefined;
+  let collected = false;
   const secs = (since: number): number => ((Date.now() - since) / 1000) * speed;
 
   function status(): OfferRequestStatus {
     const t = secs(started);
     const answered = chemists.filter((c) => c.at <= t);
     const expiresAt = new Date(started + (5 * 60 * 1000) / speed).toISOString();
+    if (closed) {
+      return {
+        request: 'preview',
+        state: 'cancelled',
+        asked: chemists.length,
+        waiting: 0,
+        declined: 0,
+        offers: [],
+        reason: closed,
+      };
+    }
     if (chosen) {
       const c = secs(chosenAt);
       let state: 'chosen' | 'ready' | 'collected' = 'chosen';
-      if (c > 16) {
+      if (collected) {
         state = 'collected';
       } else if (c > 8) {
         state = 'ready';
       }
+      const readyBy = chosenAt + ((chosen.readyMinutes ?? 0) * 60_000 + 2 * 60 * 60_000) / speed;
       return {
         request: 'preview',
         state,
@@ -116,6 +137,10 @@ function simulatedApi(speed: number): OfferApi {
           readyMinutes: chosen.readyMinutes,
           phone: chosen.phone,
           status: { chosen: 'Chosen by the patient', ready: 'Ready to collect', collected: 'Collected' }[state],
+          holdUntil:
+            state === 'collected'
+              ? undefined
+              : new Date(state === 'ready' ? Date.now() + 3 * 24 * 60 * 60_000 : readyBy).toISOString(),
         },
       };
     }
@@ -149,11 +174,13 @@ function simulatedApi(speed: number): OfferApi {
     new Promise((resolve) => {
       setTimeout(() => resolve(value()), ms);
     });
-  return {
+  const api: OfferApi = {
     request: () =>
       later(() => {
         started = Date.now();
         chosen = undefined;
+        closed = undefined;
+        collected = false;
         return status();
       }, 600),
     status: () => (started ? later(status, 150) : Promise.reject(new Error('No request yet'))),
@@ -163,7 +190,27 @@ function simulatedApi(speed: number): OfferApi {
         chosenAt = Date.now();
         return status();
       }),
+    cancel: () =>
+      later(() => {
+        closed = 'You cancelled this request';
+        return status();
+      }),
   };
+  const chemist: ChemistActions = {
+    giveUp: () => {
+      closed = `${chosen?.name ?? 'The chemist'} cannot fill it after all (Out of stock). Find another chemist.`;
+    },
+    timeRunsOut: () => {
+      closed =
+        secs(chosenAt) > 8
+          ? 'It was not collected in time, so the chemist released it. Find a chemist again if you still need it.'
+          : `${chosen?.name ?? 'The chemist'} did not get it ready in time. Find another chemist.`;
+    },
+    handOver: () => {
+      collected = true;
+    },
+  };
+  return { api, chemist };
 }
 
 /**
@@ -173,7 +220,7 @@ function simulatedApi(speed: number): OfferApi {
 export default function FindChemistPreview(): JSX.Element {
   const [speed, setSpeed] = useState(1);
   const [run, setRun] = useState(0);
-  const api = useMemo(() => simulatedApi(speed), [speed, run]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { api, chemist } = useMemo(() => simulatedApi(speed), [speed, run]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Container size={420} px={16} py="md">
       <Stack gap="md">
@@ -209,6 +256,22 @@ export default function FindChemistPreview(): JSX.Element {
           pollMs={1000}
           followMs={1000}
         />
+        <Stack gap={4}>
+          <Text size="xs" c="dimmed">
+            The chemist's side, after you choose:
+          </Text>
+          <Group gap="xs">
+            <Button size="compact-xs" variant="default" onClick={chemist.giveUp}>
+              Can't fill it after all
+            </Button>
+            <Button size="compact-xs" variant="default" onClick={chemist.timeRunsOut}>
+              Time limit passes
+            </Button>
+            <Button size="compact-xs" variant="default" onClick={chemist.handOver}>
+              Handed over
+            </Button>
+          </Group>
+        </Stack>
       </Stack>
     </Container>
   );

@@ -307,7 +307,13 @@ describe('KenyaOfferRequests', () => {
     const clearWatch = jest.fn();
     Object.defineProperty(globalThis.navigator, 'geolocation', {
       configurable: true,
-      value: { watchPosition: jest.fn((ok) => ((report = ok), 7)), clearWatch },
+      value: {
+        watchPosition: jest.fn((ok) => {
+          report = ok;
+          return 7;
+        }),
+        clearWatch,
+      },
     });
     const fetchFn = jest.fn().mockResolvedValue(ok({ status: 'completed' }));
     const task = chosenTask('in-progress');

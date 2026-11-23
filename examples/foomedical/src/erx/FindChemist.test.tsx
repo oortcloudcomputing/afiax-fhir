@@ -129,7 +129,7 @@ describe('Find a chemist', () => {
     await act(async () => {
       fireEvent.click(within(dialog).getByRole('button', { name: 'Choose' }));
     });
-    expect(api.choose).toHaveBeenCalledWith('req-1', best.offer);
+    expect(api.choose).toHaveBeenCalledWith('req-1', best.offer, undefined);
     expect(screen.getByText('Galleria Chemist is preparing it')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /\+254700000002/ })).toHaveAttribute('href', 'tel:+254700000002');
     expect(screen.getByText(/Take your ID/)).toBeInTheDocument();
@@ -378,6 +378,77 @@ describe('Find a chemist: reviews', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Send rating' }));
     });
     expect(api.rate).toHaveBeenCalledWith('req-1', 5, 'Ready on time');
+  });
+});
+
+describe('Find a chemist: delivery', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('shows the delivery offer, and chooses delivery with directions', async () => {
+    const offerWithDelivery = offer('Galleria Chemist', 590, true, { deliveryKes: 150, deliveryMinutes: 40 });
+    const api = fakeApi({
+      request: jest.fn().mockResolvedValue({ ...waiting([offerWithDelivery]), position: karen }),
+      status: jest.fn().mockResolvedValue({ ...waiting([offerWithDelivery]), position: karen }),
+      choose: jest.fn().mockResolvedValue({ ...waiting([]), state: 'chosen' }),
+    });
+    await show(api);
+    await findChemist();
+    expect(screen.getByText(/delivery KES 150, ~40 min/)).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('offer')).getByRole('button', { name: 'Choose' }));
+    });
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByText('Deliver to me'));
+    });
+    expect(dialog).toHaveTextContent('KES 740 in all (KES 590 + KES 150 delivery), arriving in about 55 min.');
+    expect(dialog).toHaveTextContent('give them the code My Afiax shows you');
+    fireEvent.change(within(dialog).getByLabelText('Directions for the rider'), { target: { value: 'Blue gate' } });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Choose delivery' }));
+    });
+    expect(api.choose).toHaveBeenCalledWith('req-1', offerWithDelivery.offer, {
+      position: karen,
+      directions: 'Blue gate',
+    });
+  });
+
+  test('offers no delivery when the chemist does not deliver', async () => {
+    const plain = { ...waiting([offer('Galleria Chemist', 590, true)]), position: karen };
+    const api = fakeApi({ request: jest.fn().mockResolvedValue(plain), status: jest.fn().mockResolvedValue(plain) });
+    await show(api);
+    await findChemist();
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('offer')).getByRole('button', { name: 'Choose' }));
+    });
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByText('Deliver to me')).not.toBeInTheDocument();
+  });
+
+  test('follows the rider, with the code and the arrival time', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const api = fakeApi({
+      status: jest.fn().mockResolvedValue({
+        ...waiting([]),
+        state: 'delivering',
+        position: karen,
+        chosen: {
+          offer: 'o',
+          chemistName: 'Galleria Chemist',
+          priceKes: 590,
+          status: 'Out for delivery',
+          delivery: { position: karen, directions: 'Blue gate', feeKes: 150, minutes: 40 },
+          rider: { position: { lat: -1.31, lng: 36.71 }, at: new Date().toISOString(), etaMinutes: 7 },
+          code: '4821',
+        },
+      } satisfies OfferRequestStatus),
+    });
+    await show(api);
+    expect(screen.getByRole('heading', { name: 'On the way: about 7 min' })).toBeInTheDocument();
+    expect(screen.getByTestId('delivery-code')).toHaveTextContent('4821');
+    expect(screen.getByText('KES 740 with KES 150 delivery')).toBeInTheDocument();
+    expect(screen.getByText('Your directions: Blue gate')).toBeInTheDocument();
+    expect(screen.getByText('Pay the rider when it arrives.')).toBeInTheDocument();
   });
 });
 

@@ -30,7 +30,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAP_AVAILABLE } from '../config';
 import { ChemistReviews } from './ChemistReviews';
 import { OffersMap } from './OffersMap';
-import type { OfferApi, OfferRequestStatus, Position, RankedOffer } from './offers-api';
+import { DeliveryPin } from './DeliveryPin';
+import type { Delivery, OfferApi, OfferRequestStatus, Position, RankedOffer } from './offers-api';
 import { OfferApiError } from './offers-api';
 
 /** The offer window (afiax-services OfferWindowMs). */
@@ -175,7 +176,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
   const expiresAt = status?.expiresAt ? Date.parse(status.expiresAt) : undefined;
   const left = expiresAt ? expiresAt - now : 0;
   const stillAnswering = status?.state === 'waiting' && left > 0 && status.waiting > 0;
-  const following = status?.state === 'chosen' || status?.state === 'ready';
+  const following = status?.state === 'chosen' || status?.state === 'ready' || status?.state === 'delivering';
 
   const refresh = useCallback(() => {
     if (!requestId) {
@@ -224,14 +225,14 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
     }
   }
 
-  async function choose(offer: RankedOffer): Promise<void> {
+  async function choose(offer: RankedOffer, delivery?: Delivery): Promise<void> {
     if (!requestId) {
       return;
     }
     setError(undefined);
     setBusy('choosing');
     try {
-      setStatus(await api.choose(requestId, offer.offer));
+      setStatus(await api.choose(requestId, offer.offer, delivery));
     } catch (err) {
       setError(err instanceof OfferApiError || err instanceof Error ? err.message : String(err));
       refresh();
@@ -335,7 +336,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
           />
         )}
 
-        {status && (status.state === 'chosen' || status.state === 'ready' || status.state === 'collected') && (
+        {status && ['chosen', 'ready', 'delivering', 'collected'].includes(status.state) && (
           <Chosen status={status} onDone={again} onCancel={() => setCancelling(true)} onRate={rate} />
         )}
 
@@ -348,25 +349,13 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
 
       <Modal opened={!!choosing} onClose={() => setChoosing(undefined)} title="Choose this chemist?" centered>
         {choosing && (
-          <Stack gap="sm">
-            <Text fw={600}>{choosing.chemistName}</Text>
-            <Text size="sm">
-              {kes(choosing.priceKes)} for everything, ready in {choosing.readyMinutes} min, {choosing.distanceKm} km
-              away.
-            </Text>
-            <Text size="sm" c="dimmed">
-              They get your name and phone so they can prepare it and call you. The other chemists are told you chose
-              someone else. Pay at the chemist when you collect.
-            </Text>
-            <Group grow>
-              <Button variant="default" onClick={() => setChoosing(undefined)} disabled={busy === 'choosing'}>
-                Go back
-              </Button>
-              <Button onClick={() => choose(choosing)} loading={busy === 'choosing'}>
-                Choose
-              </Button>
-            </Group>
-          </Stack>
+          <ChooseDialog
+            offer={choosing}
+            from={status?.position}
+            busy={busy === 'choosing'}
+            onBack={() => setChoosing(undefined)}
+            onChoose={(delivery) => choose(choosing, delivery)}
+          />
         )}
       </Modal>
 
@@ -524,7 +513,11 @@ function OfferCard(props: {
               {offer.chemistName}
             </Text>
             <Text size="xs" c="dimmed">
-              {offer.distanceKm} km · ready in {offer.readyMinutes} min ·{' '}
+              {offer.distanceKm} km · ready in {offer.readyMinutes} min
+              {offer.deliveryMinutes !== undefined
+                ? ` · ${deliveryText(offer.deliveryKes, offer.deliveryMinutes)}`
+                : ''}{' '}
+              ·{' '}
               {offer.rating !== undefined && offer.ratings ? (
                 <Anchor component="button" type="button" size="xs" onClick={onReviews}>
                   <IconStarFilled size={10} style={{ verticalAlign: 'baseline' }} /> {offer.rating.toFixed(1)} (
@@ -552,6 +545,87 @@ function OfferCard(props: {
   );
 }
 
+function deliveryText(feeKes: number | undefined, minutes: number | undefined): string {
+  return `${feeKes ? `delivery ${kes(feeKes)}` : 'free delivery'}, ~${minutes ?? 0} min`;
+}
+
+function ChooseDialog(props: {
+  readonly offer: RankedOffer;
+  /** Where the patient searched from: the delivery pin starts there. */
+  readonly from?: Position;
+  readonly busy: boolean;
+  readonly onBack: () => void;
+  readonly onChoose: (delivery?: Delivery) => void;
+}): JSX.Element {
+  const { offer, from, busy, onBack, onChoose } = props;
+  const delivers = offer.deliveryMinutes !== undefined && !!from;
+  const [mode, setMode] = useState<'collect' | 'deliver'>('collect');
+  const [pin, setPin] = useState<Position | undefined>(from);
+  const [directions, setDirections] = useState('');
+  const deliver = delivers && mode === 'deliver';
+  return (
+    <Stack gap="sm">
+      <Text fw={600}>{offer.chemistName}</Text>
+      {delivers && (
+        <SegmentedControl
+          value={mode}
+          onChange={(v) => setMode(v as 'collect' | 'deliver')}
+          data={[
+            { value: 'collect', label: 'I collect' },
+            { value: 'deliver', label: 'Deliver to me' },
+          ]}
+        />
+      )}
+      {!deliver && (
+        <Text size="sm">
+          {kes(offer.priceKes)} for everything, ready in {offer.readyMinutes} min, {offer.distanceKm} km away.
+        </Text>
+      )}
+      {deliver && pin && (
+        <>
+          <Text size="sm">
+            {kes(offer.priceKes + (offer.deliveryKes ?? 0))} in all ({kes(offer.priceKes)} +{' '}
+            {offer.deliveryKes ? `${kes(offer.deliveryKes)} delivery` : 'free delivery'}), arriving in about{' '}
+            {offer.readyMinutes + (offer.deliveryMinutes ?? 0)} min.
+          </Text>
+          <DeliveryPin value={pin} onChange={setPin} />
+          <Textarea
+            label="Directions for the rider"
+            placeholder="Gate, building, floor, landmark"
+            value={directions}
+            onChange={(e) => setDirections(e.currentTarget.value)}
+            maxLength={300}
+            autosize
+            minRows={2}
+          />
+        </>
+      )}
+      <Text size="sm" c="dimmed">
+        They get your name and phone so they can prepare it and call you. The other chemists are told you chose someone
+        else.{' '}
+        {deliver
+          ? 'Pay the rider when it arrives, and give them the code My Afiax shows you.'
+          : 'Pay at the chemist when you collect.'}
+      </Text>
+      <Group grow>
+        <Button variant="default" onClick={onBack} disabled={busy}>
+          Go back
+        </Button>
+        <Button
+          onClick={() =>
+            onChoose(deliver && pin ? { position: pin, directions: directions.trim() || undefined } : undefined)
+          }
+          loading={busy}
+        >
+          {deliver ? 'Choose delivery' : 'Choose'}
+        </Button>
+      </Group>
+    </Stack>
+  );
+}
+
+type Following = 'chosen' | 'ready' | 'delivering' | 'collected';
+
 function Chosen(props: {
   readonly status: OfferRequestStatus;
   readonly onDone: () => void;
@@ -560,36 +634,62 @@ function Chosen(props: {
 }): JSX.Element {
   const { status, onDone, onCancel, onRate } = props;
   const chosen = status.chosen;
-  const step = { chosen: 1, ready: 2, collected: 3 }[status.state as 'chosen' | 'ready' | 'collected'];
+  const delivery = chosen?.delivery;
+  const state = status.state as Following;
+  const step = { chosen: 1, ready: 2, delivering: 2, collected: 3 }[state];
   const headline = {
     chosen: `${chosen?.chemistName ?? 'The chemist'} is preparing it`,
     ready: 'Ready to collect',
-    collected: 'Collected',
-  }[status.state as 'chosen' | 'ready' | 'collected'];
+    delivering: chosen?.rider ? `On the way: about ${chosen.rider.etaMinutes} min` : 'On the way',
+    collected: delivery ? 'Delivered' : 'Collected',
+  }[state];
+  let timing = '';
+  if (state === 'chosen' && chosen?.readyMinutes !== undefined) {
+    timing = delivery
+      ? ` · arriving in about ${chosen.readyMinutes + (delivery.minutes ?? 0)} min`
+      : ` · ready in about ${chosen.readyMinutes} min`;
+  }
+  const pins = [
+    ...(chosen?.position && !(delivery && state === 'delivering')
+      ? [{ id: chosen.offer, position: chosen.position, label: chosen.chemistName }]
+      : []),
+    ...(chosen?.rider ? [{ id: 'rider', position: chosen.rider.position, label: 'Rider', rider: true }] : []),
+  ];
   return (
     <>
       <Title order={4}>{headline}</Title>
       <Stepper active={step} size="xs" allowNextStepsSelect={false}>
         <Stepper.Step label="Chosen" />
-        <Stepper.Step label="Ready" />
-        <Stepper.Step label="Collected" />
+        <Stepper.Step label={delivery ? 'On the way' : 'Ready'} />
+        <Stepper.Step label={delivery ? 'Delivered' : 'Collected'} />
       </Stepper>
+      {chosen?.code && (
+        <Card withBorder radius="md" p="sm" ta="center" data-testid="delivery-code">
+          <Text size="sm">Give the rider this code when they hand it over</Text>
+          <Text fw={700} fz={32} lts={6}>
+            {chosen.code}
+          </Text>
+          <Text size="xs" c="dimmed">
+            Never share it before the medicines are in your hands.
+          </Text>
+        </Card>
+      )}
       <Card withBorder radius="md" p="sm">
         <Text fw={600}>{chosen?.chemistName}</Text>
         <Text size="sm">
-          {kes(chosen?.priceKes)}
-          {status.state === 'chosen' && chosen?.readyMinutes !== undefined
-            ? ` · ready in about ${chosen.readyMinutes} min`
-            : ''}
+          {kes((chosen?.priceKes ?? 0) + (delivery?.feeKes ?? 0))}
+          {delivery ? ` with ${delivery.feeKes ? `${kes(delivery.feeKes)} delivery` : 'free delivery'}` : ''}
+          {timing}
         </Text>
-        {chosen?.address && <Text size="sm">{chosen.address}</Text>}
+        {!delivery && chosen?.address && <Text size="sm">{chosen.address}</Text>}
+        {delivery?.directions && <Text size="sm">Your directions: {delivery.directions}</Text>}
         <Group gap="md">
           {chosen?.phone && (
             <Anchor href={`tel:${chosen.phone}`} size="sm">
               <IconPhone size={14} style={{ verticalAlign: 'middle' }} /> {chosen.phone}
             </Anchor>
           )}
-          {chosen?.position && status.state !== 'collected' && (
+          {!delivery && chosen?.position && state !== 'collected' && (
             <Anchor
               href={`https://www.google.com/maps/dir/?api=1&destination=${chosen.position.lat},${chosen.position.lng}`}
               target="_blank"
@@ -601,30 +701,27 @@ function Chosen(props: {
           )}
         </Group>
       </Card>
-      {MAP_AVAILABLE && chosen?.position && status.state !== 'collected' && (
-        <OffersMap
-          center={status.position ?? chosen.position}
-          pins={[{ id: chosen.offer, position: chosen.position, label: chosen.chemistName }]}
-          height={180}
-        />
+      {MAP_AVAILABLE && pins.length > 0 && state !== 'collected' && (
+        <OffersMap center={delivery?.position ?? status.position ?? pins[0].position} pins={pins} height={200} />
       )}
-      {status.state === 'chosen' && chosen?.holdUntil && (
+      {state === 'chosen' && chosen?.holdUntil && (
         <Text size="sm">
-          If it is not ready by {when(chosen.holdUntil)}, your order is released and you can choose another chemist.
+          If it is not {delivery ? 'on its way' : 'ready'} by {when(chosen.holdUntil)}, your order is released and you
+          can choose another chemist.
         </Text>
       )}
-      {status.state === 'ready' && chosen?.holdUntil && <Text size="sm">Collect by {when(chosen.holdUntil)}.</Text>}
-      {status.state !== 'collected' && (
+      {state === 'ready' && chosen?.holdUntil && <Text size="sm">Collect by {when(chosen.holdUntil)}.</Text>}
+      {state !== 'collected' && (
         <>
           <Text size="sm" c="dimmed">
-            Take your ID. Pay at the chemist when you collect.
+            {delivery ? 'Pay the rider when it arrives.' : 'Take your ID. Pay at the chemist when you collect.'}
           </Text>
           <Button variant="subtle" color="red" size="xs" onClick={onCancel}>
             Cancel order
           </Button>
         </>
       )}
-      {status.state === 'collected' && (
+      {state === 'collected' && (
         <>
           <Text size="sm">Your record shows this prescription as dispensed.</Text>
           <RateChemist name={chosen?.chemistName ?? 'the chemist'} rated={status.rated} onRate={onRate} />

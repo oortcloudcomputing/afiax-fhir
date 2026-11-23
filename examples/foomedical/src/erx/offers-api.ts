@@ -25,11 +25,21 @@ export interface RankedOffer {
   readonly best: boolean;
   /** Where the chemist is. */
   readonly position?: Position;
+  /** When the chemist also delivers: the fee (0 = free) and minutes until it arrives. */
+  readonly deliveryKes?: number;
+  readonly deliveryMinutes?: number;
+}
+
+/** Where to deliver (only the chosen chemist's rider gets it). */
+export interface Delivery {
+  readonly position: Position;
+  /** Gate, building, landmark. */
+  readonly directions?: string;
 }
 
 export interface OfferRequestStatus {
   readonly request: string;
-  readonly state: 'waiting' | 'chosen' | 'ready' | 'collected' | 'cancelled';
+  readonly state: 'waiting' | 'chosen' | 'ready' | 'delivering' | 'collected' | 'cancelled';
   readonly expiresAt?: string;
   /** Where the patient searched from. */
   readonly position?: Position;
@@ -52,6 +62,12 @@ export interface OfferRequestStatus {
     readonly holdUntil?: string;
     readonly position?: Position;
     readonly address?: string;
+    /** When the patient chose delivery. */
+    readonly delivery?: Delivery & { readonly feeKes?: number; readonly minutes?: number };
+    /** While on the way: where the rider was last, and about how long until they arrive. */
+    readonly rider?: { readonly position: Position; readonly at: string; readonly etaMinutes: number };
+    /** The 4 digits the patient gives the rider at the door. */
+    readonly code?: string;
   };
 }
 
@@ -67,7 +83,7 @@ export interface Review {
 export interface OfferApi {
   request(prescriptions: readonly string[], position: Position): Promise<OfferRequestStatus>;
   status(request: string): Promise<OfferRequestStatus>;
-  choose(request: string, offer: string): Promise<OfferRequestStatus>;
+  choose(request: string, offer: string, delivery?: Delivery): Promise<OfferRequestStatus>;
   cancel(request: string): Promise<OfferRequestStatus>;
   rate(request: string, stars: number, comment?: string): Promise<OfferRequestStatus>;
   /** A chemist's latest written reviews (newest first). */
@@ -118,7 +134,7 @@ export function servicesOfferApi(
   return {
     request: (prescriptions, position) => call('/offer-requests', { prescriptions, position }),
     status: (id) => call(request(id)),
-    choose: (id, offer) => call(`${request(id)}/choose`, { offer }),
+    choose: (id, offer, delivery) => call(`${request(id)}/choose`, { offer, delivery }),
     cancel: (id) => call(`${request(id)}/cancel`, {}),
     rate: (id, stars, comment) => call(`${request(id)}/rate`, { stars, comment }),
     reviews: (chemistId) => call<Review[]>(`/chemists/${encodeURIComponent(chemistId)}/reviews`),

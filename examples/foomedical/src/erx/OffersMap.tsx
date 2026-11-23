@@ -12,7 +12,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
-import { MAP_AVAILABLE, MEDPLUM_MAPTILER_KEY } from '../config';
+import { MAP_AVAILABLE } from '../config';
+import { tileLayer } from './map-tiles';
 import type { Position } from './offers-api';
 
 export interface MapPin {
@@ -21,6 +22,8 @@ export interface MapPin {
   /** Short text on the pin, e.g. "KES 590". */
   readonly label: string;
   readonly best?: boolean;
+  /** A moving rider rather than a chemist. */
+  readonly rider?: boolean;
 }
 
 export interface OffersMapProps {
@@ -30,24 +33,6 @@ export interface OffersMapProps {
   /** A pin was tapped. */
   readonly onPick?: (id: string) => void;
   readonly height?: number;
-}
-
-function tiles(): L.TileLayer {
-  if (MEDPLUM_MAPTILER_KEY) {
-    return L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MEDPLUM_MAPTILER_KEY}`, {
-      tileSize: 512,
-      zoomOffset: -1,
-      maxZoom: 19,
-      attribution: '© MapTiler © OpenStreetMap contributors',
-      crossOrigin: true,
-    });
-  }
-  // Development only (left out of builds): OpenStreetMap's own tiles, used lightly
-  const dev = import.meta.env?.DEV ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' : '';
-  return L.tileLayer(dev, {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors',
-  });
 }
 
 function escape(text: string): string {
@@ -76,7 +61,7 @@ export function OffersMap(props: OffersMapProps): JSX.Element | null {
       [center.lat, center.lng],
       14
     );
-    tiles().addTo(m);
+    tileLayer().addTo(m);
     L.control.zoom({ position: 'bottomright' }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
@@ -108,7 +93,9 @@ export function OffersMap(props: OffersMapProps): JSX.Element | null {
     for (const pin of pins) {
       const icon = L.divIcon({
         className: '',
-        html: `<div style="transform:translate(-50%,-100%);display:inline-block;white-space:nowrap;padding:2px 8px;border-radius:12px;font:600 12px/18px sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4);background:${pin.best ? '#087f5b' : '#fff'};color:${pin.best ? '#fff' : '#212529'}">${pin.best ? '★ ' : ''}${escape(pin.label)}</div>`,
+        html: pin.rider
+          ? `<div style="transform:translate(-50%,-50%);font-size:26px;line-height:26px" title="${escape(pin.label)}">🛵</div>`
+          : `<div style="transform:translate(-50%,-100%);display:inline-block;white-space:nowrap;padding:2px 8px;border-radius:12px;font:600 12px/18px sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4);background:${pin.best ? '#087f5b' : '#fff'};color:${pin.best ? '#fff' : '#212529'}">${pin.best ? '★ ' : ''}${escape(pin.label)}</div>`,
         iconSize: [0, 0],
       });
       L.marker([pin.position.lat, pin.position.lng], { icon, keyboard: true, title: pin.label })

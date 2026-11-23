@@ -9,7 +9,7 @@ import { Alert, Box, Button, Container, Group, Stack, Text, Title } from '@manti
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { FindChemist } from './FindChemist';
-import type { OfferApi, OfferRequestStatus, RankedOffer } from './offers-api';
+import type { Delivery, OfferApi, OfferRequestStatus, RankedOffer } from './offers-api';
 
 interface Simulated {
   readonly at: number;
@@ -20,6 +20,8 @@ interface Simulated {
   readonly rating?: number;
   readonly ratings?: number;
   readonly phone: string;
+  /** Delivers: fee and minutes. */
+  readonly delivery?: { readonly kes: number; readonly minutes: number };
 }
 
 // Seconds after the request at which each chemist answers (no price: declines; no "at": never)
@@ -33,6 +35,7 @@ const chemists: Simulated[] = [
     rating: 4.7,
     ratings: 31,
     phone: '+254700000001',
+    delivery: { kes: 0, minutes: 25 },
   },
   {
     at: 7,
@@ -43,6 +46,7 @@ const chemists: Simulated[] = [
     rating: 4.4,
     ratings: 12,
     phone: '+254700000002',
+    delivery: { kes: 150, minutes: 40 },
   },
   { at: 10, name: 'Langata Road Chemist', distanceKm: 3.0, phone: '+254700000003' },
   {
@@ -110,6 +114,7 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
   let closed: string | undefined;
   let collected = false;
   let rated: number | undefined;
+  let delivery: Delivery | undefined;
   const secs = (since: number): number => ((Date.now() - since) / 1000) * speed;
 
   function status(): OfferRequestStatus {
@@ -129,12 +134,17 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
     }
     if (chosen) {
       const c = secs(chosenAt);
-      let state: 'chosen' | 'ready' | 'collected' = 'chosen';
+      let state: 'chosen' | 'ready' | 'delivering' | 'collected' = 'chosen';
       if (collected) {
         state = 'collected';
       } else if (c > 8) {
-        state = 'ready';
+        state = delivery ? 'delivering' : 'ready';
       }
+      // The rider rides from the chemist to the patient's pin over 30 simulated seconds
+      const from = placeOf(chosen);
+      const to = delivery?.position ?? karen;
+      const share = Math.min(1, Math.max(0, (c - 8) / 30));
+      const riderAt = { lat: from.lat + (to.lat - from.lat) * share, lng: from.lng + (to.lng - from.lng) * share };
       const readyBy = chosenAt + ((chosen.readyMinutes ?? 0) * 60_000 + 2 * 60 * 60_000) / speed;
       return {
         request: 'preview',
@@ -152,7 +162,24 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
           priceKes: chosen.priceKes,
           readyMinutes: chosen.readyMinutes,
           phone: chosen.phone,
-          status: { chosen: 'Chosen by the patient', ready: 'Ready to collect', collected: 'Collected' }[state],
+          status: {
+            chosen: 'Chosen by the patient',
+            ready: 'Ready to collect',
+            delivering: 'Out for delivery',
+            collected: 'Collected',
+          }[state],
+          delivery: delivery
+            ? { ...delivery, feeKes: chosen.delivery?.kes, minutes: chosen.delivery?.minutes }
+            : undefined,
+          rider:
+            state === 'delivering'
+              ? {
+                  position: riderAt,
+                  at: new Date().toISOString(),
+                  etaMinutes: Math.max(1, Math.round((1 - share) * 12)),
+                }
+              : undefined,
+          code: delivery && state !== 'collected' ? '4821' : undefined,
           position: placeOf(chosen),
           address: `${chosen.name}, near Karen, Nairobi`,
           holdUntil:
@@ -183,6 +210,8 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
             distanceKm: a.distanceKm,
             rating: a.rating,
             ratings: a.ratings,
+            deliveryKes: a.delivery?.kes,
+            deliveryMinutes: a.delivery?.minutes,
             offeredAt: new Date(started + a.at * 1000).toISOString(),
             position: placeOf(a),
           }))
@@ -205,8 +234,9 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
         return status();
       }, 600),
     status: () => (started ? later(status, 150) : Promise.reject(new Error('No request yet'))),
-    choose: (_request, offer) =>
+    choose: (_request, offer, wanted) =>
       later(() => {
+        delivery = wanted;
         chosen = chemists.find((c) => c.name === offer);
         chosenAt = Date.now();
         return status();

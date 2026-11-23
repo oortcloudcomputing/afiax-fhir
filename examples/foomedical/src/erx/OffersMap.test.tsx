@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { MapPin } from './OffersMap';
 import { OffersMap } from './OffersMap';
 
 jest.mock('../config', () => ({ MAP_AVAILABLE: true, MEDPLUM_MAPTILER_KEY: 'test-key' }));
@@ -36,5 +37,26 @@ describe('OffersMap', () => {
     expect(screen.getByTitle('KES <b>900</b>').querySelector('b')).toBeNull();
     fireEvent.click(best);
     expect(onPick).toHaveBeenCalledWith('o1');
+  });
+
+  test('keeps the rider marker and glides it, instead of redrawing it', async () => {
+    const at = (lat: number): MapPin[] => [{ id: 'rider', position: { lat, lng: 36.71 }, label: 'Rider', rider: true }];
+    let rerender: (ui: React.ReactElement) => void = () => undefined;
+    await act(async () => {
+      rerender = render(
+        <MantineProvider>
+          <OffersMap center={karen} pins={at(-1.31)} />
+        </MantineProvider>
+      ).rerender;
+    });
+    const first = screen.getByTitle('Rider');
+    await act(async () => {
+      rerender(
+        <MantineProvider>
+          <OffersMap center={karen} pins={at(-1.315)} />
+        </MantineProvider>
+      );
+    });
+    expect(screen.getByTitle('Rider')).toBe(first);
   });
 });

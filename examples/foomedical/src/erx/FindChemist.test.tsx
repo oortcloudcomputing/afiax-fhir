@@ -452,6 +452,51 @@ describe('Find a chemist: delivery', () => {
   });
 });
 
+describe('Find a chemist: type your area', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('asks from a place picked by name, without the location', async () => {
+    const yaya = { label: 'Yaya Centre, Kilimani, Nairobi', position: { lat: -1.2925, lng: 36.7876 } };
+    const searchPlaces = jest.fn().mockResolvedValue([yaya]);
+    const locate = jest.fn();
+    const api = fakeApi();
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <FindChemist
+            prescriptions={['rx-1']}
+            api={api}
+            storageKey="test-request"
+            locate={locate}
+            searchPlaces={searchPlaces}
+          />
+        </MantineProvider>
+      );
+    });
+    const box = screen.getByRole('textbox', { name: 'Or type your area' });
+    fireEvent.focus(box);
+    fireEvent.change(box, { target: { value: 'Yaya' } });
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
+    });
+    // Mantine's dropdown animation keeps it hidden from the test browser; tapping it is the same
+    const option = await screen.findByRole('option', { name: yaya.label, hidden: true }, { timeout: 2000 });
+    expect(searchPlaces).toHaveBeenCalledWith('Yaya');
+    await act(async () => {
+      fireEvent.click(option);
+    });
+    expect(api.request).toHaveBeenCalledWith(['rx-1'], yaya.position);
+    expect(locate).not.toHaveBeenCalled();
+  });
+
+  test('has no area box without a place search', async () => {
+    await show(fakeApi());
+    expect(screen.queryByRole('textbox', { name: 'Or type your area' })).not.toBeInTheDocument();
+  });
+});
+
 describe('The offer API on afiax-services', () => {
   test('sends the patient token and passes on refusals in their own words', async () => {
     const fetchFn = jest

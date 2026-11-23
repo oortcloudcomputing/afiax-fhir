@@ -10,6 +10,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { FindChemist } from './FindChemist';
 import type { Delivery, OfferApi, OfferRequestStatus, RankedOffer } from './offers-api';
+import type { Place, PlaceSearch } from './places';
 
 interface Simulated {
   readonly at: number;
@@ -291,6 +292,19 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
   return { api, chemist };
 }
 
+// Sample places around Nairobi, instead of MapTiler's search
+const previewPlaces: PlaceSearch = async (query) => {
+  const all: Place[] = [
+    { label: 'Karen Shopping Centre, Karen, Nairobi', position: { lat: -1.3197, lng: 36.7076 } },
+    { label: 'Yaya Centre, Kilimani, Nairobi', position: { lat: -1.2925, lng: 36.7876 } },
+    { label: 'Kenyatta Avenue, Nairobi CBD', position: { lat: -1.2841, lng: 36.8233 } },
+    { label: 'Westgate, Westlands, Nairobi', position: { lat: -1.2571, lng: 36.8032 } },
+    { label: 'Langata Road, Langata, Nairobi', position: { lat: -1.3314, lng: 36.7645 } },
+  ];
+  const q = query.trim().toLowerCase();
+  return all.filter((p) => p.label.toLowerCase().includes(q));
+};
+
 /**
  * The preview page.
  * @returns The page.
@@ -333,6 +347,7 @@ export default function FindChemistPreview(): JSX.Element {
           }
           pollMs={1000}
           followMs={1000}
+          searchPlaces={previewPlaces}
         />
         <Stack gap={4}>
           <Text size="xs" c="dimmed">

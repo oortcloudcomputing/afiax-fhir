@@ -31,6 +31,8 @@ import { MAP_AVAILABLE } from '../config';
 import { ChemistReviews } from './ChemistReviews';
 import { OffersMap } from './OffersMap';
 import { DeliveryPin } from './DeliveryPin';
+import { PlaceSearchBox } from './PlaceSearchBox';
+import type { PlaceSearch } from './places';
 import type { Delivery, OfferApi, OfferRequestStatus, Position, RankedOffer } from './offers-api';
 import { OfferApiError } from './offers-api';
 
@@ -51,6 +53,8 @@ export interface FindChemistProps {
   readonly followMs?: number;
   /** False when the prescription can no longer be filled: only a request made earlier is shown. */
   readonly canAsk?: boolean;
+  /** Finds places by name, for "type your area" and the delivery pin; none hides those. */
+  readonly searchPlaces?: PlaceSearch;
 }
 
 function browserLocation(): Promise<Position> {
@@ -145,6 +149,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
     pollMs = 3000,
     followMs = 15_000,
     canAsk = true,
+    searchPlaces,
   } = props;
   const [status, setStatus] = useState<OfferRequestStatus>();
   const [busy, setBusy] = useState<'locating' | 'asking' | 'choosing' | 'cancelling'>();
@@ -205,11 +210,11 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
     return () => clearInterval(timer);
   }, [status?.state]);
 
-  async function start(): Promise<void> {
+  async function start(typed?: Position): Promise<void> {
     setError(undefined);
     try {
       setBusy('locating');
-      const position = await locate();
+      const position = typed ?? (await locate());
       setBusy('asking');
       const started = await api.request(prescriptions, position);
       setNow(Date.now());
@@ -299,6 +304,15 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
                 Finding where you are…
               </Text>
             )}
+            {searchPlaces && !busy && (
+              <PlaceSearchBox
+                search={searchPlaces}
+                label="Or type your area"
+                onPick={(place) => {
+                  start(place.position).catch(console.error);
+                }}
+              />
+            )}
           </>
         )}
 
@@ -352,6 +366,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
           <ChooseDialog
             offer={choosing}
             from={status?.position}
+            searchPlaces={searchPlaces}
             busy={busy === 'choosing'}
             onBack={() => setChoosing(undefined)}
             onChoose={(delivery) => choose(choosing, delivery)}
@@ -553,11 +568,12 @@ function ChooseDialog(props: {
   readonly offer: RankedOffer;
   /** Where the patient searched from: the delivery pin starts there. */
   readonly from?: Position;
+  readonly searchPlaces?: PlaceSearch;
   readonly busy: boolean;
   readonly onBack: () => void;
   readonly onChoose: (delivery?: Delivery) => void;
 }): JSX.Element {
-  const { offer, from, busy, onBack, onChoose } = props;
+  const { offer, from, searchPlaces, busy, onBack, onChoose } = props;
   const delivers = offer.deliveryMinutes !== undefined && !!from;
   const [mode, setMode] = useState<'collect' | 'deliver'>('collect');
   const [pin, setPin] = useState<Position | undefined>(from);
@@ -588,7 +604,7 @@ function ChooseDialog(props: {
             {offer.deliveryKes ? `${kes(offer.deliveryKes)} delivery` : 'free delivery'}), arriving in about{' '}
             {offer.readyMinutes + (offer.deliveryMinutes ?? 0)} min.
           </Text>
-          <DeliveryPin value={pin} onChange={setPin} />
+          <DeliveryPin value={pin} onChange={setPin} search={searchPlaces} />
           <Textarea
             label="Directions for the rider"
             placeholder="Gate, building, floor, landmark"

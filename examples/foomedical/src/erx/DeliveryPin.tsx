@@ -10,12 +10,17 @@ import 'leaflet/dist/leaflet.css';
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
 import { MAP_AVAILABLE } from '../config';
+import { locateControl, pageGestures, pageMapOptions } from './map-gestures';
 import { tileLayer } from './map-tiles';
+import { PlaceSearchBox } from './PlaceSearchBox';
+import type { PlaceSearch } from './places';
 import type { Position } from './offers-api';
 
 export interface DeliveryPinProps {
   readonly value: Position;
   readonly onChange: (position: Position) => void;
+  /** Finds places by name, to move the pin there. */
+  readonly search?: PlaceSearch;
 }
 
 /**
@@ -24,18 +29,22 @@ export interface DeliveryPinProps {
  * @returns The map, or a note when maps are not available here.
  */
 export function DeliveryPin(props: DeliveryPinProps): JSX.Element {
-  const { value, onChange } = props;
+  const { value, onChange, search } = props;
   const element = useRef<HTMLDivElement>(null);
   const change = useRef(onChange);
-  change.current = onChange;
+  const moveTo = useRef<(position: Position, zoom?: number) => void>(undefined);
+  useEffect(() => {
+    change.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (!element.current || !MAP_AVAILABLE) {
       return undefined;
     }
-    const m = L.map(element.current, { zoomControl: false }).setView([value.lat, value.lng], 16);
+    const m = L.map(element.current, { zoomControl: false, ...pageMapOptions }).setView([value.lat, value.lng], 16);
     tileLayer().addTo(m);
     L.control.zoom({ position: 'bottomright' }).addTo(m);
+    const stopGestures = pageGestures(m);
     const pin = L.marker([value.lat, value.lng], {
       draggable: true,
       title: 'Your door',
@@ -45,6 +54,12 @@ export function DeliveryPin(props: DeliveryPinProps): JSX.Element {
         iconSize: [0, 0],
       }),
     }).addTo(m);
+    moveTo.current = (position, zoom) => {
+      pin.setLatLng([position.lat, position.lng]);
+      m.setView([position.lat, position.lng], zoom ?? Math.max(m.getZoom(), 16));
+      change.current(position);
+    };
+    locateControl((position) => moveTo.current?.(position, 17)).addTo(m);
     pin.on('dragend', () => {
       const p = pin.getLatLng();
       change.current({ lat: p.lat, lng: p.lng });
@@ -55,6 +70,8 @@ export function DeliveryPin(props: DeliveryPinProps): JSX.Element {
       change.current({ lat: e.latlng.lat, lng: e.latlng.lng });
     });
     return () => {
+      stopGestures();
+      moveTo.current = undefined;
       m.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,6 +86,15 @@ export function DeliveryPin(props: DeliveryPinProps): JSX.Element {
   }
   return (
     <Box>
+      {search && (
+        <Box mb="xs">
+          <PlaceSearchBox
+            search={search}
+            placeholder="Search your estate, street or building"
+            onPick={(place) => moveTo.current?.(place.position, 17)}
+          />
+        </Box>
+      )}
       <Box
         ref={element}
         h={200}
@@ -76,7 +102,7 @@ export function DeliveryPin(props: DeliveryPinProps): JSX.Element {
         data-testid="delivery-pin"
       />
       <Text size="xs" c="dimmed" mt={4}>
-        Drag the pin, or tap the map, to your door.
+        Drag the pin, or tap the map, to your door. ◎ shows where you are.
       </Text>
     </Box>
   );

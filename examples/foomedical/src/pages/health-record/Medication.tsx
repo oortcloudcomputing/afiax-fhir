@@ -11,6 +11,7 @@ import { InfoSection } from '../../components/InfoSection';
 import { MEDPLUM_AFIAX_SERVICES_URL } from '../../config';
 import { FindChemist } from '../../erx/FindChemist';
 import { servicesOfferApi } from '../../erx/offers-api';
+import { mapTilerPlaces } from '../../erx/places';
 
 /** On a MedicationRequest while a network chemist fills it (afiax-services ClaimExtensionUrl). */
 const ClaimExtensionUrl = 'https://afiax.africa/fhir/StructureDefinition/erx-network-claim';
@@ -30,6 +31,7 @@ export function Medication(): JSX.Element {
   // Find a chemist: an active prescription not yet with a chemist; or a request followed from this
   // browser (still shown once collected, to rate the chemist)
   const storageKey = `afiax-offer-request:${medicationId}`;
+  const places = useMemo(() => mapTilerPlaces(), []);
   const canAsk = med.status === 'active' && !med.extension?.some((e) => e.url === ClaimExtensionUrl);
   const canFind = !!offers && (canAsk || hasRemembered(storageKey));
 
@@ -38,7 +40,13 @@ export function Medication(): JSX.Element {
       <Title order={2}>{med.medicationCodeableConcept?.text}</Title>
       {canFind && offers ? (
         <Box my="md" maw={480}>
-          <FindChemist prescriptions={[medicationId]} api={offers} storageKey={storageKey} canAsk={canAsk} />
+          <FindChemist
+            prescriptions={[medicationId]}
+            api={offers}
+            storageKey={storageKey}
+            canAsk={canAsk}
+            searchPlaces={places}
+          />
         </Box>
       ) : (
         <p className="mb-6 text-lg text-gray-600">To refill this medication, please contact your pharmacy.</p>

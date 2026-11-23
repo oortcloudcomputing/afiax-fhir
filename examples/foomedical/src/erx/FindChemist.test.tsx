@@ -40,6 +40,8 @@ function fakeApi(over: Partial<OfferApi> = {}): jest.Mocked<OfferApi> {
     choose: jest.fn(),
     cancel: jest.fn(),
     rate: jest.fn(),
+    reviews: jest.fn().mockResolvedValue([]),
+    report: jest.fn().mockResolvedValue({ hidden: false }),
     ...over,
   } as jest.Mocked<OfferApi>;
 }
@@ -299,7 +301,7 @@ describe('Find a chemist: rating', () => {
       const fourth = screen.getByRole('radio', { name: '4', hidden: true });
       fireEvent.click(document.querySelector(`label[for="${fourth.id}"]`) as HTMLElement);
     });
-    fireEvent.change(screen.getByPlaceholderText(/Anything to add/), { target: { value: 'Quick' } });
+    fireEvent.change(screen.getByLabelText(/Write a review/), { target: { value: 'Quick' } });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Send rating' }));
     });
@@ -323,6 +325,59 @@ describe('Find a chemist: rating', () => {
       );
     });
     expect(screen.queryByTestId('find-chemist')).not.toBeInTheDocument();
+  });
+});
+
+describe('Find a chemist: reviews', () => {
+  beforeEach(() => localStorage.clear());
+
+  test('opens a chemist’s reviews from its offer, and reports one', async () => {
+    const api = fakeApi({
+      request: jest
+        .fn()
+        .mockResolvedValue(waiting([offer('Galleria Chemist', 590, true, { rating: 4.4, ratings: 12 })])),
+      reviews: jest.fn().mockResolvedValue([{ id: 'r1', stars: 2, text: 'Rude staff', at: '2026-11-20T09:00:00Z' }]),
+    });
+    await show(api);
+    await findChemist();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /4\.4 \(12\) · reviews/ }));
+    });
+    const dialog = await screen.findByRole('dialog', { name: 'Reviews of Galleria Chemist' });
+    expect(api.reviews).toHaveBeenCalledWith('Galleria Chemist');
+    expect(within(dialog).getByText('Rude staff')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Verified patient/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Report' }));
+    fireEvent.change(within(dialog).getByLabelText(/What is wrong with it/), { target: { value: 'Untrue' } });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Report review' }));
+    });
+    expect(api.report).toHaveBeenCalledWith('r1', 'Untrue');
+    expect(within(dialog).getByText('Thanks. Afiax will check this review.')).toBeInTheDocument();
+  });
+
+  test('sends a written review with the stars', async () => {
+    localStorage.setItem('test-request', 'req-1');
+    const collected: OfferRequestStatus = {
+      ...waiting([]),
+      state: 'collected',
+      chosen: { offer: 'o', chemistName: 'Galleria Chemist', priceKes: 590, status: 'Collected' },
+    };
+    const api = fakeApi({
+      status: jest.fn().mockResolvedValue(collected),
+      rate: jest.fn().mockResolvedValue({ ...collected, rated: 5 }),
+    });
+    await show(api);
+    const fifth = screen.getByRole('radio', { name: '5', hidden: true });
+    await act(async () => {
+      fireEvent.click(document.querySelector(`label[for="${fifth.id}"]`) as HTMLElement);
+    });
+    expect(screen.getByText(/Phone numbers and your name are taken out/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Write a review/), { target: { value: 'Ready on time' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Send rating' }));
+    });
+    expect(api.rate).toHaveBeenCalledWith('req-1', 5, 'Ready on time');
   });
 });
 

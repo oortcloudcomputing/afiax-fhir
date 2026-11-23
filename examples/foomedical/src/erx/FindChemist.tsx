@@ -26,6 +26,7 @@ import {
 import { IconMapPin, IconPhone, IconStarFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChemistReviews } from './ChemistReviews';
 import type { OfferApi, OfferRequestStatus, Position, RankedOffer } from './offers-api';
 import { OfferApiError } from './offers-api';
 
@@ -144,6 +145,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
   const [status, setStatus] = useState<OfferRequestStatus>();
   const [busy, setBusy] = useState<'locating' | 'asking' | 'choosing' | 'cancelling'>();
   const [cancelling, setCancelling] = useState(false);
+  const [reviewing, setReviewing] = useState<{ id: string; name: string }>();
   const [error, setError] = useState<string>();
   const [choosing, setChoosing] = useState<RankedOffer>();
   const [now, setNow] = useState(() => Date.now());
@@ -326,6 +328,7 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
             onChoose={setChoosing}
             onAgain={again}
             onCancel={() => setCancelling(true)}
+            onReviews={(offer) => setReviewing({ id: offer.chemistId, name: offer.chemistName })}
           />
         )}
 
@@ -364,6 +367,8 @@ export function FindChemist(props: FindChemistProps): JSX.Element {
         )}
       </Modal>
 
+      <ChemistReviews api={api} chemist={reviewing} onClose={() => setReviewing(undefined)} />
+
       <Modal opened={cancelling} onClose={() => setCancelling(false)} title="Cancel this request?" centered>
         <Stack gap="sm">
           <Text size="sm">
@@ -392,8 +397,9 @@ function Waiting(props: {
   readonly onChoose: (offer: RankedOffer) => void;
   readonly onAgain: () => void;
   readonly onCancel: () => void;
+  readonly onReviews: (offer: RankedOffer) => void;
 }): JSX.Element {
-  const { status, left, windowMs, onChoose, onAgain, onCancel } = props;
+  const { status, left, windowMs, onChoose, onAgain, onCancel, onReviews } = props;
   const open = left > 0 && status.waiting > 0;
   const parts = [
     `${status.asked} chemist${status.asked === 1 ? '' : 's'} asked`,
@@ -441,7 +447,12 @@ function Waiting(props: {
       )}
 
       {status.offers.map((offer) => (
-        <OfferCard key={offer.offer} offer={offer} onChoose={() => onChoose(offer)} />
+        <OfferCard
+          key={offer.offer}
+          offer={offer}
+          onChoose={() => onChoose(offer)}
+          onReviews={() => onReviews(offer)}
+        />
       ))}
       {status.offers.length > 0 && open && (
         <Text size="xs" c="dimmed" ta="center">
@@ -457,8 +468,12 @@ function Waiting(props: {
   );
 }
 
-function OfferCard(props: { readonly offer: RankedOffer; readonly onChoose: () => void }): JSX.Element {
-  const { offer, onChoose } = props;
+function OfferCard(props: {
+  readonly offer: RankedOffer;
+  readonly onChoose: () => void;
+  readonly onReviews: () => void;
+}): JSX.Element {
+  const { offer, onChoose, onReviews } = props;
   return (
     <Card
       withBorder
@@ -476,10 +491,10 @@ function OfferCard(props: { readonly offer: RankedOffer; readonly onChoose: () =
             <Text size="xs" c="dimmed">
               {offer.distanceKm} km · ready in {offer.readyMinutes} min ·{' '}
               {offer.rating !== undefined && offer.ratings ? (
-                <>
+                <Anchor component="button" type="button" size="xs" onClick={onReviews}>
                   <IconStarFilled size={10} style={{ verticalAlign: 'baseline' }} /> {offer.rating.toFixed(1)} (
-                  {offer.ratings})
-                </>
+                  {offer.ratings}) · reviews
+                </Anchor>
               ) : (
                 'new'
               )}
@@ -596,7 +611,9 @@ function RateChemist(props: {
         {stars > 0 && (
           <>
             <Textarea
-              placeholder="Anything to add? (optional, only Afiax sees it)"
+              label="Write a review (optional)"
+              description="Other patients see it as 'Verified patient'. Phone numbers and your name are taken out."
+              placeholder="How was the service, the price, the wait?"
               value={comment}
               onChange={(e) => setComment(e.currentTarget.value)}
               maxLength={500}
@@ -617,7 +634,7 @@ function RateChemist(props: {
           </>
         )}
         <Text size="xs" c="dimmed">
-          Your stars help other patients choose. The chemist does not see who rated them.
+          Your stars and review help other patients choose. Nobody sees your name.
         </Text>
       </Stack>
     </Card>

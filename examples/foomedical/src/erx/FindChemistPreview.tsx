@@ -203,6 +203,28 @@ function simulatedApi(speed: number): { api: OfferApi; chemist: ChemistActions }
         rated = stars;
         return status();
       }),
+    reviews: (chemistId) =>
+      later(() =>
+        chemistId === 'Karen Hub Pharmacy'
+          ? [
+              {
+                id: 'r1',
+                stars: 5,
+                text: 'Had everything in stock and ready when I arrived.',
+                at: '2026-11-20T09:00:00Z',
+              },
+              { id: 'r2', stars: 4, text: 'A bit pricey but very helpful pharmacist.', at: '2026-11-12T15:00:00Z' },
+            ]
+          : [
+              {
+                id: 'r3',
+                stars: 4,
+                text: 'Good price. Had to wait 10 minutes more than they said.',
+                at: '2026-11-18T12:00:00Z',
+              },
+            ]
+      ),
+    report: () => later(() => ({ hidden: false })),
   };
   const chemist: ChemistActions = {
     giveUp: () => {

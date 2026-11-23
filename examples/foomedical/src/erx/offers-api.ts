@@ -49,6 +49,14 @@ export interface OfferRequestStatus {
   };
 }
 
+/** A written review, as every patient sees it ("Verified patient", never a name). */
+export interface Review {
+  readonly id: string;
+  readonly stars: number;
+  readonly text: string;
+  readonly at: string;
+}
+
 /** What the Find a chemist screen needs from afiax-services. */
 export interface OfferApi {
   request(prescriptions: readonly string[], position: Position): Promise<OfferRequestStatus>;
@@ -56,6 +64,9 @@ export interface OfferApi {
   choose(request: string, offer: string): Promise<OfferRequestStatus>;
   cancel(request: string): Promise<OfferRequestStatus>;
   rate(request: string, stars: number, comment?: string): Promise<OfferRequestStatus>;
+  /** A chemist's latest written reviews (newest first). */
+  reviews(chemistId: string): Promise<Review[]>;
+  report(reviewId: string, reason?: string): Promise<{ hidden: boolean }>;
 }
 
 /** An answer afiax-services refused, with its own words for the patient. */
@@ -81,29 +92,31 @@ export function servicesOfferApi(
   token: () => string | undefined,
   fetchFn: typeof fetch = fetch
 ): OfferApi {
-  const base = `${servicesUrl.replace(/\/$/, '')}/erx/offer-requests`;
-  async function call(path: string, body?: unknown): Promise<OfferRequestStatus> {
-    const response = await fetchFn(`${base}${path}`, {
+  const root = `${servicesUrl.replace(/\/$/, '')}/erx`;
+  async function call<T = OfferRequestStatus>(path: string, body?: unknown): Promise<T> {
+    const response = await fetchFn(`${root}${path}`, {
       method: body === undefined ? 'GET' : 'POST',
       headers: { Authorization: `Bearer ${token() ?? ''}`, 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const answer = (await response.json().catch(() => undefined)) as
-      | (OfferRequestStatus & { message?: string })
-      | undefined;
+    const answer = (await response.json().catch(() => undefined)) as (T & { message?: string }) | undefined;
     if (!response.ok) {
       throw new OfferApiError(
         answer?.message ?? 'Afiax is not reachable just now. Try again in a minute.',
         response.status
       );
     }
-    return answer as OfferRequestStatus;
+    return answer as T;
   }
+  const request = (id: string): string => `/offer-requests/${encodeURIComponent(id)}`;
   return {
-    request: (prescriptions, position) => call('', { prescriptions, position }),
-    status: (request) => call(`/${encodeURIComponent(request)}`),
-    choose: (request, offer) => call(`/${encodeURIComponent(request)}/choose`, { offer }),
-    cancel: (request) => call(`/${encodeURIComponent(request)}/cancel`, {}),
-    rate: (request, stars, comment) => call(`/${encodeURIComponent(request)}/rate`, { stars, comment }),
+    request: (prescriptions, position) => call('/offer-requests', { prescriptions, position }),
+    status: (id) => call(request(id)),
+    choose: (id, offer) => call(`${request(id)}/choose`, { offer }),
+    cancel: (id) => call(`${request(id)}/cancel`, {}),
+    rate: (id, stars, comment) => call(`${request(id)}/rate`, { stars, comment }),
+    reviews: (chemistId) => call<Review[]>(`/chemists/${encodeURIComponent(chemistId)}/reviews`),
+    report: (reviewId, reason) =>
+      call<{ hidden: boolean }>(`/reviews/${encodeURIComponent(reviewId)}/report`, { reason }),
   };
 }

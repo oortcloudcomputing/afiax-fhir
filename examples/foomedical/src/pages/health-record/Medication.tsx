@@ -4,21 +4,46 @@ import { Anchor, Box, Button, Modal, Stack, Text, Title } from '@mantine/core';
 import { formatDateTime, formatHumanName, formatTiming } from '@medplum/core';
 import type { HumanName, MedicationRequest } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
+import { MEDPLUM_AFIAX_SERVICES_URL } from '../../config';
+import { FindChemist } from '../../erx/FindChemist';
+import { servicesOfferApi } from '../../erx/offers-api';
+
+/** On a MedicationRequest while a network chemist fills it (afiax-services ClaimExtensionUrl). */
+const ClaimExtensionUrl = 'https://afiax.africa/fhir/StructureDefinition/erx-network-claim';
 
 export function Medication(): JSX.Element {
   const medplum = useMedplum();
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const { medicationId = '' } = useParams();
   const med: MedicationRequest = medplum.readResource('MedicationRequest', medicationId).read();
+  const offers = useMemo(
+    () =>
+      MEDPLUM_AFIAX_SERVICES_URL
+        ? servicesOfferApi(MEDPLUM_AFIAX_SERVICES_URL, () => medplum.getAccessToken())
+        : undefined,
+    [medplum]
+  );
+  // Find a chemist: an active prescription, not yet with a chemist (or followed from this browser)
+  const storageKey = `afiax-offer-request:${medicationId}`;
+  const canFind =
+    !!offers &&
+    med.status === 'active' &&
+    (!med.extension?.some((e) => e.url === ClaimExtensionUrl) || hasRemembered(storageKey));
 
   return (
     <Box p="xl">
       <Title order={2}>{med.medicationCodeableConcept?.text}</Title>
-      <p className="mb-6 text-lg text-gray-600">To refill this medication, please contact your pharmacy.</p>
+      {canFind && offers ? (
+        <Box my="md" maw={480}>
+          <FindChemist prescriptions={[medicationId]} api={offers} storageKey={storageKey} />
+        </Box>
+      ) : (
+        <p className="mb-6 text-lg text-gray-600">To refill this medication, please contact your pharmacy.</p>
+      )}
       <p className="mb-6 text-lg text-gray-600">
         No more refills available at your pharmacy?{' '}
         <Anchor onClick={() => setModalOpen(true)}>Renew your prescription</Anchor>
@@ -75,4 +100,12 @@ function KeyValue({ name, value }: { name: string; value: string | undefined }):
       </Text>
     </div>
   );
+}
+
+function hasRemembered(key: string): boolean {
+  try {
+    return !!localStorage.getItem(key);
+  } catch {
+    return false;
+  }
 }

@@ -6,6 +6,7 @@
 //   For a local server use http://localhost:8103/.
 // - MEDPLUM_PROJECT_ID: the Afiax project patients sign up to. With no project id, sign-up is closed.
 // - GOOGLE_CLIENT_ID and RECAPTCHA_SITE_KEY: optional, Afiax's own keys only.
+// - MEDPLUM_AFIAX_SERVICES_URL: afiax-services, for Find a chemist (Prescription Network). Empty hides it.
 //
 // Never point this app at api.medplum.com: patient data must stay on Afiax servers in Kenya.
 
@@ -20,3 +21,4 @@ export const MEDPLUM_BASE_URL: string = readEnv(import.meta.env?.MEDPLUM_BASE_UR
 export const MEDPLUM_PROJECT_ID: string | undefined = readEnv(import.meta.env?.MEDPLUM_PROJECT_ID);
 export const MEDPLUM_GOOGLE_CLIENT_ID: string | undefined = readEnv(import.meta.env?.GOOGLE_CLIENT_ID);
 export const MEDPLUM_RECAPTCHA_SITE_KEY: string | undefined = readEnv(import.meta.env?.RECAPTCHA_SITE_KEY);
+export const MEDPLUM_AFIAX_SERVICES_URL: string | undefined = readEnv(import.meta.env?.MEDPLUM_AFIAX_SERVICES_URL);

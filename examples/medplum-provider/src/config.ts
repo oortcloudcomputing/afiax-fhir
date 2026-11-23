@@ -22,6 +22,8 @@ export interface ProviderAppConfig {
   readonly supportEmail?: string;
   /** Minutes without activity before signing out; 0 switches it off (change register 1.7). */
   readonly idleTimeoutMinutes?: string;
+  /** afiax-services, for the Prescription Network's offer requests. Undefined hides them. */
+  readonly afiaxServicesUrl?: string;
 }
 
 export const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
@@ -48,6 +50,7 @@ const config: ProviderAppConfig = {
   helpUrl: readEnv(import.meta.env?.MEDPLUM_HELP_URL),
   supportEmail: readEnv(import.meta.env?.MEDPLUM_SUPPORT_EMAIL),
   idleTimeoutMinutes: readEnv(import.meta.env?.MEDPLUM_IDLE_TIMEOUT_MINUTES),
+  afiaxServicesUrl: readEnv(import.meta.env?.MEDPLUM_AFIAX_SERVICES_URL),
 };
 
 export function getConfig(): ProviderAppConfig {

@@ -1,0 +1,71 @@
+---
+sidebar_position: 2
+---
+
+# Answer offer requests (Afiax Prescription Network)
+
+A patient near you has a prescription and wants to know where to get it. They ask the 5 nearest open chemists in the Afiax Prescription Network for a price. If you answer in time, they see your offer next to the others and pick one chemist. This guide shows you how to answer, and what to do when the patient picks you.
+
+**Who this is for:** chemists (retail pharmacies) in the Afiax Prescription Network.
+
+**How long it takes:** under a minute per request. You have **5 minutes** to answer.
+
+## How a request moves on
+
+| You see | What it means | What you do |
+|---|---|---|
+| **4:32 left** (orange) | A patient is waiting for prices | Send your offer, or click **Can't fill it** |
+| **Waiting for the patient** (blue) | You sent an offer. The patient is comparing. | Nothing. Keep the medicines in mind. |
+| **Chosen: prepare it** (green) | The patient picked you. You now see their name and phone. | Prepare the medicines, then click **It's ready to collect** |
+| **Ready to collect** | My Afiax shows the patient it is ready | When they collect, click **Handed over** |
+| **Recently closed** | Collected, declined, another chemist chosen, or not answered in time | Nothing |
+
+## Before you start
+
+- Your chemist is subscribed to the Prescription Network in the Oortcloud portal, with its premises (location and opening hours) filled in, and Oortcloud has verified your PPB licence. Until then, patients are not sent to you.
+- You sign in to **Afiax Provider**. The left menu shows **Offer requests**.
+- You get an SMS when a new request arrives. Keep Afiax Provider open on the counter's computer or phone: new requests appear by themselves within seconds.
+
+## Step 1: Read the request
+
+Each request shows:
+
+- the patient's sex and age, and how far away they are (for example *Woman, 36 · 1.2 km away*);
+- every medicine, with the quantity and the dose;
+- the patient's **allergies**, in red. Check them before you offer.
+
+You do **not** see the patient's name or phone yet. You only get them if the patient picks you.
+
+## Step 2: Offer a price, or decline
+
+1. In **Total price (KES)**, type the price for **everything** on the request.
+2. In **Ready in (minutes)**, type how soon it will be ready to collect (15 is filled in).
+3. Click **Send offer**.
+
+If you can't fill it (out of stock, closing soon), click **Can't fill it**, add a reason if you want, then click **Decline**. Declining is better than not answering: the patient knows straight away.
+
+After the 5 minutes, you can no longer answer.
+
+### How patients compare offers
+
+The patient sees the offers ranked, with the best one marked **★ Best**. Price counts most (half), then distance, how soon it is ready, and your rating. A fair price and an honest ready time win most often.
+
+## Step 3: When the patient picks you
+
+The request turns green: **Chosen: prepare it**. You now see the patient's name and phone (tap the number to call them).
+
+1. Prepare the medicines.
+2. Click **It's ready to collect**. My Afiax shows the patient it is ready.
+3. When the patient comes, **check their ID** against the name shown.
+4. Hand over the medicines, then click **Handed over** and confirm.
+
+**Handed over** marks the prescription as dispensed on the patient's record at the clinic that wrote it, so it cannot be filled again anywhere else.
+
+## If something goes wrong
+
+| What you see | Why | What to do |
+|---|---|---|
+| *The patient is no longer waiting for offers on this prescription* | The 5 minutes were over | Nothing. Answer the next one sooner. |
+| *The patient chose another chemist* | Another chemist was picked | Nothing |
+| *Offer requests are not set up here* | This Afiax Provider is not connected to the network | Contact your Afiax administrator |
+| No **Offer requests** in the menu | You are signed in to your facility, not the network | Sign out and sign in again, choosing **Afiax Prescription Network** |

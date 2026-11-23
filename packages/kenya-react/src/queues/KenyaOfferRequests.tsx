@@ -1,0 +1,334 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+//
+// Offer requests of the Afiax Prescription Network (ADR-016 §3b), for a chemist in Afiax Provider.
+// A nearby patient asks up to 5 open chemists for a price on their prescription; each chemist has
+// 5 minutes to offer a total price and a ready time, or to decline. The patient picks one offer; only
+// that chemist then sees the patient's name and phone, prepares the medicines, says they are ready
+// and records the hand-over (afiax-services dispenses the prescription in the prescriber's project).
+//
+// The chemist reads its own offer Tasks with its own token (the network access policy shows only
+// its own); every answer goes to afiax-services, which checks the window and the claim.
+
+import { Alert, Anchor, Badge, Button, Group, NumberInput, Paper, Stack, Text, TextInput, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
+import type { Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ConfirmButton } from '../common/ConfirmButton';
+import type { OfferCard, OfferRequestView, OfferStage } from './offer-requests';
+import { NetworkTaskCodeSystem, offerCard, sortOfferCards } from './offer-requests';
+
+/** How often the list reloads, so a new request shows within seconds. */
+const RefreshMs = 10_000;
+
+function timeLeft(expiresAt: string | undefined, now: Date): string {
+  const ms = Math.max(0, Date.parse(expiresAt ?? '') - now.getTime());
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function medicineName(line: OfferRequestView['lines'][number]): string {
+  return line.medication.text ?? line.medication.display ?? line.medication.code ?? 'Medicine';
+}
+
+function who(patient: OfferRequestView['patient'] | undefined): string {
+  const sexes: Record<string, string> = { female: 'Woman', male: 'Man' };
+  const sex = sexes[patient?.gender ?? ''] ?? 'Patient';
+  return patient?.age !== undefined ? `${sex}, ${patient.age}` : sex;
+}
+
+export interface KenyaOfferRequestsProps {
+  /** afiax-services (for example https://services.afiax.africa); its /erx endpoints take the answers. */
+  readonly servicesUrl: string;
+  /** fetch, injected in tests. */
+  readonly fetchFn?: typeof fetch;
+}
+
+/**
+ * A chemist's offer requests: answer new ones within 5 minutes, then prepare and hand over the chosen ones.
+ * @param props - The component props.
+ * @returns The list.
+ */
+export function KenyaOfferRequests(props: KenyaOfferRequestsProps): JSX.Element {
+  const { servicesUrl } = props;
+  const fetchFn = props.fetchFn ?? globalThis.fetch.bind(globalThis);
+  const medplum = useMedplum();
+  const [tasks, setTasks] = useState<Task[]>();
+  const [error, setError] = useState<string>();
+  const [now, setNow] = useState(() => new Date());
+
+  const load = useCallback(() => {
+    medplum
+      .searchResources(
+        'Task',
+        new URLSearchParams([
+          ['code', `${NetworkTaskCodeSystem}|offer`],
+          ['_sort', '-authored-on'],
+          ['_count', '50'],
+        ]),
+        { cache: 'no-cache' }
+      )
+      .then((found) => {
+        setTasks(found);
+        setError(undefined);
+      })
+      .catch((err) => setError(normalizeErrorString(err)));
+  }, [medplum]);
+
+  useEffect(() => {
+    load();
+    const reload = setInterval(load, RefreshMs);
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => {
+      clearInterval(reload);
+      clearInterval(tick);
+    };
+  }, [load]);
+
+  async function send(offerId: string, action: 'reply' | 'ready' | 'dispensed', body: object = {}): Promise<boolean> {
+    try {
+      const response = await fetchFn(`${servicesUrl.replace(/\/$/, '')}/erx/offers/${offerId}/${action}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${medplum.getAccessToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const answer = (await response.json().catch(() => undefined)) as { message?: string } | undefined;
+        throw new Error(answer?.message ?? `Afiax services answered ${response.status}`);
+      }
+      return true;
+    } catch (err) {
+      showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      return false;
+    } finally {
+      load();
+    }
+  }
+
+  const cards = sortOfferCards((tasks ?? []).map((t) => offerCard(t, now)));
+  const open = cards.filter((c) => c.stage !== 'closed');
+  const closed = cards.filter((c) => c.stage === 'closed').slice(0, 10);
+
+  return (
+    <Stack gap="md">
+      <div>
+        <Title order={3}>Offer requests</Title>
+        <Text size="sm" c="dimmed">
+          Patients nearby ask for a price on their prescription. Answer within 5 minutes; the patient picks one chemist.
+        </Text>
+      </div>
+      {error && (
+        <Alert color="red" variant="light">
+          {error}
+        </Alert>
+      )}
+      {tasks && open.length === 0 && (
+        <Paper withBorder p="md">
+          <Text c="dimmed">No open requests. New ones appear here, and you get an SMS.</Text>
+        </Paper>
+      )}
+      {open.map((card) => (
+        <OfferRequestCard key={card.id} card={card} now={now} send={send} />
+      ))}
+      {closed.length > 0 && (
+        <Stack gap="xs">
+          <Title order={5}>Recently closed</Title>
+          {closed.map((card) => (
+            <Paper key={card.id} withBorder p="sm">
+              <Group justify="space-between" wrap="nowrap" gap="xs">
+                <Text size="sm" lineClamp={1}>
+                  {card.view?.lines.map(medicineName).join(', ') ?? 'Prescription'}
+                </Text>
+                <Text size="xs" c="dimmed" ta="right">
+                  {card.closed}
+                </Text>
+              </Group>
+            </Paper>
+          ))}
+        </Stack>
+      )}
+    </Stack>
+  );
+}
+
+interface OfferRequestCardProps {
+  readonly card: OfferCard;
+  readonly now: Date;
+  readonly send: (offerId: string, action: 'reply' | 'ready' | 'dispensed', body?: object) => Promise<boolean>;
+}
+
+function OfferRequestCard(props: OfferRequestCardProps): JSX.Element {
+  const { card, now, send } = props;
+  const [price, setPrice] = useState<number | string>('');
+  const [ready, setReady] = useState<number | string>(15);
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const view = card.view;
+
+  async function act(action: 'reply' | 'ready' | 'dispensed', body?: object, done?: string): Promise<void> {
+    setBusy(true);
+    const ok = await send(card.id, action, body);
+    setBusy(false);
+    if (ok && done) {
+      showNotification({ color: 'green', message: done });
+    }
+  }
+
+  const badge: Record<Exclude<OfferStage, 'closed'>, { color: string; label: string }> = {
+    answer: { color: 'orange', label: `${timeLeft(card.expiresAt, now)} left` },
+    offered: { color: 'blue', label: 'Waiting for the patient' },
+    chosen: { color: 'green', label: 'Chosen: prepare it' },
+    ready: { color: 'teal', label: 'Ready to collect' },
+  };
+  const b = badge[card.stage as Exclude<OfferStage, 'closed'>];
+
+  return (
+    <Paper withBorder p="md" data-testid="offer-request">
+      <Stack gap="xs">
+        <Group justify="space-between" wrap="nowrap" gap="xs">
+          <Text fw={600}>
+            {who(view?.patient)}
+            {view ? ` · ${view.distanceKm} km away` : ''}
+          </Text>
+          <Badge color={b.color} style={{ flexShrink: 0 }}>
+            {b.label}
+          </Badge>
+        </Group>
+        <Stack gap={4}>
+          {view?.lines.map((line, i) => (
+            <div key={`${card.id}-${i}`}>
+              <Text size="sm" fw={500}>
+                {medicineName(line)}
+                {line.quantity !== undefined ? ` × ${line.quantity}${line.unit ? ` ${line.unit}` : ''}` : ''}
+              </Text>
+              {line.dose && (
+                <Text size="xs" c="dimmed">
+                  {line.dose}
+                </Text>
+              )}
+            </div>
+          ))}
+        </Stack>
+        {view?.patient.allergies.length ? (
+          <Alert color="red" variant="light" p="xs">
+            Allergies: {view.patient.allergies.join(', ')}
+          </Alert>
+        ) : (
+          <Text size="xs" c="dimmed">
+            No allergies recorded
+          </Text>
+        )}
+
+        {card.stage === 'answer' && !declining && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              act('reply', { priceKes: price, readyMinutes: ready }, 'Offer sent. The patient sees it now.').catch(
+                console.error
+              );
+            }}
+          >
+            <Stack gap="xs">
+              <Group grow align="flex-start" gap="xs">
+                <NumberInput
+                  label="Total price (KES)"
+                  description="Everything on it"
+                  min={1}
+                  value={price}
+                  onChange={setPrice}
+                  required
+                />
+                <NumberInput
+                  label="Ready in (minutes)"
+                  min={0}
+                  max={1440}
+                  allowDecimal={false}
+                  value={ready}
+                  onChange={setReady}
+                  required
+                />
+              </Group>
+              <Group grow gap="xs">
+                <Button variant="default" onClick={() => setDeclining(true)} disabled={busy}>
+                  Can't fill it
+                </Button>
+                <Button
+                  type="submit"
+                  loading={busy}
+                  disabled={typeof price !== 'number' || price <= 0 || typeof ready !== 'number'}
+                >
+                  Send offer
+                </Button>
+              </Group>
+            </Stack>
+          </form>
+        )}
+        {card.stage === 'answer' && declining && (
+          <Stack gap="xs">
+            <TextInput
+              label="Why not? (optional)"
+              placeholder="Out of stock"
+              value={reason}
+              onChange={(e) => setReason(e.currentTarget.value)}
+            />
+            <Group grow gap="xs">
+              <Button variant="default" onClick={() => setDeclining(false)} disabled={busy}>
+                Go back
+              </Button>
+              <Button
+                color="red"
+                loading={busy}
+                onClick={() => act('reply', { decline: true, reason }).catch(console.error)}
+              >
+                Decline
+              </Button>
+            </Group>
+          </Stack>
+        )}
+
+        {card.stage !== 'answer' && card.priceKes !== undefined && (
+          <Text size="sm">
+            You offered KES {card.priceKes.toLocaleString('en-KE')}, ready in {card.readyMinutes ?? 0} min
+          </Text>
+        )}
+        {(card.stage === 'chosen' || card.stage === 'ready') && (
+          <Paper bg="var(--mantine-color-green-light)" p="xs">
+            <Text size="sm" fw={600}>
+              {card.patient?.name ?? 'The patient'}
+            </Text>
+            {card.patient?.phone && (
+              <Anchor size="sm" href={`tel:${card.patient.phone}`}>
+                {card.patient.phone}
+              </Anchor>
+            )}
+            <Text size="xs" c="dimmed">
+              Check the patient's ID when they collect.
+            </Text>
+          </Paper>
+        )}
+        {card.stage === 'chosen' && (
+          <Button
+            loading={busy}
+            onClick={() => act('ready', {}, 'My Afiax now shows the patient it is ready.').catch(console.error)}
+          >
+            It's ready to collect
+          </Button>
+        )}
+        {(card.stage === 'chosen' || card.stage === 'ready') && (
+          <ConfirmButton
+            variant={card.stage === 'ready' ? 'filled' : 'default'}
+            title="Handed over"
+            message={`Record that ${card.patient?.name ?? 'the patient'} collected everything on this prescription? It is then marked dispensed on their record.`}
+            onConfirm={() => act('dispensed', {}, 'Recorded as collected.')}
+          >
+            Handed over
+          </ConfirmButton>
+        )}
+      </Stack>
+    </Paper>
+  );
+}

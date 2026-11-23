@@ -24,6 +24,9 @@ import { hasDoseSpotIdentifier } from './components/utils';
 import { getConfig, getIdleTimeoutMs } from './config';
 import './index.css';
 
+/** The Afiax Prescription Network project's tenant id (afiax-services src/erx/directory.ts). */
+const NetworkTenantId = 'afiax-prescription-network';
+
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
@@ -33,6 +36,7 @@ import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPag
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
+import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
@@ -81,12 +85,19 @@ export function App(): JSX.Element | null {
 
   const membership = medplum.getProjectMembership();
   const isKenya = getProjectSettingString(medplum.getProject(), 'countryPack') === 'kenya';
+  // A chemist in the Afiax Prescription Network (ADR-016 §3b) only answers offer requests there
+  const isNetworkChemist = getProjectSettingString(medplum.getProject(), 'oortcloudTenant') === NetworkTenantId;
   // DoseSpot is US e-prescribing; Kenya prescribes through Kenya orders (KNHTS, CDS, pharmacy queue)
   const hasDoseSpot = !isKenya && hasDoseSpotIdentifier(membership);
   // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
-  const kenyaRoleMenus = isKenya
-    ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl)
-    : undefined;
+  let kenyaRoleMenus = isKenya ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl) : undefined;
+  if (isNetworkChemist) {
+    kenyaRoleMenus = [{ links: [{ icon: <IconPill />, label: 'Offer requests', href: '/erx/offers' }] }];
+  }
+  let home = setupDismissed ? '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated' : '/getstarted';
+  if (isNetworkChemist) {
+    home = '/erx/offers';
+  }
 
   return (
     <AppShell
@@ -175,19 +186,7 @@ export function App(): JSX.Element | null {
                 <Route index element={<SpacesPage />} />
                 <Route path=":topicId" element={<SpacesPage />} />
               </Route>
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={
-                      setupDismissed
-                        ? '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated'
-                        : '/getstarted'
-                    }
-                    replace
-                  />
-                }
-              />
+              <Route path="/" element={<Navigate to={home} replace />} />
               {/* Kenya registers patients through the DHA Client Registry */}
               <Route path="/Patient/new" element={isKenya ? <KenyaRegistrationPage /> : <ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
@@ -228,6 +227,7 @@ export function App(): JSX.Element | null {
               <Route path="/schedule" element={<SchedulePage />} />
               {isKenya && <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />}
               {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
+              {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />

@@ -34,6 +34,7 @@ export * from './hl7';
 export * from './jwt';
 export * from './kenya';
 export * from './kenya-beds';
+export * from './kenya-scheduling';
 export * from './kenya-cds';
 export * from './kenya-erx';
 export * from './kenya-ihr';

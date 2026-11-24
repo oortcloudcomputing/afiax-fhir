@@ -7,27 +7,20 @@
 // or closed (C). A patient in a bed is an inpatient Encounter (class IMP) whose active location is
 // the bed. Every change goes through $kenya-bed, which checks the bed's state and version, so two
 // nurses cannot put two patients in one bed.
-import type { WithId } from '@medplum/core';
-import { badRequest, createReference, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import type { KenyaBedState, WithId } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  getKenyaBedState,
+  getReferenceString,
+  isKenyaLocationKind,
+  KenyaBedStateDisplay,
+  KenyaBedStatusSystem,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import type { Coding, Encounter, EncounterLocation, Location, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
-
-export const KenyaLocationKindSystem = 'https://afiax.africa/fhir/CodeSystem/location-kind';
-export const KenyaWardTypeSystem = 'https://afiax.africa/fhir/CodeSystem/ward-type';
-export const BedStatusSystem = 'http://terminology.hl7.org/CodeSystem/v2-0116';
-
-export const KenyaWardTypes = {
-  icu: 'ICU',
-  hdu: 'HDU',
-  general: 'General ward',
-  maternity: 'Maternity',
-  paediatric: 'Paediatric',
-  isolation: 'Isolation',
-} as const;
-export type KenyaWardType = keyof typeof KenyaWardTypes;
-
-export type KenyaBedState = 'U' | 'O' | 'H' | 'C';
-const BedStateDisplay: Record<KenyaBedState, string> = { U: 'Unoccupied', O: 'Occupied', H: 'Housekeeping', C: 'Closed' };
 
 export type KenyaBedAction = 'admit' | 'transfer' | 'discharge' | 'cleaned' | 'close' | 'reopen';
 
@@ -48,68 +41,9 @@ export interface KenyaBedResult {
   readonly toBed?: WithId<Location>;
 }
 
-const kindCoding = (code: 'ward' | 'bed'): Coding => ({ system: KenyaLocationKindSystem, code, display: code === 'ward' ? 'Ward' : 'Bed' });
-const stateCoding = (code: KenyaBedState): Coding => ({ system: BedStatusSystem, code, display: BedStateDisplay[code] });
-
-/**
- * Whether a Location is a bed on the bed board.
- * @param l - The Location.
- * @returns True for a bed.
- */
-export function isKenyaBed(l: Location): boolean {
-  return !!l.type?.some((t) => t.coding?.some((c) => c.system === KenyaLocationKindSystem && c.code === 'bed'));
-}
-
-/**
- * A bed's state; a bed with none recorded is free.
- * @param bed - The bed.
- * @returns U (free), O (occupied), H (being cleaned) or C (closed).
- */
-export function getKenyaBedState(bed: Location): KenyaBedState {
-  const code = bed.operationalStatus?.system === BedStatusSystem ? bed.operationalStatus.code : undefined;
-  return code === 'O' || code === 'H' || code === 'C' ? code : 'U';
-}
-
-/**
- * A new ward (no id).
- * @param name - What staff call it ("ICU 1", "Female medical ward").
- * @param wardType - ICU, HDU, general and so on.
- * @param partOf - The facility's Location, if the project has more than one.
- * @returns The Location.
- */
-export function buildKenyaWard(name: string, wardType: KenyaWardType, partOf?: Reference<Location>): Location {
-  return {
-    resourceType: 'Location',
-    status: 'active',
-    mode: 'instance',
-    name,
-    type: [
-      { coding: [kindCoding('ward')] },
-      { coding: [{ system: KenyaWardTypeSystem, code: wardType, display: KenyaWardTypes[wardType] }] },
-    ],
-    physicalType: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code: 'wa', display: 'Ward' }] },
-    partOf,
-  };
-}
-
-/**
- * A new bed in a ward (no id), free.
- * @param name - The bed's label ("Bed 3").
- * @param ward - Its ward.
- * @returns The Location.
- */
-export function buildKenyaBed(name: string, ward: WithId<Location>): Location {
-  return {
-    resourceType: 'Location',
-    status: 'active',
-    mode: 'instance',
-    name,
-    type: [{ coding: [kindCoding('bed')] }],
-    physicalType: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code: 'bd', display: 'Bed' }] },
-    operationalStatus: stateCoding('U'),
-    partOf: createReference(ward),
-  };
-}
+const stateCoding = (code: KenyaBedState): Coding => ({ system: KenyaBedStatusSystem, code, display: KenyaBedStateDisplay[code] });
+const isKenyaBed = (l: Location): boolean => isKenyaLocationKind(l, 'bed');
+export { getKenyaBedState, isKenyaBed };
 
 function refuse(message: string): never {
   throw new OperationOutcomeError(badRequest(message));

@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
+import { buildKenyaBed, buildKenyaWard, ContentType, createReference, getKenyaBedState } from '@medplum/core';
 import type { Encounter, Location, OperationOutcome, Parameters, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { buildKenyaBed, buildKenyaWard, getKenyaBedState } from '../../country-pack/kenya/beds';
 import { createTestProject } from '../../test.setup';
 
 const app = express();

@@ -8,6 +8,8 @@ import {
   IconBed,
   IconApps,
   IconBook2,
+  IconBuildingStore,
+  IconUserCircle,
   IconClock,
   IconCalendarEvent,
   IconClipboardCheck,
@@ -42,6 +44,8 @@ import { BedReferralAlerts } from './components/kenya/BedReferralAlerts';
 import { BedBoardPage } from './pages/kenya/BedBoardPage';
 import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
 import { ClinicHoursPage } from './pages/kenya/ClinicHoursPage';
+import { MarketplaceFacilityPage } from './pages/kenya/MarketplaceFacilityPage';
+import { MarketplaceProfilePage } from './pages/kenya/MarketplaceProfilePage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
@@ -167,6 +171,12 @@ export function App(): JSX.Element | null {
                   ...(isKenya ? [{ icon: <IconBed />, label: 'Bed board', href: '/kenya/beds' }] : []),
                   ...(isKenya ? [{ icon: <IconAmbulance />, label: 'Bed referrals', href: '/kenya/bed-referrals' }] : []),
                   ...(isKenya ? [{ icon: <IconClock />, label: 'Clinic hours', href: '/kenya/clinic-hours' }] : []),
+                  // Marketplace (ADR-018 §B): every practitioner edits only their own profile; the facility
+                  // admin manages the facility and checks registrations
+                  ...(isKenya ? [{ icon: <IconUserCircle />, label: 'My marketplace profile', href: '/kenya/marketplace/profile' }] : []),
+                  ...(isKenya && membership?.admin
+                    ? [{ icon: <IconBuildingStore />, label: 'Facility marketplace', href: '/kenya/marketplace/facility' }]
+                    : []),
                   { icon: <IconApps />, label: 'Enterprise apps', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
@@ -242,6 +252,8 @@ export function App(): JSX.Element | null {
               {isKenya && <Route path="/kenya/beds" element={<BedBoardPage />} />}
               {isKenya && <Route path="/kenya/bed-referrals" element={<BedReferralsPage />} />}
               {isKenya && <Route path="/kenya/clinic-hours" element={<ClinicHoursPage />} />}
+              {isKenya && <Route path="/kenya/marketplace/profile" element={<MarketplaceProfilePage />} />}
+              {isKenya && <Route path="/kenya/marketplace/facility" element={<MarketplaceFacilityPage />} />}
               {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

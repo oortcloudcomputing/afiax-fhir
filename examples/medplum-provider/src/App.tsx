@@ -8,6 +8,7 @@ import {
   IconBed,
   IconApps,
   IconBook2,
+  IconClock,
   IconCalendarEvent,
   IconClipboardCheck,
   IconListCheck,
@@ -40,6 +41,7 @@ import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { BedReferralAlerts } from './components/kenya/BedReferralAlerts';
 import { BedBoardPage } from './pages/kenya/BedBoardPage';
 import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
+import { ClinicHoursPage } from './pages/kenya/ClinicHoursPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
@@ -164,6 +166,7 @@ export function App(): JSX.Element | null {
                   ...(isKenya ? [{ icon: <IconListCheck />, label: 'Department queues', href: '/kenya/queue' }] : []),
                   ...(isKenya ? [{ icon: <IconBed />, label: 'Bed board', href: '/kenya/beds' }] : []),
                   ...(isKenya ? [{ icon: <IconAmbulance />, label: 'Bed referrals', href: '/kenya/bed-referrals' }] : []),
+                  ...(isKenya ? [{ icon: <IconClock />, label: 'Clinic hours', href: '/kenya/clinic-hours' }] : []),
                   { icon: <IconApps />, label: 'Enterprise apps', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
@@ -238,6 +241,7 @@ export function App(): JSX.Element | null {
               {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
               {isKenya && <Route path="/kenya/beds" element={<BedBoardPage />} />}
               {isKenya && <Route path="/kenya/bed-referrals" element={<BedReferralsPage />} />}
+              {isKenya && <Route path="/kenya/clinic-hours" element={<ClinicHoursPage />} />}
               {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

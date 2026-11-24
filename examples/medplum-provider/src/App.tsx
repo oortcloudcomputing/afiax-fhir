@@ -10,6 +10,7 @@ import {
   IconBook2,
   IconBuildingStore,
   IconUserCircle,
+  IconVideo,
   IconClock,
   IconCalendarEvent,
   IconClipboardCheck,
@@ -46,6 +47,7 @@ import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
 import { ClinicHoursPage } from './pages/kenya/ClinicHoursPage';
 import { MarketplaceFacilityPage } from './pages/kenya/MarketplaceFacilityPage';
 import { MarketplaceProfilePage } from './pages/kenya/MarketplaceProfilePage';
+import { VideoVisitsPage } from './pages/kenya/VideoVisitsPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
@@ -174,6 +176,7 @@ export function App(): JSX.Element | null {
                   // Marketplace (ADR-018 §B): every practitioner edits only their own profile; the facility
                   // admin manages the facility and checks registrations
                   ...(isKenya ? [{ icon: <IconUserCircle />, label: 'My marketplace profile', href: '/kenya/marketplace/profile' }] : []),
+                  ...(isKenya ? [{ icon: <IconVideo />, label: 'Video visits', href: '/kenya/video-visits' }] : []),
                   ...(isKenya && membership?.admin
                     ? [{ icon: <IconBuildingStore />, label: 'Facility marketplace', href: '/kenya/marketplace/facility' }]
                     : []),
@@ -254,6 +257,7 @@ export function App(): JSX.Element | null {
               {isKenya && <Route path="/kenya/clinic-hours" element={<ClinicHoursPage />} />}
               {isKenya && <Route path="/kenya/marketplace/profile" element={<MarketplaceProfilePage />} />}
               {isKenya && <Route path="/kenya/marketplace/facility" element={<MarketplaceFacilityPage />} />}
+              {isKenya && <Route path="/kenya/video-visits" element={<VideoVisitsPage />} />}
               {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

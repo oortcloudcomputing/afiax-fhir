@@ -59,7 +59,8 @@ export function useMarketplace(): { call: MarketplaceCall; servicesUrl?: string;
   const call = useCallback<MarketplaceCall>(
     async <T,>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> => {
       await medplum.refreshIfExpired();
-      const res = await fetch(`${servicesUrl}/directory/${path}`, {
+      // A path starting with / is from the root (e.g. /escrow/…); otherwise under /directory/
+      const res = await fetch(path.startsWith('/') ? `${servicesUrl}${path}` : `${servicesUrl}/directory/${path}`, {
         method,
         headers: { Authorization: `Bearer ${medplum.getAccessToken()}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined,

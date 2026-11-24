@@ -20,6 +20,22 @@ interface MyFacility {
 
 type RosterEntry = MarketplaceCard & { published: boolean; consented?: string };
 
+interface Earnings {
+  heldKes: number;
+  dueKes: number;
+  paidKes: number;
+  commissionKes: number;
+  recent: { id: string; date: string; description: string; state: string; priceKes: number; payoutKes: number }[];
+}
+
+const kes = (n: number): string => `KES ${n.toLocaleString()}`;
+const StateLabel: Record<string, { text: string; color: string }> = {
+  held: { text: 'Held until the visit', color: 'blue' },
+  disputed: { text: 'Patient reported a problem', color: 'orange' },
+  released: { text: 'Paid out', color: 'green' },
+  refunded: { text: 'Refunded to patient', color: 'gray' },
+};
+
 /**
  * The facility admin's marketplace page (ADR-018 §B): join or leave, the county, and every
  * practitioner's profile: check registrations against the register, take a profile down.
@@ -31,6 +47,8 @@ export function MarketplaceFacilityPage(): JSX.Element {
   const [catalog, setCatalog] = useState<MarketplaceCatalog>();
   const [facility, setFacility] = useState<MyFacility>();
   const [roster, setRoster] = useState<RosterEntry[]>();
+  // Afiax escrow (when on): money for this facility's paid bookings
+  const [earnings, setEarnings] = useState<Earnings | null>();
 
   const loadRoster = useCallback(async () => setRoster(await call<RosterEntry[]>('GET', 'my-facility/profiles')), [call]);
 
@@ -44,6 +62,7 @@ export function MarketplaceFacilityPage(): JSX.Element {
         setFacility(f);
         if (f.canEdit) {
           await loadRoster();
+          setEarnings(await call<Earnings>('GET', '/escrow/my-facility').catch(() => null));
         }
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
@@ -95,6 +114,60 @@ export function MarketplaceFacilityPage(): JSX.Element {
       </Text>
       <Stack gap="xl">
         {facility && catalog ? <FacilitySettings facility={facility} catalog={catalog} onSaved={setFacility} /> : null}
+        {earnings ? (
+          <Card withBorder padding="lg">
+            <Title order={4}>Payments through Afiax</Title>
+            <Text size="sm" c="dimmed" mb="md">
+              Patients pay Afiax when they book. Afiax pays you the consultation fee less its commission after the visit
+              (when you mark it attended, or a day after it ends), or refunds the patient if it is cancelled.
+            </Text>
+            <Group grow>
+              {[
+                ['Held for coming visits', earnings.heldKes],
+                ['Due to you', earnings.dueKes],
+                ['Paid to you', earnings.paidKes],
+                ['Afiax commission', earnings.commissionKes],
+              ].map(([label, value]) => (
+                <Card key={label as string} withBorder padding="sm">
+                  <Text size="xs" c="dimmed">
+                    {label}
+                  </Text>
+                  <Text fw={700} size="lg">
+                    {kes(value as number)}
+                  </Text>
+                </Card>
+              ))}
+            </Group>
+            {earnings.recent.length ? (
+              <Table mt="md" verticalSpacing="xs">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Date</Table.Th>
+                    <Table.Th>Booking</Table.Th>
+                    <Table.Th>Fee</Table.Th>
+                    <Table.Th>You get</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {earnings.recent.map((r) => (
+                    <Table.Tr key={r.id}>
+                      <Table.Td>{new Date(r.date).toLocaleDateString()}</Table.Td>
+                      <Table.Td>{r.description}</Table.Td>
+                      <Table.Td>{kes(r.priceKes)}</Table.Td>
+                      <Table.Td>{r.state === 'refunded' ? '—' : kes(r.payoutKes)}</Table.Td>
+                      <Table.Td>
+                        <Badge variant="light" color={StateLabel[r.state]?.color ?? 'gray'}>
+                          {StateLabel[r.state]?.text ?? r.state}
+                        </Badge>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            ) : null}
+          </Card>
+        ) : null}
         {roster ? (
           <Card withBorder padding="lg">
             <Title order={4}>Practitioners</Title>

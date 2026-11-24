@@ -101,3 +101,34 @@ export function buildKenyaBed(name: string, ward: WithId<Location>): Location {
     partOf: createReference(ward),
   };
 }
+
+/** On a bed held for an accepted referral (ADR-018 §C): referral, until, and who it is for. */
+export const KenyaBedHoldExtension = 'https://afiax.africa/fhir/StructureDefinition/bed-hold';
+/** How long an accepted referral holds a bed (user decision 2026-11-24). */
+export const KenyaBedHoldMs = 2 * 60 * 60 * 1000;
+
+export interface KenyaBedHold {
+  readonly referral: string;
+  readonly until: string;
+  /** Who it is held for ("Referral from Afiax Test Clinic"). */
+  readonly display?: string;
+}
+
+/**
+ * The hold on a bed, if it has one that has not run out.
+ * @param bed - The bed.
+ * @param now - The moment to check against.
+ * @returns The hold, or undefined.
+ */
+export function getKenyaBedHold(bed: Location, now: Date = new Date()): KenyaBedHold | undefined {
+  const ext = bed.extension?.find((e) => e.url === KenyaBedHoldExtension);
+  const part = (name: string): string | undefined =>
+    ext?.extension?.find((e) => e.url === name)?.valueString ??
+    ext?.extension?.find((e) => e.url === name)?.valueDateTime;
+  const referral = part('referral');
+  const until = part('until');
+  if (!referral || !until || Date.parse(until) <= now.getTime()) {
+    return undefined;
+  }
+  return { referral, until, display: part('display') };
+}

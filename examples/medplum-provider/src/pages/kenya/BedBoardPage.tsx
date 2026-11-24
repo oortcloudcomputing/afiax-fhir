@@ -7,6 +7,8 @@ import {
   buildKenyaBed,
   buildKenyaWard,
   formatHumanName,
+  formatTime,
+  getKenyaBedHold,
   getKenyaBedState,
   getKenyaWardType,
   getReferenceString,
@@ -144,19 +146,31 @@ export function BedBoardPage(): JSX.Element {
               <SimpleGrid cols={{ base: 2, sm: 4, lg: 6 }} spacing="sm">
                 {beds.map((bed) => {
                   const state = getKenyaBedState(bed);
+                  const hold = state === 'U' ? getKenyaBedHold(bed) : undefined;
                   const who = board.occupants.get(getReferenceString(bed));
                   const name = who?.patient?.name?.[0] ? formatHumanName(who.patient.name[0]) : undefined;
                   return (
                     <Card key={bed.id} withBorder padding="sm" data-testid={`bed-${bed.name}`}>
                       <Group justify="space-between" mb={4}>
                         <Text fw={700}>{bed.name}</Text>
-                        <Badge color={stateLook[state].color}>{stateLook[state].label}</Badge>
+                        {hold ? (
+                          <Badge color="orange">Held</Badge>
+                        ) : (
+                          <Badge color={stateLook[state].color}>{stateLook[state].label}</Badge>
+                        )}
                       </Group>
                       <Text size="sm" mih={20}>
-                        {bedCaption(state, name, bed.description)}
+                        {hold
+                          ? `${hold.display ?? 'For a referral'} until ${formatTime(hold.until)}`
+                          : bedCaption(state, name, bed.description)}
                       </Text>
                       <Group gap={4} mt="xs">
-                        {state === 'U' ? (
+                        {hold ? (
+                          <Button size="compact-xs" variant="light" color="orange" onClick={() => act(bed, 'release')}>
+                            Release
+                          </Button>
+                        ) : null}
+                        {state === 'U' && !hold ? (
                           <>
                             <Button size="compact-xs" onClick={() => setBedFor({ bed, action: 'admit' })}>
                               Admit

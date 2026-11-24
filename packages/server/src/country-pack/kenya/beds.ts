@@ -11,7 +11,11 @@ import type { KenyaBedState, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  forbidden,
+  getKenyaBedHold,
   getKenyaBedState,
+  KenyaBedHoldExtension,
+  KenyaBedHoldMs,
   getReferenceString,
   isKenyaLocationKind,
   KenyaBedStateDisplay,
@@ -19,10 +23,14 @@ import {
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
-import type { Coding, Encounter, EncounterLocation, Location, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { AccessPolicy, Coding, Encounter, EncounterLocation, Location, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 
-export type KenyaBedAction = 'admit' | 'transfer' | 'discharge' | 'cleaned' | 'close' | 'reopen';
+export type KenyaBedAction = 'admit' | 'transfer' | 'discharge' | 'cleaned' | 'close' | 'reopen' | 'hold' | 'release';
+
+/** Staff roles that may hold a bed for a referral (user decision 2026-11-24), besides project admins. */
+const HoldRoles = ['clinician', 'facility-admin'];
+const StaffRoleSystem = 'https://afiax.africa/kenya/staff-role';
 
 export interface KenyaBedInput {
   readonly action: KenyaBedAction;
@@ -32,6 +40,12 @@ export interface KenyaBedInput {
   readonly toBed?: Reference<Location>;
   /** close: why (broken, staffing). */
   readonly reason?: string;
+  /** hold: the referral it is held for; admit: the referral a held bed is admitted for. */
+  readonly referral?: string;
+  /** hold: until when (default 2 hours from now). */
+  readonly until?: string;
+  /** hold: who it is held for ("Referral from ..."). */
+  readonly display?: string;
 }
 
 export interface KenyaBedResult {
@@ -93,6 +107,58 @@ async function setState(
 }
 
 /**
+ * Whether the caller may hold or release beds for referrals: a project admin, or staff whose
+ * access policy is the clinician or facility-admin role.
+ * @param ctx - The request context.
+ * @returns True when allowed.
+ */
+async function mayHoldBeds(ctx: AuthenticatedRequestContext): Promise<boolean> {
+  if (ctx.membership.admin || ctx.project.superAdmin) {
+    return true;
+  }
+  const policies = [ctx.membership.accessPolicy, ...(ctx.membership.access ?? []).map((a) => a.policy)].filter(
+    (p): p is Reference<AccessPolicy> => !!p?.reference
+  );
+  const systemRepo = ctx.repo.getSystemRepo();
+  for (const ref of policies) {
+    const policy = await systemRepo.readReference<AccessPolicy>(ref).catch(() => undefined);
+    if (policy?.meta?.tag?.some((t) => t.system === StaffRoleSystem && HoldRoles.includes(t.code ?? ''))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Sets or clears a bed's hold, refusing if someone changed the bed since it was read.
+ * @param ctx - The request context.
+ * @param bed - The bed, as read.
+ * @param hold - The hold, or undefined to clear it.
+ * @returns The updated bed.
+ */
+async function setHold(
+  ctx: AuthenticatedRequestContext,
+  bed: WithId<Location>,
+  hold: { referral: string; until: string; display?: string } | undefined
+): Promise<WithId<Location>> {
+  const extension = (bed.extension ?? []).filter((e) => e.url !== KenyaBedHoldExtension);
+  if (hold) {
+    extension.push({
+      url: KenyaBedHoldExtension,
+      extension: [
+        { url: 'referral', valueString: hold.referral },
+        { url: 'until', valueDateTime: hold.until },
+        ...(hold.display ? [{ url: 'display', valueString: hold.display }] : []),
+      ],
+    });
+  }
+  return ctx.repo.updateResource<Location>(
+    { ...bed, extension: extension.length ? extension : undefined },
+    { ifMatch: bed.meta?.versionId }
+  );
+}
+
+/**
  * Admits, transfers or discharges a patient, or changes a bed's state, checking the bed first.
  * @param ctx - The request context.
  * @param bed - The bed.
@@ -117,6 +183,10 @@ export async function changeKenyaBed(
         if (state !== 'U') {
           refuse(`${name} is not free`);
         }
+        const hold = getKenyaBedHold(bed);
+        if (hold && hold.referral !== input.referral) {
+          refuse(`${name} is held for a referral until ${hold.until}. Choose another bed, or release the hold.`);
+        }
         const patientRef = input.patient?.reference;
         if (!patientRef?.startsWith('Patient/')) {
           refuse('Choose the patient to admit');
@@ -134,7 +204,9 @@ export async function changeKenyaBed(
         if (already.length) {
           refuse('This patient is already admitted. Transfer them instead.');
         }
-        const occupied = await setState(ctx, bed, 'O');
+        // A held bed's hold ends when its referred patient is admitted
+        const unheld = hold ? await setHold(ctx, bed, undefined) : bed;
+        const occupied = await setState(ctx, unheld, 'O');
         const encounter = await ctx.repo.createResource<Encounter>({
           resourceType: 'Encounter',
           status: 'in-progress',
@@ -203,12 +275,37 @@ export async function changeKenyaBed(
         if (state === 'O') {
           refuse(`${name} has a patient. Transfer or discharge them first.`);
         }
+        if (getKenyaBedHold(bed)) {
+          refuse(`${name} is held for a referral. Release the hold first.`);
+        }
         return { bed: await setState(ctx, bed, 'C', input.reason) };
       case 'reopen':
         if (state !== 'C') {
           refuse(`${name} is not closed`);
         }
         return { bed: await setState(ctx, bed, 'U') };
+      case 'hold': {
+        if (!(await mayHoldBeds(ctx))) {
+          throw new OperationOutcomeError(forbidden);
+        }
+        if (state !== 'U') {
+          refuse(`${name} is not free`);
+        }
+        const current = getKenyaBedHold(bed);
+        if (current && current.referral !== input.referral) {
+          refuse(`${name} is already held for another referral`);
+        }
+        if (!input.referral?.trim()) {
+          refuse('Say which referral the bed is held for');
+        }
+        const until = input.until && Date.parse(input.until) > Date.now() ? input.until : new Date(Date.now() + KenyaBedHoldMs).toISOString();
+        return { bed: await setHold(ctx, bed, { referral: input.referral.trim(), until, display: input.display?.trim() || undefined }) };
+      }
+      case 'release':
+        if (!(await mayHoldBeds(ctx))) {
+          throw new OperationOutcomeError(forbidden);
+        }
+        return { bed: await setHold(ctx, bed, undefined) };
       default:
         return refuse('Unknown bed action');
     }

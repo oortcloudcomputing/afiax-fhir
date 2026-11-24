@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildKenyaBed, buildKenyaWard, ContentType, createReference, getKenyaBedState } from '@medplum/core';
-import type { Encounter, Location, OperationOutcome, Parameters, Patient } from '@medplum/fhirtypes';
+import { buildKenyaBed, buildKenyaWard, ContentType, createReference, getKenyaBedHold, getKenyaBedState } from '@medplum/core';
+import type { AccessPolicy, Encounter, Location, OperationOutcome, Parameters, Patient, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject } from '../../test.setup';
+import { addTestUser, createTestProject } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
+let project: Project & { id: string };
 let icu: Location;
 let ward: Location;
 
-function fhir(method: 'get' | 'post', path: string): request.Test {
+function fhir(method: 'get' | 'post', path: string, token = accessToken): request.Test {
   const req = method === 'get' ? request(app).get(`/fhir/R4/${path}`) : request(app).post(`/fhir/R4/${path}`);
-  return req.set('Authorization', 'Bearer ' + accessToken).set('Content-Type', ContentType.FHIR_JSON);
+  return req.set('Authorization', 'Bearer ' + token).set('Content-Type', ContentType.FHIR_JSON);
 }
 
 async function create<T extends { resourceType: string }>(resource: T): Promise<T & { id: string }> {
@@ -24,8 +25,13 @@ async function create<T extends { resourceType: string }>(resource: T): Promise<
   return res.body;
 }
 
-function bedAction(bed: Location, action: string, extra: NonNullable<Parameters['parameter']> = []): request.Test {
-  return fhir('post', `Location/${bed.id}/$kenya-bed`).send({
+function bedAction(
+  bed: Location,
+  action: string,
+  extra: NonNullable<Parameters['parameter']> = [],
+  token = accessToken
+): request.Test {
+  return fhir('post', `Location/${bed.id}/$kenya-bed`, token).send({
     resourceType: 'Parameters',
     parameter: [{ name: 'action', valueCode: action }, ...extra],
   });
@@ -49,6 +55,7 @@ describe('Bed board: $kenya-bed (ADR-018 §C)', () => {
       project: { name: 'Kenya beds', setting: [{ name: 'countryPack', valueString: 'kenya' }] },
     });
     accessToken = result.accessToken;
+    project = result.project as Project & { id: string };
     icu = await create(buildKenyaWard('ICU', 'icu'));
     ward = await create(buildKenyaWard('Female medical', 'general'));
   });
@@ -138,4 +145,77 @@ describe('Bed board: $kenya-bed (ADR-018 §C)', () => {
     const inBed = await fhir('get', `Encounter?location=Location/${bed.id}&status=in-progress`);
     expect(inBed.body.entry).toHaveLength(1);
   });
+
+  /**
+   * A staff member with a Kenya staff-role policy that can read and change beds.
+   * @param role - The staff role code.
+   * @returns Their access token.
+   */
+  async function staff(role: string): Promise<string> {
+    const policy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      name: `Kenya ${role}`,
+      resource: [{ resourceType: 'Location' }, { resourceType: 'Encounter' }, { resourceType: 'Patient' }],
+    };
+    const user = await addTestUser(project, policy);
+    // addTestUser replaces meta, so tag the policy with the role afterwards, as the seeded roles are
+    const ref = user.membership.accessPolicy?.reference as string;
+    const saved: AccessPolicy = (await fhir('get', ref)).body;
+    const res = await request(app)
+      .put(`/fhir/R4/${ref}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...saved, meta: { ...saved.meta, tag: [{ system: 'https://afiax.africa/kenya/staff-role', code: role }] } });
+    expect(res.status).toBe(200);
+    return user.accessToken;
+  }
+
+  test('hold a bed for a referral: only that referral can be admitted, it cannot be closed, it can be released', async () => {
+    const bed = await create(buildKenyaBed('ICU bed 7', icu as Location & { id: string }));
+    const held = await bedAction(bed, 'hold', [
+      { name: 'referral', valueString: 'ref-123' },
+      { name: 'display', valueString: 'Referral from Afiax Test Clinic' },
+    ]);
+    expect(held.status).toBe(200);
+    const hold = getKenyaBedHold(await read(bed));
+    expect(hold).toMatchObject({ referral: 'ref-123', display: 'Referral from Afiax Test Clinic' });
+    // About two hours
+    const hours = (Date.parse(hold?.until ?? '') - Date.now()) / 3_600_000;
+    expect(hours).toBeGreaterThan(1.9);
+    expect(hours).toBeLessThanOrEqual(2);
+    expect(getKenyaBedState(await read(bed))).toBe('U');
+
+    const walkIn = await patient('Walkin');
+    expect(errorText(await bedAction(bed, 'admit', [{ name: 'patient', valueReference: createReference(walkIn) }]))).toContain(
+      'held for a referral'
+    );
+    expect(errorText(await bedAction(bed, 'close'))).toContain('Release the hold first');
+    expect(errorText(await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-other' }]))).toContain('already held');
+
+    const referred = await patient('Referred');
+    const admitted = await bedAction(bed, 'admit', [
+      { name: 'patient', valueReference: createReference(referred) },
+      { name: 'referral', valueString: 'ref-123' },
+    ]);
+    expect(admitted.status).toBe(200);
+    const after = await read(bed);
+    expect(getKenyaBedState(after)).toBe('O');
+    expect(getKenyaBedHold(after)).toBeUndefined();
+
+    const other = await create(buildKenyaBed('ICU bed 8', icu as Location & { id: string }));
+    await bedAction(other, 'hold', [{ name: 'referral', valueString: 'ref-456' }]);
+    expect((await bedAction(other, 'release')).status).toBe(200);
+    expect(getKenyaBedHold(await read(other))).toBeUndefined();
+  });
+
+  test('only clinicians, facility admins and project admins may hold beds', async () => {
+    const bed = await create(buildKenyaBed('Bed 12', ward as Location & { id: string }));
+    const nurse = await staff('nurse');
+    const clinician = await staff('clinician');
+    expect((await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-n' }], nurse)).status).toBe(403);
+    expect((await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-c' }], clinician)).status).toBe(200);
+    expect((await bedAction(bed, 'release', [], nurse)).status).toBe(403);
+    expect((await bedAction(bed, 'release', [], clinician)).status).toBe(200);
+  });
 });
+

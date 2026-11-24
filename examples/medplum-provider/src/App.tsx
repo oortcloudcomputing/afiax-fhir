@@ -37,6 +37,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { BedReferralAlerts } from './components/kenya/BedReferralAlerts';
 import { BedBoardPage } from './pages/kenya/BedBoardPage';
 import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
@@ -183,6 +184,8 @@ export function App(): JSX.Element | null {
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
     >
+      {/* Bed referral news on every page (ADR-018 §C): pop-up, sound, browser notification */}
+      {isKenya && profile ? <BedReferralAlerts /> : null}
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (

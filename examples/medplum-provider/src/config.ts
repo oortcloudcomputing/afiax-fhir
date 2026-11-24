@@ -24,6 +24,8 @@ export interface ProviderAppConfig {
   readonly idleTimeoutMinutes?: string;
   /** afiax-services, for the Prescription Network's offer requests. Undefined hides them. */
   readonly afiaxServicesUrl?: string;
+  /** MapTiler key for maps (decision 2026-11-23, as My Afiax). Undefined: OpenStreetMap tiles in development only. */
+  readonly maptilerKey?: string;
 }
 
 export const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
@@ -51,6 +53,7 @@ const config: ProviderAppConfig = {
   supportEmail: readEnv(import.meta.env?.MEDPLUM_SUPPORT_EMAIL),
   idleTimeoutMinutes: readEnv(import.meta.env?.MEDPLUM_IDLE_TIMEOUT_MINUTES),
   afiaxServicesUrl: readEnv(import.meta.env?.MEDPLUM_AFIAX_SERVICES_URL),
+  maptilerKey: readEnv(import.meta.env?.MEDPLUM_MAPTILER_KEY),
 };
 
 export function getConfig(): ProviderAppConfig {

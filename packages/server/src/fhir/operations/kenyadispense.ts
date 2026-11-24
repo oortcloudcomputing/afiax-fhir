@@ -29,6 +29,8 @@ export const kenyaDispenseOperation: OperationDefinition = {
   parameter: [
     { use: 'in', name: 'quantity', type: 'decimal', min: 0, max: '1' },
     { use: 'in', name: 'note', type: 'string', min: 0, max: '1' },
+    // The dispensing pharmacy when it is not the caller (Afiax Prescription Network chemists)
+    { use: 'in', name: 'performer', type: 'Reference', min: 0, max: '1' },
   ],
 };
 

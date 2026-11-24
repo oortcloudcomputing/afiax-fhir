@@ -25,6 +25,7 @@ import type {
   Encounter,
   MedicationDispense,
   MedicationRequest,
+  Organization,
   Patient,
   Practitioner,
   Reference,
@@ -119,6 +120,30 @@ export interface KenyaDispenseInput {
   /** Quantity handed over now; defaults to everything left. */
   readonly quantity?: number;
   readonly note?: string;
+  /**
+   * The pharmacy that dispensed, when it is not the caller: a chemist in the Afiax Prescription
+   * Network dispenses through afiax-services, whose client would otherwise be recorded. An
+   * Organization, usually named by its PPB premises licence (it lives in another project).
+   */
+  readonly performer?: Reference<Organization>;
+}
+
+/**
+ * Checks a dispensing pharmacy given to $kenya-dispense: an Organization, by reference or by
+ * identifier, with a name for display.
+ * @param performer - The performer from the operation input.
+ * @returns The performer to record.
+ */
+function dispensingPharmacy(performer: Reference<Organization>): Reference<Organization> {
+  const byReference = performer.reference?.startsWith('Organization/');
+  const byIdentifier = performer.identifier?.system && performer.identifier.value;
+  if (!byReference && !(byIdentifier && (performer.type === undefined || performer.type === 'Organization'))) {
+    throw new OperationOutcomeError(badRequest('The performer must be the dispensing pharmacy (an Organization)'));
+  }
+  if (!performer.display?.trim()) {
+    throw new OperationOutcomeError(badRequest('Give the dispensing pharmacy a name (performer.display)'));
+  }
+  return { ...performer, type: 'Organization', display: performer.display.trim() };
 }
 
 export interface KenyaDispenseResult {
@@ -207,7 +232,7 @@ export async function dispenseKenyaPrescription(
       medicationCodeableConcept: prescription.medicationCodeableConcept,
       subject: prescription.subject as Reference<Patient>,
       context: prescription.encounter,
-      performer: [{ actor: ctx.profile as Reference<Practitioner> }],
+      performer: [{ actor: input.performer ? dispensingPharmacy(input.performer) : (ctx.profile as Reference<Practitioner>) }],
       location,
       authorizingPrescription: [createReference(prescription)],
       quantity: { ...prescription.dispenseRequest?.quantity, value: quantity },

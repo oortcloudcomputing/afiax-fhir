@@ -47,7 +47,10 @@ function param(body: Parameters, name: string): NonNullable<Parameters['paramete
   return body.parameter?.find((p) => p.name === name);
 }
 
-/** Prescribes metformin 1 tablet BD for 30 days, 60 tablets; returns the MedicationRequest. */
+/**
+ * Prescribes metformin 1 tablet BD for 30 days, 60 tablets.
+ * @returns The MedicationRequest.
+ */
 async function prescribe(): Promise<MedicationRequest> {
   const res = await fhir('post', `Encounter/${encounter.id}/$kenya-order`).send({
     resourceType: 'Parameters',
@@ -164,6 +167,45 @@ describe('Kenya dispensing by prescription code (ADR-016 step 2)', () => {
     const res = await dispense(prescription, 61);
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('Only 60 left');
+  });
+
+  test('a network chemist is recorded as the performer, not the caller', async () => {
+    const prescription = await prescribe();
+    const chemist = {
+      type: 'Organization',
+      identifier: { system: 'https://afiax.africa/kenya/identifier/ppb-premises', value: 'PPB/P/12345' },
+      display: 'Uzima Chemist',
+    };
+    const res = await fhir('post', `MedicationRequest/${prescription.id}/$kenya-dispense`).send({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'performer', valueReference: chemist },
+        { name: 'note', valueString: 'Dispensed at Uzima Chemist (Afiax Prescription Network)' },
+      ],
+    });
+    expect(res.status).toBe(200);
+    const dispensed: MedicationDispense = (
+      await fhir('get', param(res.body, 'dispense')?.valueReference?.reference as string)
+    ).body;
+    expect(dispensed.performer).toEqual([{ actor: chemist }]);
+  });
+
+  test('a performer that is not a named pharmacy is refused', async () => {
+    const prescription = await prescribe();
+    for (const [performer, message] of [
+      [{ reference: 'Practitioner/123', display: 'Someone' }, 'must be the dispensing pharmacy'],
+      [{ type: 'Organization', identifier: { system: 'https://afiax.africa/kenya/identifier/ppb-premises', value: 'X' } }, 'Give the dispensing pharmacy a name'],
+    ] as const) {
+      const res = await fhir('post', `MedicationRequest/${prescription.id}/$kenya-dispense`).send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'performer', valueReference: performer }],
+      });
+      expect(res.status).toBe(400);
+      expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(message);
+    }
+    // Nothing was dispensed by the refused calls
+    const again = await dispense(prescription);
+    expect(param(again.body, 'state')?.valueCode).toBe('dispensed');
   });
 
   test('an expired or cancelled prescription is refused', async () => {

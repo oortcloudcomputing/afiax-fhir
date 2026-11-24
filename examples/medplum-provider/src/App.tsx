@@ -4,6 +4,7 @@ import { getProjectSettingString, getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, IdleSignOut, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
+  IconBed,
   IconApps,
   IconBook2,
   IconCalendarEvent,
@@ -35,6 +36,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { BedBoardPage } from './pages/kenya/BedBoardPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
@@ -157,6 +159,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   // Kenya staff without a role still reach the department queues
                   ...(isKenya ? [{ icon: <IconListCheck />, label: 'Department queues', href: '/kenya/queue' }] : []),
+                  ...(isKenya ? [{ icon: <IconBed />, label: 'Bed board', href: '/kenya/beds' }] : []),
                   { icon: <IconApps />, label: 'Enterprise apps', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [
@@ -227,6 +230,7 @@ export function App(): JSX.Element | null {
               <Route path="/schedule" element={<SchedulePage />} />
               {isKenya && <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />}
               {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
+              {isKenya && <Route path="/kenya/beds" element={<BedBoardPage />} />}
               {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

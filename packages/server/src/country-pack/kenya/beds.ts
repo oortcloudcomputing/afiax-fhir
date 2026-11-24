@@ -301,11 +301,16 @@ export async function changeKenyaBed(
         const until = input.until && Date.parse(input.until) > Date.now() ? input.until : new Date(Date.now() + KenyaBedHoldMs).toISOString();
         return { bed: await setHold(ctx, bed, { referral: input.referral.trim(), until, display: input.display?.trim() || undefined }) };
       }
-      case 'release':
-        if (!(await mayHoldBeds(ctx))) {
+      case 'release': {
+        // Whoever names the referral the bed is held for may free it (afiax-services, when the
+        // referring hospital cancels); anyone else needs the role that may hold beds
+        const current = getKenyaBedHold(bed);
+        const ownReferral = !!current && !!input.referral && current.referral === input.referral;
+        if (!ownReferral && !(await mayHoldBeds(ctx))) {
           throw new OperationOutcomeError(forbidden);
         }
         return { bed: await setHold(ctx, bed, undefined) };
+      }
       default:
         return refuse('Unknown bed action');
     }

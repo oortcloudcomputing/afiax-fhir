@@ -215,6 +215,11 @@ describe('Bed board: $kenya-bed (ADR-018 §C)', () => {
     expect((await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-n' }], nurse)).status).toBe(403);
     expect((await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-c' }], clinician)).status).toBe(200);
     expect((await bedAction(bed, 'release', [], nurse)).status).toBe(403);
+    expect((await bedAction(bed, 'release', [{ name: 'referral', valueString: 'ref-wrong' }], nurse)).status).toBe(403);
+    // Naming the referral it is held for frees it (the referring hospital cancelled)
+    expect((await bedAction(bed, 'release', [{ name: 'referral', valueString: 'ref-c' }], nurse)).status).toBe(200);
+    expect(getKenyaBedHold(await read(bed))).toBeUndefined();
+    await bedAction(bed, 'hold', [{ name: 'referral', valueString: 'ref-d' }], clinician);
     expect((await bedAction(bed, 'release', [], clinician)).status).toBe(200);
   });
 });

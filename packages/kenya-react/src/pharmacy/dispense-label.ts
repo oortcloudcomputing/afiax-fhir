@@ -33,7 +33,7 @@ const pageCss: Record<DispenseLabelSize, string> = {
   a4: '@page { size: A4; margin: 15mm; } .label { font-size: 11pt; width: 100mm; border: 1px dashed #888; padding: 4mm; } .medicine { font-size: 14pt; }',
 };
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 }
 
@@ -82,6 +82,14 @@ ${body}
  * @param size - The label stock.
  */
 export function printDispenseLabels(labels: readonly DispenseLabel[], size: DispenseLabelSize): void {
+  printHtml(buildDispenseLabelsHtml(labels, size));
+}
+
+/**
+ * Prints an HTML document through a hidden frame, so the workspace stays open behind the print dialog.
+ * @param html - The document.
+ */
+export function printHtml(html: string): void {
   const frame = document.createElement('iframe');
   frame.setAttribute('aria-hidden', 'true');
   frame.style.position = 'fixed';
@@ -96,7 +104,7 @@ export function printDispenseLabels(labels: readonly DispenseLabel[], size: Disp
     return;
   }
   doc.open();
-  doc.write(buildDispenseLabelsHtml(labels, size));
+  doc.write(html);
   doc.close();
   win.addEventListener('afterprint', () => frame.remove());
   setTimeout(() => {

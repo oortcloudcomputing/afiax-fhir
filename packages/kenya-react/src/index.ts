@@ -34,6 +34,8 @@ export * from './orders/KenyaOrderHistory';
 export * from './patient/ConditionIhrPanel';
 export * from './patient/NationalRecordPublicationPanel';
 export * from './patient/PatientIdentityPanel';
+export * from './pharmacy/dispense-label';
+export * from './pharmacy/KenyaPharmacyDispense';
 export * from './pharmacy/KenyaPharmacyToday';
 export * from './pharmacy/pharmacy-today';
 export * from './queues/KenyaDepartmentQueue';

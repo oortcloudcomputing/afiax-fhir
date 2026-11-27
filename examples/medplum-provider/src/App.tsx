@@ -261,6 +261,7 @@ export function App(): JSX.Element | null {
               {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/pharmacy" replace />} />}
               {isKenya && <Route path="/kenya/queue/pharmacy" element={<Navigate to="/kenya/pharmacy" replace />} />}
               {isKenya && <Route path="/kenya/pharmacy" element={<PharmacyPage />} />}
+              {isKenya && <Route path="/kenya/pharmacy/dispense" element={<PharmacyPage />} />}
               {isKenya && <Route path="/kenya/beds" element={<BedBoardPage />} />}
               {isKenya && <Route path="/kenya/bed-referrals" element={<BedReferralsPage />} />}
               {isKenya && <Route path="/kenya/clinic-hours" element={<ClinicHoursPage />} />}

@@ -35,6 +35,11 @@ interface DispensedToday {
 export interface KenyaPharmacyTodayProps {
   /** How often to reload, in milliseconds (tests set it). */
   readonly refreshMs?: number;
+  /**
+   * When set, Dispense opens the Dispense tab with these prescriptions (safety checks, stock,
+   * label) instead of dispensing from the card.
+   */
+  readonly onOpenDispense?: (prescriptionIds: string[]) => void;
 }
 
 /**
@@ -145,7 +150,10 @@ export function KenyaPharmacyToday(props: KenyaPharmacyTodayProps): JSX.Element 
         <SummaryTile label="Dispensed today" value={dispensed?.length} />
       </SimpleGrid>
 
-      <KenyaPrescriptionLookup onDispensed={load} />
+      <KenyaPrescriptionLookup
+        onDispensed={load}
+        onOpen={props.onOpenDispense ? (p) => props.onOpenDispense?.([p.id as string]) : undefined}
+      />
 
       <SegmentedControl
         value={filter}
@@ -173,6 +181,7 @@ export function KenyaPharmacyToday(props: KenyaPharmacyTodayProps): JSX.Element 
           disabled={!!busy}
           onStart={() => startPreparing(group)}
           onDispense={(lines, key) => dispenseItems(key, lines)}
+          onOpenDispense={props.onOpenDispense}
         />
       ))}
 
@@ -237,10 +246,13 @@ interface OrderCardProps {
   readonly disabled: boolean;
   readonly onStart: () => void;
   readonly onDispense: (lines: readonly QueueItem[], key: string) => void;
+  readonly onOpenDispense?: (prescriptionIds: string[]) => void;
 }
 
 function OrderCard(props: OrderCardProps): JSX.Element {
-  const { group, busy, disabled, onStart, onDispense } = props;
+  const { group, busy, disabled, onStart, onDispense, onOpenDispense } = props;
+  const open = (lines: readonly QueueItem[]): void =>
+    onOpenDispense?.(lines.map((l) => l.order?.id).filter((id): id is string => !!id));
   const patient = group.items.find((i) => i.patient)?.patient;
   const medicines = group.items.filter((i) => i.order?.resourceType === 'MedicationRequest');
   const patientText = patient ? queuePatientName(patient) : 'the patient';
@@ -284,7 +296,12 @@ function OrderCard(props: OrderCardProps): JSX.Element {
                     </Text>
                   )}
                 </div>
-                {request && group.items.length > 1 && (
+                {request && group.items.length > 1 && onOpenDispense && (
+                  <Button size="xs" variant="subtle" disabled={disabled} onClick={() => open([item])}>
+                    Dispense this
+                  </Button>
+                )}
+                {request && group.items.length > 1 && !onOpenDispense && (
                   <ConfirmButton
                     size="xs"
                     variant="subtle"
@@ -308,7 +325,12 @@ function OrderCard(props: OrderCardProps): JSX.Element {
               Start preparing
             </Button>
           )}
-          {medicines.length > 0 && (
+          {medicines.length > 0 && onOpenDispense && (
+            <Button size="xs" disabled={disabled} onClick={() => open(medicines)}>
+              {medicines.length > 1 ? `Dispense all (${medicines.length})` : 'Dispense'}
+            </Button>
+          )}
+          {medicines.length > 0 && !onOpenDispense && (
             <ConfirmButton
               size="xs"
               loading={busy}

@@ -4,8 +4,13 @@ import { allOk, badRequest, createReference, notFound, OperationOutcomeError } f
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { MedicationRequest, OperationDefinition, Parameters, ParametersParameter, Patient } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import type { KenyaDispenseInput, KenyaPrescriptionStatus } from '../../country-pack/kenya/dispense';
+import type {
+  KenyaDispenseInput,
+  KenyaDispenseSafetyAlert,
+  KenyaPrescriptionStatus,
+} from '../../country-pack/kenya/dispense';
 import {
+  checkKenyaDispenseSafety,
   dispenseKenyaPrescription,
   findKenyaPrescriptionByCode,
   getKenyaPrescriptionStatus,
@@ -31,6 +36,8 @@ export const kenyaDispenseOperation: OperationDefinition = {
     { use: 'in', name: 'note', type: 'string', min: 0, max: '1' },
     // The dispensing pharmacy when it is not the caller (Afiax Prescription Network chemists)
     { use: 'in', name: 'performer', type: 'Reference', min: 0, max: '1' },
+    // The pharmacist's reason to dispense despite a high-severity safety alert
+    { use: 'in', name: 'safetyOverride', type: 'string', min: 0, max: '1' },
   ],
 };
 
@@ -57,6 +64,43 @@ function statusParameters(status: KenyaPrescriptionStatus): ParametersParameter[
     out.push({ name: 'remaining', valueDecimal: status.remaining });
   }
   return out;
+}
+
+function alertParameter(alert: KenyaDispenseSafetyAlert): ParametersParameter {
+  const part: ParametersParameter[] = [
+    { name: 'id', valueString: alert.id },
+    { name: 'severity', valueCode: alert.severity },
+    { name: 'category', valueCode: alert.category },
+    { name: 'title', valueString: alert.title },
+    { name: 'detail', valueString: alert.detail },
+    { name: 'recommendation', valueString: alert.recommendation },
+    { name: 'evidence', valueString: alert.evidence },
+  ];
+  if (alert.overridden) {
+    part.push({ name: 'overridden', valueString: alert.overridden });
+  }
+  return { name: 'alert', part };
+}
+
+/**
+ * Handles GET MedicationRequest/:id/$kenya-dispense-check: before dispensing, whether the
+ * prescription can be dispensed and the safety alerts against the record as it stands now (each
+ * high one with the override already recorded for it, if any).
+ * @param req - The FHIR request.
+ * @returns The status and the alerts.
+ */
+export async function kenyaDispenseCheckHandler(req: FhirRequest): Promise<FhirResponse> {
+  const ctx = requireKenya();
+  const prescription = await ctx.repo.readResource<MedicationRequest>('MedicationRequest', req.params.id);
+  const alerts = await checkKenyaDispenseSafety(ctx, prescription);
+  const body: Parameters = {
+    resourceType: 'Parameters',
+    parameter: [
+      ...statusParameters(getKenyaPrescriptionStatus(prescription, new Date().toISOString().slice(0, 10))),
+      ...alerts.map(alertParameter),
+    ],
+  };
+  return [allOk, body];
 }
 
 /**

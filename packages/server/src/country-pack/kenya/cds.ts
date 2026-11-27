@@ -230,7 +230,13 @@ export async function enforceKenyaMedicationSafety(
   throw new OperationOutcomeError(outcome);
 }
 
-function alertIdentifier(trigger: Resource & { id: string }, alert: KenyaCdsAlert): string {
+/**
+ * The identifier that makes a recorded alert unique per triggering record and rule.
+ * @param trigger - The record that raised the alert.
+ * @param alert - The alert.
+ * @returns The identifier value.
+ */
+export function kenyaCdsAlertIdentifier(trigger: Resource & { id: string }, alert: KenyaCdsAlert): string {
   return `${trigger.resourceType}/${trigger.id}|${alert.id}|${alert.implicated.join(',')}`;
 }
 
@@ -240,7 +246,10 @@ function alertIdentifier(trigger: Resource & { id: string }, alert: KenyaCdsAler
  * @param trigger - The record that raised the alerts.
  * @param patient - The patient.
  * @param alerts - The alerts.
- * @param override - The override reason, when the prescriber went ahead.
+ * @param override - The override reason, when the prescriber (or pharmacist) went ahead.
+ * @param options - Who overrode (default the prescriber) and other records to list as implicated.
+ * @param options.by - Who went ahead despite the alert.
+ * @param options.alsoImplicated - More records to name, e.g. the dispense a pharmacist made.
  * @returns The DetectedIssues created.
  */
 export async function recordKenyaCdsAlerts(
@@ -248,15 +257,17 @@ export async function recordKenyaCdsAlerts(
   trigger: Resource & { id: string },
   patient: Reference<Patient> | undefined,
   alerts: readonly KenyaCdsAlert[],
-  override?: string
+  override?: string,
+  options?: { readonly by?: 'Prescriber' | 'Pharmacist'; readonly alsoImplicated?: readonly string[] }
 ): Promise<WithId<DetectedIssue>[]> {
+  const by = options?.by ?? 'Prescriber';
   const created: WithId<DetectedIssue>[] = [];
   // DetectedIssue authors must be practitioners; other profiles (e.g. a bot) are left out
   const prescriber = ctx.profile?.reference?.startsWith('Practitioner/')
     ? (ctx.profile as Reference<Practitioner>)
     : undefined;
   for (const alert of alerts) {
-    const identifier = alertIdentifier(trigger, alert);
+    const identifier = kenyaCdsAlertIdentifier(trigger, alert);
     const existing = await ctx.systemRepo.searchOne<DetectedIssue>({
       resourceType: 'DetectedIssue',
       filters: [
@@ -268,7 +279,7 @@ export async function recordKenyaCdsAlerts(
       continue;
     }
     const triggerRef = `${trigger.resourceType}/${trigger.id}`;
-    const implicated = [...new Set([triggerRef, ...alert.implicated])].map((reference) => ({ reference }));
+    const implicated = [...new Set([triggerRef, ...(options?.alsoImplicated ?? []), ...alert.implicated])].map((reference) => ({ reference }));
     created.push(
       await ctx.systemRepo.createResource<DetectedIssue>({
         resourceType: 'DetectedIssue',
@@ -285,7 +296,7 @@ export async function recordKenyaCdsAlerts(
         mitigation: override
           ? [
               {
-                action: { text: `Prescriber override: ${override}` },
+                action: { text: `${by} override: ${override}` },
                 date: new Date().toISOString(),
                 author: prescriber,
               },

@@ -4,12 +4,15 @@ import {
   ContentType,
   createReference,
   getKenyaPrescriptionCode,
+  getReferenceString,
   KenyaDepartmentSystem,
   KenyaErxMedicationDispenseProfile,
   KenyaHealthProductSystem,
 } from '@medplum/core';
 import type {
+  AllergyIntolerance,
   Bundle,
+  DetectedIssue,
   Encounter,
   Location,
   MedicationDispense,
@@ -235,5 +238,64 @@ describe('Kenya dispensing by prescription code (ADR-016 step 2)', () => {
     expect(results.filter((r) => r.status === 200)).toHaveLength(1);
     const dispenses = await fhir('get', `MedicationDispense?prescription=MedicationRequest/${prescription.id}`);
     expect((dispenses.body as Bundle).entry).toHaveLength(1);
+  });
+
+  test('an allergy recorded after prescribing stops the dispense until the pharmacist gives a reason', async () => {
+    const other: Patient = (await fhir('post', 'Patient').send({ resourceType: 'Patient', name: [{ family: 'Otieno' }] }))
+      .body;
+    const prescription: MedicationRequest = (
+      await fhir('post', 'MedicationRequest').send({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(other),
+        medicationCodeableConcept: {
+          coding: [{ system: KenyaHealthProductSystem, code: 'PH12907', display: 'Amoxicillin 500 mg Oral Capsule' }],
+          text: 'Amoxicillin 500 mg Oral Capsule',
+        },
+        dispenseRequest: { quantity: { value: 21, unit: 'capsule' } },
+      } satisfies MedicationRequest)
+    ).body;
+    expect(prescription.id).toBeDefined();
+    const allergy: AllergyIntolerance = (
+      await fhir('post', 'AllergyIntolerance').send({
+        resourceType: 'AllergyIntolerance',
+        patient: createReference(other),
+        clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical', code: 'active' }] },
+        code: { text: 'Penicillin' },
+      } satisfies AllergyIntolerance)
+    ).body;
+
+    const check = await fhir('get', `MedicationRequest/${prescription.id}/$kenya-dispense-check`);
+    expect(check.status).toBe(200);
+    expect(param(check.body, 'state')?.valueCode).toBe('valid');
+    const alert = param(check.body, 'alert');
+    expect(alert?.part?.find((p) => p.name === 'severity')?.valueCode).toBe('high');
+    expect(alert?.part?.find((p) => p.name === 'category')?.valueCode).toBe('allergy');
+    expect(alert?.part?.find((p) => p.name === 'overridden')).toBeUndefined();
+
+    const refused = await dispense(prescription);
+    expect(refused.status).toBe(400);
+    expect((refused.body as OperationOutcome).issue?.[0]?.details?.text).toContain('Allergy');
+
+    const accepted = await fhir('post', `MedicationRequest/${prescription.id}/$kenya-dispense`).send({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'quantity', valueDecimal: 7 },
+        { name: 'safetyOverride', valueString: 'Allergy was a rash in childhood; prescriber confirmed by phone' },
+      ],
+    });
+    expect(accepted.status).toBe(200);
+    const issues = await fhir('get', `DetectedIssue?implicated=${getReferenceString(allergy)}`);
+    const issue = (issues.body as Bundle<DetectedIssue>).entry?.[0]?.resource;
+    expect(issue?.mitigation?.[0]?.action?.text).toBe(
+      'Pharmacist override: Allergy was a rash in childhood; prescriber confirmed by phone'
+    );
+    expect(issue?.implicated?.map((i) => i.reference)).toContain(param(accepted.body, 'dispense')?.valueReference?.reference);
+
+    // The rest of the course: the alert shows the reason and asks nothing more
+    const again = await fhir('get', `MedicationRequest/${prescription.id}/$kenya-dispense-check`);
+    expect(param(again.body, 'alert')?.part?.find((p) => p.name === 'overridden')?.valueString).toContain('Pharmacist override');
+    expect((await dispense((await fhir('get', `MedicationRequest/${prescription.id}`)).body)).status).toBe(200);
   });
 });

@@ -7,8 +7,15 @@
 // conforms); the running dispensed total is kept on the MedicationRequest, whose version is checked
 // on update, so two pharmacists cannot fill the same prescription at once; a fully dispensed
 // prescription becomes "completed" and its pharmacy Task is completed.
+//
+// Safety at the counter: the prescribing rules (allergy, interaction, pregnancy, critical lab) run
+// again against the record as it stands now. A high-severity alert the prescriber already overrode
+// shows their reason and asks nothing more; any other high alert needs the pharmacist's reason to
+// proceed, recorded as a DetectedIssue naming the prescription and the dispense. Chemists in the
+// Afiax Prescription Network (performer given) are not checked here: their dispense comes through
+// afiax-services after the patient chose them, with no one to ask.
 
-import type { WithId } from '@medplum/core';
+import type { KenyaCdsAlert, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
@@ -17,14 +24,17 @@ import {
   KenyaErxMedicationDispenseProfile,
   normalizeKenyaPrescriptionCode,
   KenyaPrescriptionCodeSystem,
+  KenyaCdsAlertCategorySystem,
   Operator,
   OperationOutcomeError,
 } from '@medplum/core';
 import type {
   Coding,
+  DetectedIssue,
   Encounter,
   MedicationDispense,
   MedicationRequest,
+  OperationOutcome,
   Organization,
   Patient,
   Practitioner,
@@ -32,6 +42,12 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
+import {
+  checkKenyaMedicationRequest,
+  KenyaCdsAlertIdentifierSystem,
+  kenyaCdsAlertIdentifier,
+  recordKenyaCdsAlerts,
+} from './cds';
 
 /** Running total dispensed against a prescription (MedicationRequest extension, valueDecimal). */
 export const KenyaDispensedQuantityExtensionUrl = 'https://afiax.africa/fhir/StructureDefinition/kenya-erx-dispensed-quantity';
@@ -126,6 +142,81 @@ export interface KenyaDispenseInput {
    * Organization, usually named by its PPB premises licence (it lives in another project).
    */
   readonly performer?: Reference<Organization>;
+  /** The pharmacist's reason to dispense despite a high-severity safety alert. */
+  readonly safetyOverride?: string;
+}
+
+/** A safety alert at dispense, with the override already recorded for it, if any. */
+export interface KenyaDispenseSafetyAlert extends KenyaCdsAlert {
+  /** The recorded override, e.g. "Prescriber override: benefit outweighs risk". */
+  readonly overridden?: string;
+}
+
+type SafetyContext = Pick<AuthenticatedRequestContext, 'project' | 'systemRepo'>;
+
+/**
+ * Runs the prescribing safety rules for a prescription about to be dispensed, and marks the
+ * high-severity alerts someone already overrode.
+ * @param ctx - The request context.
+ * @param prescription - The MedicationRequest.
+ * @returns The alerts, most severe first.
+ */
+export async function checkKenyaDispenseSafety(
+  ctx: SafetyContext,
+  prescription: WithId<MedicationRequest>
+): Promise<KenyaDispenseSafetyAlert[]> {
+  const alerts = await checkKenyaMedicationRequest(ctx.systemRepo, ctx.project.id, prescription);
+  return Promise.all(
+    alerts.map(async (alert): Promise<KenyaDispenseSafetyAlert> => {
+      if (alert.severity !== 'high') {
+        return alert;
+      }
+      const recorded = await ctx.systemRepo.searchOne<DetectedIssue>({
+        resourceType: 'DetectedIssue',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: ctx.project.id },
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: `${KenyaCdsAlertIdentifierSystem}|${kenyaCdsAlertIdentifier(prescription, alert)}`,
+          },
+        ],
+      });
+      const overridden = recorded?.mitigation?.find((m) => m.action?.text)?.action?.text;
+      return overridden ? { ...alert, overridden } : alert;
+    })
+  );
+}
+
+/**
+ * The high-severity alerts no one has overridden yet: these stop a dispense without a reason.
+ * @param alerts - The alerts from checkKenyaDispenseSafety.
+ * @returns The alerts that need the pharmacist's reason.
+ */
+export function unresolvedKenyaDispenseAlerts(alerts: readonly KenyaDispenseSafetyAlert[]): KenyaDispenseSafetyAlert[] {
+  return alerts.filter((a) => a.severity === 'high' && !a.overridden);
+}
+
+function safetyRefusal(alerts: readonly KenyaCdsAlert[]): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    issue: [
+      ...alerts.map((alert) => ({
+        severity: 'error' as const,
+        code: 'business-rule' as const,
+        details: {
+          coding: [{ system: KenyaCdsAlertCategorySystem, code: alert.category }],
+          text: `${alert.title}. ${alert.detail} ${alert.recommendation}`,
+        },
+        diagnostics: `Evidence: ${alert.evidence}`,
+      })),
+      {
+        severity: 'information' as const,
+        code: 'informational' as const,
+        details: { text: 'To dispense anyway, record your reason (safetyOverride).' },
+      },
+    ],
+  };
 }
 
 /**
@@ -193,7 +284,7 @@ export function getKenyaErxDispenseGaps(dispense: MedicationDispense): string[] 
  * @returns The dispense, the updated prescription and its status.
  */
 export async function dispenseKenyaPrescription(
-  ctx: Pick<AuthenticatedRequestContext, 'repo' | 'profile'>,
+  ctx: Pick<AuthenticatedRequestContext, 'repo' | 'profile' | 'project' | 'systemRepo'>,
   prescription: WithId<MedicationRequest>,
   input: KenyaDispenseInput
 ): Promise<KenyaDispenseResult> {
@@ -209,6 +300,11 @@ export async function dispenseKenyaPrescription(
   if (status.remaining !== undefined && quantity > status.remaining) {
     throw new OperationOutcomeError(badRequest(`Only ${status.remaining} left to dispense on this prescription`));
   }
+  const override = input.safetyOverride?.trim();
+  const unresolved = input.performer ? [] : unresolvedKenyaDispenseAlerts(await checkKenyaDispenseSafety(ctx, prescription));
+  if (unresolved.length > 0 && !override) {
+    throw new OperationOutcomeError(safetyRefusal(unresolved));
+  }
   const dispensedTotal = status.dispensed + quantity;
   const complete = status.remaining === undefined || dispensedTotal >= (status.prescribed ?? 0);
   const firstFill = status.dispensed === 0;
@@ -223,7 +319,7 @@ export async function dispenseKenyaPrescription(
     : undefined;
   const location = encounter?.location?.[0]?.location;
 
-  return ctx.repo.withTransaction(async () => {
+  const result = await ctx.repo.withTransaction(async () => {
     const dispense: MedicationDispense = {
       resourceType: 'MedicationDispense',
       identifier: prescription.identifier?.filter((i) => i.system === KenyaPrescriptionCodeSystem),
@@ -286,4 +382,11 @@ export async function dispenseKenyaPrescription(
       status: getKenyaPrescriptionStatus(updated, now.slice(0, 10)),
     };
   });
+  if (unresolved.length > 0 && override) {
+    await recordKenyaCdsAlerts(ctx, prescription, prescription.subject as Reference<Patient>, unresolved, override, {
+      by: 'Pharmacist',
+      alsoImplicated: [getReferenceString(result.dispense)],
+    });
+  }
+  return result;
 }

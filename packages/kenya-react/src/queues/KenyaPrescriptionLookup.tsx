@@ -30,6 +30,11 @@ interface Lookup {
 export interface KenyaPrescriptionLookupProps {
   /** Called after a dispense, so the queue reloads. */
   readonly onDispensed?: () => void;
+  /**
+   * When set, a prescription that can be dispensed opens here (the pharmacy workspace's Dispense
+   * tab, with safety checks, stock and a label) instead of being dispensed from the lookup.
+   */
+  readonly onOpen?: (prescription: MedicationRequest) => void;
 }
 
 /**
@@ -169,7 +174,12 @@ export function KenyaPrescriptionLookup(props: KenyaPrescriptionLookupProps): JS
                 {found.reason}
               </Alert>
             )}
-            {canDispense && (
+            {canDispense && props.onOpen && (
+              <Group justify="flex-end">
+                <Button onClick={() => props.onOpen?.(found.prescription)}>Dispense…</Button>
+              </Group>
+            )}
+            {canDispense && !props.onOpen && (
               <Group align="flex-end" gap="xs" wrap="wrap">
                 <NumberInput
                   label="Quantity to hand over now"

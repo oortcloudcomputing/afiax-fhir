@@ -36,11 +36,18 @@ describe('Department queues in the provider app', () => {
     expect(screen.getByText('Department queues')).toBeInTheDocument();
   });
 
-  test('/kenya/queue opens the pharmacy queue', async () => {
+  test('/kenya/queue opens the pharmacy workspace', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'getProject').mockReturnValue(kenyaProject);
     await setup(medplum, '/kenya/queue');
-    expect(await screen.findByText('No open orders for Pharmacy.')).toBeInTheDocument();
+    expect(await screen.findByText('No one is waiting. New prescriptions appear here.')).toBeInTheDocument();
+  });
+
+  test('the old pharmacy queue link opens the pharmacy workspace', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'getProject').mockReturnValue(kenyaProject);
+    await setup(medplum, '/kenya/queue/pharmacy');
+    expect(await screen.findByTestId('pharmacy-today-summary')).toBeInTheDocument();
   });
 
   test('outside Kenya there is no queue link', async () => {

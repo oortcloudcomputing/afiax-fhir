@@ -14,6 +14,11 @@ import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
 import { getConfig } from './config';
 
+// Installable as an app (manifest.webmanifest); the worker caches nothing yet
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error);
+}
+
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
   // The Afiax FHIR server, never Medplum's cloud (MEDPLUM_BASE_URL; see config.ts)

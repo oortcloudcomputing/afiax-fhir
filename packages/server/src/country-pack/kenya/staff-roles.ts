@@ -173,7 +173,7 @@ export const KenyaStaffRoles: readonly KenyaStaffRole[] = [
     code: 'pharmacy',
     display: 'Pharmacy',
     description: 'Works the pharmacy queue and dispenses prescriptions.',
-    menu: [{ title: 'Pharmacy', link: [queue('pharmacy', 'Pharmacy queue'), patients, tasks] }],
+    menu: [{ title: 'Pharmacy', link: [{ name: 'Pharmacy', target: '/kenya/pharmacy' }, patients, tasks] }],
     resources: [
       ...read('Patient', 'Encounter'),
       ...write('Task', 'ChargeItem', 'Communication'),

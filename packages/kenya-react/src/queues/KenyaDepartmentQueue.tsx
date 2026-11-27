@@ -10,27 +10,14 @@
 import { Badge, Button, Group, Paper, SegmentedControl, Stack, Table, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { KenyaDepartmentCode } from '@medplum/core';
-import {
-  formatDateTime,
-  getReferenceString,
-  KenyaDepartments,
-  KenyaDepartmentSystem,
-  normalizeErrorString,
-} from '@medplum/core';
-import type { MedicationRequest, Parameters, Patient, Resource, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { formatDateTime, KenyaDepartments, normalizeErrorString } from '@medplum/core';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ConfirmButton } from '../common/ConfirmButton';
 import { KenyaPrescriptionLookup } from './KenyaPrescriptionLookup';
-
-interface QueueItem {
-  readonly task: Task;
-  readonly order?: ServiceRequest | MedicationRequest;
-  readonly patient?: Patient;
-}
-
-const openStatuses = 'requested,accepted,in-progress';
+import type { QueueItem } from './queue-items';
+import { acceptQueueTask, completeQueueItem, loadQueueItems, queuePatientName as patientName } from './queue-items';
 
 /** How often the queue reloads on its own, so new orders appear without refreshing the page. */
 const QueueRefreshMs = 30_000;
@@ -54,46 +41,7 @@ export function KenyaDepartmentQueue(props: KenyaDepartmentQueueProps): JSX.Elem
   const [loadedAt, setLoadedAt] = useState<string>();
 
   const load = useCallback(() => {
-    medplum
-      .search(
-        'Task',
-        new URLSearchParams([
-          ['performer', `${KenyaDepartmentSystem}|${department}`],
-          ['status', openStatuses],
-          ['_sort', 'authored-on'],
-          ['_count', '100'],
-          ['_include', 'Task:focus'],
-          ['_include', 'Task:patient'],
-        ]),
-        { cache: 'no-cache' }
-      )
-      .then((bundle) => {
-        const included = new Map<string, Resource>();
-        for (const entry of bundle.entry ?? []) {
-          if (entry.resource) {
-            included.set(getReferenceString(entry.resource), entry.resource);
-          }
-        }
-        const tasks = (bundle.entry ?? [])
-          .filter((e) => e.search?.mode !== 'include' && e.resource?.resourceType === 'Task')
-          .map((e) => e.resource as Task);
-        // Use the included resources; read any the server did not include
-        const resolve = async <T extends Resource>(reference: string | undefined): Promise<T | undefined> => {
-          if (!reference) {
-            return undefined;
-          }
-          return (
-            (included.get(reference) as T | undefined) ?? medplum.readReference<T>({ reference }).catch(() => undefined)
-          );
-        };
-        return Promise.all(
-          tasks.map(async (task) => ({
-            task,
-            order: await resolve<ServiceRequest | MedicationRequest>(task.focus?.reference),
-            patient: await resolve<Patient>(task.for?.reference),
-          }))
-        );
-      })
+    loadQueueItems(medplum, department)
       .then((loaded) => {
         setItems(loaded);
         setLoadedAt(new Date().toISOString());
@@ -112,25 +60,11 @@ export function KenyaDepartmentQueue(props: KenyaDepartmentQueueProps): JSX.Elem
 
   async function advance(item: QueueItem, action: 'accept' | 'complete'): Promise<void> {
     try {
-      if (action === 'complete' && item.order?.resourceType === 'MedicationRequest' && item.order.id) {
-        // Everything left on the prescription; the server records the dispense and closes this task
-        await medplum.post<Parameters>(medplum.fhirUrl('MedicationRequest', item.order.id, '$kenya-dispense'), {
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-        showNotification({ color: 'green', message: completedText(department) });
-        load();
-        return;
+      if (action === 'accept') {
+        await acceptQueueTask(medplum, item.task);
+      } else {
+        await completeQueueItem(medplum, item, completedText(department));
       }
-      await medplum.updateResource<Task>({
-        ...item.task,
-        status: action === 'accept' ? 'in-progress' : 'completed',
-        businessStatus: { text: action === 'accept' ? 'in progress' : completedText(department) },
-        owner:
-          item.task.owner ??
-          (medplum.getProfile() ? { reference: getReferenceString(medplum.getProfile() as Resource) } : undefined),
-        lastModified: new Date().toISOString(),
-      });
       showNotification({ color: 'green', message: action === 'accept' ? 'Order accepted' : completedText(department) });
       load();
     } catch (err) {
@@ -235,9 +169,4 @@ export function KenyaDepartmentQueue(props: KenyaDepartmentQueueProps): JSX.Elem
 
 function completedText(department: string): string {
   return department === 'pharmacy' ? 'Dispensed' : 'Completed';
-}
-
-function patientName(patient: Patient): string {
-  const name = patient.name?.[0];
-  return [name?.given?.join(' '), name?.family].filter(Boolean).join(' ') || `Patient/${patient.id}`;
 }

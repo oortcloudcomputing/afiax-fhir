@@ -1,37 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { showNotification } from '@mantine/notifications';
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import type { Referral } from './bedReferralsApi';
+import { askForBrowserNotifications, kenyaAlert as alert } from './kenyaAlert';
 import { urgencyColor, useBedsApi } from './bedReferralsApi';
 
 /** How often referrals are checked for news. */
 const PollMs = 20_000;
-
-/**
- * A short two-tone alert (no sound file): repeated for emergencies.
- * @param emergency - Whether it is an emergency referral.
- */
-function beep(emergency: boolean): void {
-  try {
-    const ctx = new AudioContext();
-    const tones = emergency ? [880, 660, 880, 660] : [660, 880];
-    tones.forEach((hz, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = hz;
-      gain.gain.value = 0.15;
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.18);
-      osc.stop(ctx.currentTime + i * 0.18 + 0.15);
-    });
-    setTimeout(() => ctx.close().catch(() => undefined), 1500);
-  } catch {
-    // No audio (autoplay blocked before any click): the pop-up still shows
-  }
-}
 
 /**
  * News about bed referrals, on every page of Afiax Provider (user decision 2026-11-24): a pop-up
@@ -48,9 +25,7 @@ export function BedReferralAlerts(): JSX.Element | null {
     if (!call) {
       return undefined;
     }
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => undefined);
-    }
+    askForBrowserNotifications();
     let stopped = false;
     const tick = async (): Promise<void> => {
       const [incoming, sent] = await Promise.all([
@@ -128,16 +103,4 @@ function describe(r: Referral, was: string | undefined): { title: string; body: 
     return { title: `Ambulance ${r.ambulance.plate} is on the way`, body: `From ${r.view.from}.` };
   }
   return undefined;
-}
-
-function alert(title: string, body: string, loud: boolean, color: string, onClick: () => void): void {
-  showNotification({ title, message: body, color, autoClose: loud ? false : 15_000, onClick, style: { cursor: 'pointer' } });
-  beep(loud);
-  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    const n = new Notification(title, { body, tag: title });
-    n.onclick = () => {
-      window.focus();
-      onClick();
-    };
-  }
 }

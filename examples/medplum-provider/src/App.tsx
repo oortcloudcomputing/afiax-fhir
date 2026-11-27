@@ -24,7 +24,7 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
-import { getKenyaRoleMenus } from './components/kenya/kenyaRoleMenu';
+import { getKenyaRoleMenus, getKenyaStaffRole } from './components/kenya/kenyaRoleMenu';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import { getConfig, getIdleTimeoutMs } from './config';
@@ -42,6 +42,7 @@ import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPag
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { BedReferralAlerts } from './components/kenya/BedReferralAlerts';
+import { PharmacyOrderAlerts } from './components/kenya/PharmacyOrderAlerts';
 import { BedBoardPage } from './pages/kenya/BedBoardPage';
 import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
 import { ClinicHoursPage } from './pages/kenya/ClinicHoursPage';
@@ -50,6 +51,7 @@ import { MarketplaceProfilePage } from './pages/kenya/MarketplaceProfilePage';
 import { VideoVisitsPage } from './pages/kenya/VideoVisitsPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
+import { PharmacyPage } from './pages/kenya/PharmacyPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
@@ -102,6 +104,8 @@ export function App(): JSX.Element | null {
   const isNetworkChemist = getProjectSettingString(medplum.getProject(), 'oortcloudTenant') === NetworkTenantId;
   // DoseSpot is US e-prescribing; Kenya prescribes through Kenya orders (KNHTS, CDS, pharmacy queue)
   const hasDoseSpot = !isKenya && hasDoseSpotIdentifier(membership);
+  // Pharmacy staff hear about new prescriptions on every page
+  const isPharmacyStaff = isKenya && getKenyaStaffRole(medplum.getUserConfiguration()) === 'pharmacy';
   // Kenya staff with a role (front desk, nurse, clinician, ...) get that role's menu
   let kenyaRoleMenus = isKenya ? getKenyaRoleMenus(medplum.getUserConfiguration(), getConfig().adminAppUrl) : undefined;
   if (isNetworkChemist) {
@@ -202,6 +206,9 @@ export function App(): JSX.Element | null {
     >
       {/* Bed referral news on every page (ADR-018 §C): pop-up, sound, browser notification */}
       {isKenya && profile ? <BedReferralAlerts /> : null}
+      {isKenya && profile && (isPharmacyStaff || location.pathname.startsWith('/kenya/pharmacy')) ? (
+        <PharmacyOrderAlerts />
+      ) : null}
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (
@@ -251,7 +258,9 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding" element={isKenya ? <KenyaRegistrationPage /> : <IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               {isKenya && <Route path="/kenya/queue/:department" element={<DepartmentQueuePage />} />}
-              {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/queue/pharmacy" replace />} />}
+              {isKenya && <Route path="/kenya/queue" element={<Navigate to="/kenya/pharmacy" replace />} />}
+              {isKenya && <Route path="/kenya/queue/pharmacy" element={<Navigate to="/kenya/pharmacy" replace />} />}
+              {isKenya && <Route path="/kenya/pharmacy" element={<PharmacyPage />} />}
               {isKenya && <Route path="/kenya/beds" element={<BedBoardPage />} />}
               {isKenya && <Route path="/kenya/bed-referrals" element={<BedReferralsPage />} />}
               {isKenya && <Route path="/kenya/clinic-hours" element={<ClinicHoursPage />} />}

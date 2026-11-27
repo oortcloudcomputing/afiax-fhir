@@ -15,6 +15,7 @@ import {
   IconFileInvoice,
   IconListCheck,
   IconMail,
+  IconPill,
   IconReceipt,
   IconSettings,
   IconShieldCheck,
@@ -71,6 +72,9 @@ function resolveTarget(target: string, adminAppUrl: string | undefined): string 
 }
 
 function getIcon(target: string): JSX.Element {
+  if (target.startsWith('/kenya/pharmacy')) {
+    return <IconPill />;
+  }
   if (target.startsWith('/kenya/queue')) {
     return <IconListCheck />;
   }

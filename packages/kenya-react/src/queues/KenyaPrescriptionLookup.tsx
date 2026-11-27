@@ -11,9 +11,11 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, normalizeKenyaPrescriptionCode } from '@medplum/core';
 import type { MedicationRequest, Parameters, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
+import { IconQrcode } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ConfirmButton } from '../common/ConfirmButton';
+import { PrescriptionQrScanner } from './PrescriptionQrScanner';
 
 interface Lookup {
   readonly prescription: MedicationRequest;
@@ -42,8 +44,9 @@ export function KenyaPrescriptionLookup(props: KenyaPrescriptionLookupProps): JS
   const [found, setFound] = useState<Lookup>();
   const [quantity, setQuantity] = useState<number | string>('');
   const [searching, setSearching] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
-  async function find(): Promise<void> {
+  async function find(code: string): Promise<void> {
     setError(undefined);
     setFound(undefined);
     if (!normalizeKenyaPrescriptionCode(code)) {
@@ -111,13 +114,13 @@ export function KenyaPrescriptionLookup(props: KenyaPrescriptionLookupProps): JS
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            find().catch(console.error);
+            find(code).catch(console.error);
           }}
         >
           <Group align="flex-end" gap="xs" wrap="wrap">
             <TextInput
               label="Prescription code"
-              description="Type it from the printed prescription, or scan its QR code"
+              description="Type it, scan the QR code with a handheld scanner, or use Scan QR for the camera"
               placeholder="RX-7KQ2-M9XD-3T"
               value={code}
               onChange={(e) => setCode(e.currentTarget.value)}
@@ -127,8 +130,20 @@ export function KenyaPrescriptionLookup(props: KenyaPrescriptionLookupProps): JS
             <Button type="submit" loading={searching}>
               Find
             </Button>
+            <Button variant="light" leftSection={<IconQrcode size={16} />} onClick={() => setScanning(true)}>
+              Scan QR
+            </Button>
           </Group>
         </form>
+        <PrescriptionQrScanner
+          opened={scanning}
+          onClose={() => setScanning(false)}
+          onScan={(scanned) => {
+            setScanning(false);
+            setCode(scanned);
+            find(scanned).catch(console.error);
+          }}
+        />
         {error && (
           <Alert color="red" variant="light">
             {error}

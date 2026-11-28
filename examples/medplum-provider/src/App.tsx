@@ -10,6 +10,7 @@ import {
   IconBook2,
   IconBuildingStore,
   IconUserCircle,
+  IconHeartbeat,
   IconVideo,
   IconClock,
   IconCalendarEvent,
@@ -48,6 +49,7 @@ import { BedReferralsPage } from './pages/kenya/BedReferralsPage';
 import { ClinicHoursPage } from './pages/kenya/ClinicHoursPage';
 import { MarketplaceFacilityPage } from './pages/kenya/MarketplaceFacilityPage';
 import { MarketplaceProfilePage } from './pages/kenya/MarketplaceProfilePage';
+import { HomeReadingsPage } from './pages/kenya/HomeReadingsPage';
 import { VideoVisitsPage } from './pages/kenya/VideoVisitsPage';
 import { DepartmentQueuePage } from './pages/kenya/DepartmentQueuePage';
 import { OfferRequestsPage } from './pages/kenya/OfferRequestsPage';
@@ -181,6 +183,8 @@ export function App(): JSX.Element | null {
                   // admin manages the facility and checks registrations
                   ...(isKenya ? [{ icon: <IconUserCircle />, label: 'My marketplace profile', href: '/kenya/marketplace/profile' }] : []),
                   ...(isKenya ? [{ icon: <IconVideo />, label: 'Video visits', href: '/kenya/video-visits' }] : []),
+                  // Vital signs patients take at home in My Afiax, and their alerts (ADR-012 §4)
+                  ...(isKenya ? [{ icon: <IconHeartbeat />, label: 'Home readings', href: '/kenya/home-readings' }] : []),
                   ...(isKenya && membership?.admin
                     ? [{ icon: <IconBuildingStore />, label: 'Facility marketplace', href: '/kenya/marketplace/facility' }]
                     : []),
@@ -270,6 +274,7 @@ export function App(): JSX.Element | null {
               {isKenya && <Route path="/kenya/marketplace/profile" element={<MarketplaceProfilePage />} />}
               {isKenya && <Route path="/kenya/marketplace/facility" element={<MarketplaceFacilityPage />} />}
               {isKenya && <Route path="/kenya/video-visits" element={<VideoVisitsPage />} />}
+              {isKenya && <Route path="/kenya/home-readings" element={<HomeReadingsPage />} />}
               {isNetworkChemist && <Route path="/erx/offers" element={<OfferRequestsPage />} />}
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
